@@ -61,6 +61,7 @@ exportRoutes.get("/export", async (c) => {
       source_type: b.sourceType,
       canonical_url: b.canonicalUrl,
       external_id: b.externalId,
+      owner: b.owner,
       title: b.title,
       description: b.description,
       language: b.language,

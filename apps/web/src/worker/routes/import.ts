@@ -112,6 +112,7 @@ importRoutes.post("/bookmarks/import/github", async (c) => {
           sourceType: "github",
           canonicalUrl,
           externalId: repo.fullName,
+          owner: repo.fullName.split("/")[0] || repo.owner,
           title: repo.fullName,
           description: repo.description,
           language: repo.language,

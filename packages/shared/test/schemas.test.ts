@@ -167,6 +167,12 @@ describe("listBookmarksQuerySchema", () => {
     expect(res.success).toBe(true)
     if (res.success) expect(res.data.healthStatus).toBe("stale")
   })
+
+  it("接受 owner", () => {
+    const res = listBookmarksQuerySchema.safeParse({ owner: "facebook" })
+    expect(res.success).toBe(true)
+    if (res.success) expect(res.data.owner).toBe("facebook")
+  })
 })
 
 describe("createFolderSchema", () => {

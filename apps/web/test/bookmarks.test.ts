@@ -14,6 +14,7 @@ interface BookmarkPayload {
   source_type: string
   canonical_url: string
   external_id: string
+  owner: string | null
   title: string
   description: string | null
   language: string | null
@@ -85,6 +86,7 @@ describe("POST /api/bookmarks", () => {
     expect(body.source_type).toBe("github")
     expect(body.canonical_url).toBe("https://github.com/facebook/react")
     expect(body.external_id).toBe("facebook/react")
+    expect(body.owner).toBe("facebook")
     expect(body.language).toBe("TypeScript")
     expect(body.stars).toBe(1234)
     expect(body.health_status).toBeTruthy()
@@ -184,13 +186,22 @@ describe("GET /api/bookmarks", () => {
     expect(page1.body.items[0]!.id).not.toBe(page2.body.items[0]!.id)
   })
 
-  it("支持 q / language / tag / folderId 过滤", async () => {
+  it("支持 q / language / tag / folderId / owner 过滤", async () => {
     const byQuery = await client.json<BookmarkList>("/api/bookmarks?q=uv")
     expect(byQuery.body.items).toHaveLength(1)
     expect(byQuery.body.items[0]!.external_id).toBe("astral-sh/uv")
 
     const byLanguage = await client.json<BookmarkList>("/api/bookmarks?language=Rust")
     expect(byLanguage.body.items).toHaveLength(1)
+
+    const byOwner = await client.json<BookmarkList>("/api/bookmarks?owner=facebook")
+    expect(byOwner.body.items).toHaveLength(1)
+    expect(byOwner.body.items[0]!.external_id).toBe("facebook/react")
+    expect(byOwner.body.items[0]!.owner).toBe("facebook")
+
+    const unknownOwner = await client.json<BookmarkList>("/api/bookmarks?owner=nobody")
+    expect(unknownOwner.body.total).toBe(0)
+    expect(unknownOwner.body.items).toEqual([])
 
     const byTag = await client.json<BookmarkList>("/api/bookmarks?tag=react")
     expect(byTag.body.items).toHaveLength(1)
@@ -398,6 +409,32 @@ describe("GET /api/tags", () => {
     expect(body.items.length).toBeGreaterThan(0)
     const react = body.items.find((t) => t.name === "react")
     expect(react?.usage_count).toBe(1)
+  })
+})
+
+describe("GET /api/bookmarks/owners", () => {
+  it("返回去重开发者列表，支持 q 过滤", async () => {
+    await createBookmark("facebook/react")
+    await createBookmark("astral-sh/uv")
+
+    const all = await client.json<{
+      items: Array<{ name: string; usage_count: number }>
+    }>("/api/bookmarks/owners")
+    expect(all.status).toBe(200)
+    expect(all.body.items.map((o) => o.name)).toEqual(["astral-sh", "facebook"])
+    expect(all.body.items.find((o) => o.name === "facebook")?.usage_count).toBe(1)
+
+    const filtered = await client.json<{
+      items: Array<{ name: string; usage_count: number }>
+    }>("/api/bookmarks/owners?q=face")
+    expect(filtered.status).toBe(200)
+    expect(filtered.body.items).toHaveLength(1)
+    expect(filtered.body.items[0]!.name).toBe("facebook")
+
+    const miss = await client.json<{
+      items: Array<{ name: string }>
+    }>("/api/bookmarks/owners?q=zzz")
+    expect(miss.body.items).toEqual([])
   })
 })
 

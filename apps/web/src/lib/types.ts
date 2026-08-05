@@ -67,6 +67,7 @@ export interface Bookmark {
   source_type: string
   canonical_url: string
   external_id?: string | null // e.g. "owner/repo"
+  owner?: string | null
   title: string
   description?: string | null
   language?: string | null
@@ -111,12 +112,18 @@ export interface BookmarksQueryParams {
   folder_id?: string
   tag?: string
   language?: string
+  owner?: string
   health_status?: HealthStatus
   sort?: "recent" | "updated" | "stars" | "name"
   q?: string
   archived?: boolean
   page?: number
   limit?: number
+}
+
+export interface BookmarkOwner {
+  name: string
+  usage_count?: number
 }
 
 export interface BookmarksResponse {

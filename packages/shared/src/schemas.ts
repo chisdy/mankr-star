@@ -72,6 +72,7 @@ export const listBookmarksQuerySchema = z.object({
   folderId: z.string().uuid().optional(),
   tag: z.string().optional(),
   language: z.string().optional(),
+  owner: z.string().optional(),
   healthStatus: z.enum(HEALTH_STATUSES).optional(),
   archived: z
     .enum(["true", "false", "1", "0"])

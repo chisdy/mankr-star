@@ -97,6 +97,7 @@ function serializeBookmark(
     source_type: b.sourceType,
     canonical_url: b.canonicalUrl,
     external_id: b.externalId,
+    owner: b.owner,
     title: b.title,
     description: b.description,
     language: b.language,
@@ -162,6 +163,7 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     folderId,
     tag,
     language,
+    owner,
     healthStatus,
     archived,
     includeArchived,
@@ -189,6 +191,7 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     conditions.push(inArray(bookmarks.folderId, ids))
   }
   if (language) conditions.push(eq(bookmarks.language, language))
+  if (owner) conditions.push(eq(bookmarks.owner, owner))
 
   if (q) {
     const pattern = `%${q}%`
@@ -284,6 +287,40 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     page,
     pageSize,
     total,
+  })
+})
+
+bookmarkRoutes.get("/bookmarks/owners", async (c) => {
+  const db = c.get("db")
+  const q = c.req.query("q")?.trim()
+
+  const conditions = [
+    isNull(bookmarks.deletedAt),
+    isNotNull(bookmarks.owner),
+  ]
+  if (q) {
+    conditions.push(like(bookmarks.owner, `%${q}%`))
+  }
+
+  const usageCount = count(bookmarks.id).as("usage_count")
+
+  const rows = await db
+    .select({
+      name: bookmarks.owner,
+      usage_count: usageCount,
+    })
+    .from(bookmarks)
+    .where(and(...conditions))
+    .groupBy(bookmarks.owner)
+    .orderBy(asc(bookmarks.owner))
+
+  return c.json({
+    items: rows
+      .filter((r): r is { name: string; usage_count: number } => Boolean(r.name))
+      .map((r) => ({
+        name: r.name,
+        usage_count: Number(r.usage_count),
+      })),
   })
 })
 
@@ -423,6 +460,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
     sourceType: "github" as const,
     canonicalUrl: parsedRepo.canonicalUrl,
     externalId: parsedRepo.externalId,
+    owner: meta.fullName.split("/")[0] || parsedRepo.owner,
     title: meta.fullName,
     description: meta.description,
     language: meta.language,

@@ -1,5 +1,6 @@
 import type {
   Bookmark,
+  BookmarkOwner,
   BookmarksQueryParams,
   BookmarksResponse,
   DeepSeekSettings,
@@ -179,6 +180,7 @@ function toBookmarksQuery(params?: BookmarksQueryParams): string {
   if (params.folder_id) search.set("folderId", params.folder_id)
   if (params.tag) search.set("tag", params.tag)
   if (params.language) search.set("language", params.language)
+  if (params.owner) search.set("owner", params.owner)
   if (params.health_status) search.set("healthStatus", params.health_status)
   if (params.q) search.set("q", params.q)
   if (params.page) search.set("page", String(params.page))
@@ -276,6 +278,7 @@ function getInitialMockData(): MockDataStore {
       source_type: "github",
       canonical_url: "https://github.com/facebook/react",
       external_id: "facebook/react",
+      owner: "facebook",
       title: "facebook/react",
       description: "The library for web and native user interfaces.",
       language: "JavaScript",
@@ -297,6 +300,7 @@ function getInitialMockData(): MockDataStore {
       source_type: "github",
       canonical_url: "https://github.com/deepseek-ai/DeepSeek-V3",
       external_id: "deepseek-ai/DeepSeek-V3",
+      owner: "deepseek-ai",
       title: "deepseek-ai/DeepSeek-V3",
       description: "An open-source Mixture-of-Experts (MoE) language model.",
       language: "Python",
@@ -498,6 +502,9 @@ export const api = {
             (b) => b.language?.toLowerCase() === params.language!.toLowerCase()
           )
         }
+        if (params?.owner) {
+          items = items.filter((b) => b.owner === params.owner)
+        }
         if (params?.health_status) {
           items = items.filter((b) => b.health_status === params.health_status)
         }
@@ -582,6 +589,7 @@ export const api = {
           source_type: "github",
           canonical_url: `https://github.com/${repoName}`,
           external_id: repoName,
+          owner: repoName.split("/")[0] || null,
           title: repoName,
           description: null,
           language: null,
@@ -971,6 +979,34 @@ export const api = {
       }))
     } catch (err) {
       if (shouldFallbackToMock(err)) return mockStore().tags
+      throw err
+    }
+  },
+
+  async getOwners(q?: string): Promise<BookmarkOwner[]> {
+    try {
+      const search = q?.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""
+      const res = await request<{
+        items: Array<{ name: string; usage_count?: number }>
+      }>(`/api/bookmarks/owners${search}`)
+      return res.items.map((o) => ({
+        name: o.name,
+        usage_count: o.usage_count ?? 0,
+      }))
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const counts = new Map<string, number>()
+        for (const b of mockStore().bookmarks) {
+          if (b.deleted_at || !b.owner) continue
+          if (q?.trim() && !b.owner.toLowerCase().includes(q.trim().toLowerCase())) {
+            continue
+          }
+          counts.set(b.owner, (counts.get(b.owner) ?? 0) + 1)
+        }
+        return Array.from(counts.entries())
+          .map(([name, usage_count]) => ({ name, usage_count }))
+          .sort((a, b) => a.name.localeCompare(b.name))
+      }
       throw err
     }
   },

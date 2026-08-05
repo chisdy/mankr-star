@@ -192,6 +192,7 @@ export async function syncUpdates(env: Env): Promise<{ scanned: number; events: 
           forks: meta.forks,
           description: meta.description,
           language: meta.language,
+          owner: meta.fullName.split("/")[0] || owner,
           topicsJson: JSON.stringify(meta.topics),
           defaultBranch: meta.defaultBranch,
           pushedAt: meta.pushedAt,

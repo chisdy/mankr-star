@@ -42,6 +42,7 @@ import { BookmarkRow, BookmarkRowSkeleton } from "./bookmark-row"
 import { BookmarkCard, BookmarkCardSkeleton } from "./bookmark-card"
 import { BookmarkDetailDrawer } from "./bookmark-detail-drawer"
 import { AddBookmarkDialog } from "./add-bookmark-dialog"
+import { OwnerSelect } from "./owner-select"
 
 export function BookmarksPage() {
   const { t } = useTranslation(["bookmarks", "common"])
@@ -75,6 +76,7 @@ export function BookmarksPage() {
   const folderId = searchParams.get("folder_id") || ""
   const tag = searchParams.get("tag") || ""
   const language = searchParams.get("language") || ""
+  const owner = searchParams.get("owner") || ""
   const healthStatus = searchParams.get("health_status") || ""
   const sortParam = searchParams.get("sort")
   const sort: "recent" | "updated" | "stars" | "name" =
@@ -91,6 +93,7 @@ export function BookmarksPage() {
       folder_id: folderId || undefined,
       tag: tag || undefined,
       language: language || undefined,
+      owner: owner || undefined,
       health_status: (healthStatus || undefined) as
         | "unavailable"
         | "empty"
@@ -104,7 +107,7 @@ export function BookmarksPage() {
       q: q || undefined,
       archived: archived || undefined,
     }),
-    [folderId, tag, language, healthStatus, sort, q, archived]
+    [folderId, tag, language, owner, healthStatus, sort, q, archived]
   )
 
   // Query bookmarks
@@ -130,6 +133,11 @@ export function BookmarksPage() {
   const { data: tags = [] } = useQuery({
     queryKey: queryKeys.tags.all,
     queryFn: () => api.getTags(),
+  })
+
+  const { data: owners = [], isLoading: ownersLoading } = useQuery({
+    queryKey: queryKeys.bookmarks.owners,
+    queryFn: () => api.getOwners(),
   })
 
   // Languages list extracted or standard
@@ -192,6 +200,7 @@ export function BookmarksPage() {
     folderId ||
     tag ||
     language ||
+    owner ||
     healthStatus ||
     q ||
     archived ||
@@ -253,6 +262,14 @@ export function BookmarksPage() {
                 ))}
               </SelectContent>
             </Select>
+
+            <OwnerSelect
+              owners={owners}
+              value={owner || null}
+              onValueChange={(val) => updateParam("owner", val)}
+              isLoading={ownersLoading}
+              size="sm"
+            />
 
             {/* Health status Select */}
             <Select
@@ -378,6 +395,19 @@ export function BookmarksPage() {
                 <XIcon
                   className="size-3 cursor-pointer"
                   onClick={() => updateParam("language", null)}
+                />
+              </Badge>
+            )}
+
+            {owner && (
+              <Badge
+                variant="secondary"
+                className="h-5 gap-1 text-[11px] font-normal"
+              >
+                <span>{t("list.chipOwner", { name: owner })}</span>
+                <XIcon
+                  className="size-3 cursor-pointer"
+                  onClick={() => updateParam("owner", null)}
                 />
               </Badge>
             )}
