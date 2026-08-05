@@ -11,7 +11,7 @@
     {
       "binding": "DB",
       "database_name": "mankr-star",
-      "database_id": "00000000-0000-0000-0000-000000000001",
+      "database_id": "6998114e-02cc-441f-b69b-7d8fbf7d8d9d",
       "migrations_dir": "../../packages/db/migrations"
     }
   ],
