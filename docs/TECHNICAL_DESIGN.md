@@ -459,20 +459,23 @@ pnpm --filter web dev    # Vite + workerd（CF plugin）
 
 ```bash
 pnpm --filter web build
-pnpm deploy   # 等价于在 apps/web 下执行 wrangler deploy
+pnpm deploy   # 先 remote D1 migrate，再 wrangler deploy
 ```
 
-Workers Builds（Git 自动部署）建议：
+Workers Builds（Git 自动部署）必配：
 
 | 项 | 值 |
 |----|-----|
-| Build command | `pnpm run build` |
-| Deploy command | `pnpm run deploy`（或 `pnpm --filter web exec wrangler deploy`） |
 | Root directory | 留空（仓库根，以便 pnpm workspace 安装） |
+| Build command | `pnpm run build` |
+| Deploy command | `pnpm run deploy` |
+| Non-production deploy command | `pnpm run deploy:version`（若开启非生产分支构建） |
 
 勿在 monorepo 根直接跑 `npx wrangler deploy`：根目录无 `wrangler.jsonc`，会报 workspace 检测错误。
 
-CI 建议：typecheck → lint → drizzle migrate（对 staging）→ deploy。
+`pnpm run deploy` / `deploy:version` 都会先执行 `wrangler d1 migrations apply DB --remote`，再上传 Worker。单独迁库：`pnpm db:migrate:remote`。
+
+**API Token（关键）**：默认 Workers Builds token **不含 D1**。Settings → Build → API token 需包含账户权限 **D1 Edit**（以及已有的 Workers Scripts Edit），否则自动迁移会失败、部署中断。
 
 ---
 
