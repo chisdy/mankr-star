@@ -459,8 +459,18 @@ pnpm --filter web dev    # Vite + workerd（CF plugin）
 
 ```bash
 pnpm --filter web build
-pnpm exec wrangler deploy
+pnpm deploy   # 等价于在 apps/web 下执行 wrangler deploy
 ```
+
+Workers Builds（Git 自动部署）建议：
+
+| 项 | 值 |
+|----|-----|
+| Build command | `pnpm run build` |
+| Deploy command | `pnpm run deploy`（或 `pnpm --filter web exec wrangler deploy`） |
+| Root directory | 留空（仓库根，以便 pnpm workspace 安装） |
+
+勿在 monorepo 根直接跑 `npx wrangler deploy`：根目录无 `wrangler.jsonc`，会报 workspace 检测错误。
 
 CI 建议：typecheck → lint → drizzle migrate（对 staging）→ deploy。
 

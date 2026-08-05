@@ -11,6 +11,7 @@
     "test": "turbo test",
     "test:shared": "pnpm --filter @mankr/shared test",
     "test:worker": "pnpm --filter web test",
+    "deploy": "pnpm --filter web exec wrangler deploy",
     "db:generate": "pnpm --filter @mankr/db generate",
     "db:migrate:local": "pnpm --filter web db:migrate:local",
     "db:seed:local": "bash packages/db/seed/reset-and-seed.sh"
