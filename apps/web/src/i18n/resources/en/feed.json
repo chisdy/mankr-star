@@ -1,0 +1,11 @@
+{
+  "title": "Activity feed",
+  "description": "Track Release, pushes, and changes for followed repos",
+  "empty": "No updates yet. Tracked repos will appear here when they change.",
+  "eventType": {
+    "release": "New Release",
+    "push": "Branch updated",
+    "stars_delta": "Stars surged",
+    "meta_change": "Metadata changed"
+  }
+}

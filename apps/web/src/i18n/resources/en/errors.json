@@ -1,0 +1,28 @@
+{
+  "generic": "Request failed. Please try again later.",
+  "network": "Unable to reach the server. Check your network and try again.",
+  "UNAUTHORIZED": "Not signed in",
+  "NOT_FOUND": "Resource not found",
+  "BAD_REQUEST": "Invalid request",
+  "VALIDATION_ERROR": "Validation failed",
+  "RATE_LIMITED": "Too many requests. Please try again later.",
+  "DUPLICATE": "Resource already exists",
+  "INVALID_CREDENTIALS": "Incorrect username or password",
+  "INSTANCE_INITIALIZED": "This instance is already initialized",
+  "INVALID_PASSWORD": "Current password is incorrect",
+  "NOT_CONFIGURED": "DeepSeek API Key is not configured",
+  "INVALID_URL": "Invalid GitHub URL or owner/repo",
+  "UNSUPPORTED_SOURCE": "Unsupported source URL",
+  "GITHUB_ERROR": "Failed to fetch GitHub metadata",
+  "INTERNAL_ERROR": "Internal server error",
+  "TARGET_NOT_FOUND": "Target folder not found",
+  "INVALID_TARGET": "Invalid target folder",
+  "http": {
+    "401": "Not signed in or session expired.",
+    "403": "You do not have permission for this action.",
+    "404": "Resource not found.",
+    "409": "Conflict. Please check and try again.",
+    "429": "Too many requests. Please try again later.",
+    "502": "Upstream service unavailable. Please try again later."
+  }
+}

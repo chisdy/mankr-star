@@ -1,0 +1,79 @@
+{
+  "range": {
+    "7d": "7 days",
+    "30d": "30 days",
+    "all": "All",
+    "aria": "Time range"
+  },
+  "header": {
+    "title": "Insights",
+    "description": "Library composition, health, and DeepSeek usage"
+  },
+  "states": {
+    "loadError": "Failed to load insights. Check network or backend.",
+    "libraryEmptyPrefix": "Library is empty. Go to",
+    "libraryEmptyLink": "Bookmarks",
+    "libraryEmptySuffix": "to add your first link."
+  },
+  "metrics": {
+    "totalBookmarks": "Total bookmarks",
+    "addedInRange": "Added in range",
+    "aiTokens": "AI tokens",
+    "promptTokens": "Prompt {{count}}",
+    "completionTokens": "Completion {{count}}",
+    "estimatedCost": "Estimated AI cost",
+    "calls": "{{count}} calls",
+    "successFailure": "(ok {{ok}} / error {{error}})",
+    "aiDoneRate": "AI completion rate",
+    "classified": "Classified {{count}}",
+    "fallback": "Fallback {{count}}"
+  },
+  "sections": {
+    "dailyTokensTitle": "Daily AI token usage",
+    "dailyTokensDescription": "Days with calls only; cost is a public-price estimate, not a bill",
+    "aiKindTitle": "AI call kinds",
+    "aiKindDescription": "Classify / translate / connection test share",
+    "totalCalls": "Total calls",
+    "languageTitle": "Language distribution",
+    "languageDescription": "Primary languages across starred repos",
+    "healthTitle": "Repo health",
+    "healthDescription": "Activity and status distribution",
+    "foldersTitle": "Top folders",
+    "foldersEmpty": "No folder data",
+    "topClickedTitle": "Most opened",
+    "topClickedEmpty": "No click records yet",
+    "clickCount": "{{count}} times",
+    "tagsAndSyncTitle": "Top tags & sync",
+    "topTags": "Frequent tags",
+    "noTags": "No tags",
+    "syncIssues": "Sync issues",
+    "trackingSummary": "Tracking: {{tracked}} / {{total}} repos",
+    "aiDone": "Done: {{count}}",
+    "aiPending": "Pending: {{count}}",
+    "aiFailed": "Failed: {{count}}",
+    "aiFallback": "Fallback: {{count}}"
+  },
+  "charts": {
+    "dailyEmptyTitle": "No AI calls in this range",
+    "dailyEmptyDescription": "Add bookmarks or test DeepSeek to see token usage here",
+    "dailyHoverCalls": "({{count}} calls)",
+    "dailySummary": "{{count}} days with calls (hover or focus bars for details)",
+    "dailyPeak": "Peak: {{tokens}} tokens",
+    "dailyAria": "Daily AI tokens, {{count}} days with data, peak {{tokens}} tokens",
+    "dailyBarDetail": "{{date}}: {{tokens}} tokens, {{calls}} calls",
+    "donutEmpty": "No kind distribution data",
+    "donutAria": "{{totalLabel}} {{totalValue}}, by kind",
+    "donutValue": "{{count}} calls",
+    "languageEmpty": "No language data",
+    "languageAria": "Language distribution, {{total}} items",
+    "healthEmpty": "No health data"
+  },
+  "format": {
+    "costNone": "N/A",
+    "kind": {
+      "classify": "AI classify",
+      "slug_translate": "Slug translate",
+      "connection_test": "Connection test"
+    }
+  }
+}

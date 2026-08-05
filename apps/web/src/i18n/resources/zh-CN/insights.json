@@ -1,0 +1,79 @@
+{
+  "range": {
+    "7d": "7 天",
+    "30d": "30 天",
+    "all": "全部",
+    "aria": "时间窗"
+  },
+  "header": {
+    "title": "洞察",
+    "description": "库构成、健康度与 DeepSeek 真实调用用量"
+  },
+  "states": {
+    "loadError": "无法加载洞察数据，请检查网络或后端服务。",
+    "libraryEmptyPrefix": "库为空。去",
+    "libraryEmptyLink": "收藏",
+    "libraryEmptySuffix": "添加第一条链接。"
+  },
+  "metrics": {
+    "totalBookmarks": "收藏总数",
+    "addedInRange": "本窗新增",
+    "aiTokens": "AI Token 消耗",
+    "promptTokens": "提示 {{count}}",
+    "completionTokens": "生成 {{count}}",
+    "estimatedCost": "预估 AI 费用",
+    "calls": "{{count}} 次调用",
+    "successFailure": "(成功 {{ok}} / 失败 {{error}})",
+    "aiDoneRate": "AI 处理完成率",
+    "classified": "已归类 {{count}}",
+    "fallback": "降级 {{count}}"
+  },
+  "sections": {
+    "dailyTokensTitle": "每日 AI Token 消耗",
+    "dailyTokensDescription": "仅含有调用记录的日期；费用按公开价粗算，非账单",
+    "aiKindTitle": "AI 调用用途分布",
+    "aiKindDescription": "分类 / 翻译 / 连接测试占比",
+    "totalCalls": "总调用",
+    "languageTitle": "编程语言分布",
+    "languageDescription": "全库 GitHub 收藏主要语言占比",
+    "healthTitle": "仓库健康度",
+    "healthDescription": "更新活跃度与状态分布",
+    "foldersTitle": "热门文件夹占用",
+    "foldersEmpty": "暂无文件夹数据",
+    "topClickedTitle": "热门打开收藏",
+    "topClickedEmpty": "尚无跳转点击记录",
+    "clickCount": "{{count}} 次",
+    "tagsAndSyncTitle": "热门标签与同步",
+    "topTags": "高频标签",
+    "noTags": "暂无标签",
+    "syncIssues": "同步异常状态",
+    "trackingSummary": "动态追踪: {{tracked}} / {{total}} 仓库在追踪中",
+    "aiDone": "完成: {{count}}",
+    "aiPending": "待处理: {{count}}",
+    "aiFailed": "失败: {{count}}",
+    "aiFallback": "降级: {{count}}"
+  },
+  "charts": {
+    "dailyEmptyTitle": "本时间窗内暂无 AI 调用记录",
+    "dailyEmptyDescription": "添加收藏或测试 DeepSeek 连接后将在此展示 Token 变化",
+    "dailyHoverCalls": "({{count}} 次调用)",
+    "dailySummary": "{{count}} 个有调用的日期 (悬停或聚焦柱条查看明细)",
+    "dailyPeak": "峰值: {{tokens}} Tokens",
+    "dailyAria": "AI Token 按日用量，共 {{count}} 个有数据的日期，峰值 {{tokens}} Tokens",
+    "dailyBarDetail": "{{date}}: {{tokens}} Tokens, {{calls}} 次调用",
+    "donutEmpty": "暂无用途占比数据",
+    "donutAria": "{{totalLabel}} {{totalValue}}，按用途分布",
+    "donutValue": "{{count}} 次",
+    "languageEmpty": "暂无语言分类数据",
+    "languageAria": "编程语言分布，共 {{total}} 条",
+    "healthEmpty": "暂无健康度数据"
+  },
+  "format": {
+    "costNone": "暂无",
+    "kind": {
+      "classify": "AI 分类",
+      "slug_translate": "Slug 翻译",
+      "connection_test": "连接测试"
+    }
+  }
+}

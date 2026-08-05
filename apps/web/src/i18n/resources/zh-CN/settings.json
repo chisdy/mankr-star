@@ -1,0 +1,92 @@
+{
+  "title": "设置",
+  "description": "账号管理、DeepSeek AI 配置、GitHub PAT 与数据偏好",
+  "toasts": {
+    "deepseekSaved": "已保存 DeepSeek AI 配置",
+    "deepseekSaveFailed": "配置保存失败",
+    "deepseekCleared": "已清除 DeepSeek API Key",
+    "deepseekTestSuccess": "DeepSeek API 测试成功！",
+    "deepseekTestFailed": "DeepSeek API 测试失败",
+    "patSaved": "已保存 GitHub PAT",
+    "patSaveFailed": "PAT 保存失败",
+    "trackingSaved": "已更新跟踪阈值并重算仓库近况",
+    "publicBrowsingEnabled": "已开启公开浏览",
+    "publicBrowsingDisabled": "已关闭公开浏览",
+    "publicBrowsingSaveFailed": "公开浏览设置保存失败",
+    "passwordChanged": "密码修改成功",
+    "passwordChangeFailed": "密码修改失败",
+    "exportSuccess": "数据导出成功",
+    "exportFailed": "导出数据失败"
+  },
+  "account": {
+    "section": "1. 账号信息",
+    "username": "用户名:",
+    "email": "邮箱:",
+    "noEmail": "未绑定邮箱"
+  },
+  "password": {
+    "title": "修改密码",
+    "currentLabel": "当前密码",
+    "currentPlaceholder": "输入当前密码",
+    "newLabel": "新密码",
+    "newPlaceholder": "至少 8 位字符",
+    "update": "更新密码",
+    "currentRequired": "请输入当前密码",
+    "newMin": "新密码至少 8 个字符"
+  },
+  "deepseek": {
+    "section": "2. DeepSeek AI 配置",
+    "configuredBadge": "已配置 (****{{last4}})",
+    "unconfiguredBadge": "未配置 (规则降级)",
+    "description": "用于项目一句话用途摘要、推荐分类与智能打标签。密钥采用 AES-GCM 加密存储，不暴露明文。",
+    "keyPlaceholder": "粘贴 DeepSeek API Key",
+    "savedKeyPlaceholder": "已保存密钥 (****{{last4}})，若不修改请留空",
+    "modelLabel": "模型偏好",
+    "modelPlaceholder": "选择 DeepSeek 模型",
+    "modelFlash": "deepseek-v4-flash (推荐，速度快)",
+    "modelPro": "deepseek-v4-pro (推理更深)",
+    "save": "保存配置",
+    "test": "测试连接",
+    "clear": "清除 Key",
+    "clearConfirm": "确定要清除 DeepSeek API Key 吗？"
+  },
+  "github": {
+    "section": "3. GitHub PAT",
+    "configuredBadge": "已配置 (****{{last4}})",
+    "unconfiguredBadge": "未配置",
+    "description": "可选。配置 PAT 可提高 GitHub REST API 请求限额（提升星数与更新同步速度）。",
+    "patPlaceholder": "粘贴 GitHub Personal Access Token",
+    "savedPatPlaceholder": "已保存 PAT (****{{last4}})，留空保持不变",
+    "save": "保存 PAT"
+  },
+  "tracking": {
+    "section": "4. 更新跟踪",
+    "description": "系统每 6 小时同步一次 GitHub 近况。可调整「近期活跃」与「疑似停更」判定天数；保存后会按已有推送时间本地重算，不额外请求 GitHub。单条收藏可在详情中关闭跟踪。",
+    "hotWithinDays": "近期活跃（天内有推送）",
+    "staleAfterDays": "疑似停更（超过多少天无推送）",
+    "save": "保存阈值"
+  },
+  "visibility": {
+    "section": "5. 可见性",
+    "description": "控制未登录访客能否只读查看本实例的收藏与动态。",
+    "publicBrowsing": "公开浏览",
+    "publicBrowsingDescription": "开启后，任何人可通过本实例链接只读查看收藏与动态；关闭后必须登录才能访问。添加收藏、新建文件夹等操作仍需登录。私人笔记始终不对访客可见。"
+  },
+  "export": {
+    "section": "6. 数据备份与导出",
+    "description": "导出全部收藏、分类与标签数据为 JSON 格式。",
+    "title": "导出全库 JSON",
+    "detail": "包含私有笔记、AI 摘要、标签与时间戳",
+    "button": "导出数据"
+  },
+  "appearance": {
+    "section": "7. 外观与语言",
+    "description": "主题与界面语言",
+    "themeDescription": "自适应浅色 / 深色界面主题",
+    "system": "跟随系统",
+    "light": "浅色主题",
+    "dark": "深色主题",
+    "language": "语言",
+    "languageDescription": "选择英文或简体中文"
+  }
+}

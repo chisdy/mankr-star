@@ -7,13 +7,19 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "turbo format",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "test:shared": "pnpm --filter @mankr/shared test",
+    "test:worker": "pnpm --filter web test",
+    "db:generate": "pnpm --filter @mankr/db generate",
+    "db:migrate:local": "pnpm --filter web db:migrate:local",
+    "db:seed:local": "bash packages/db/seed/reset-and-seed.sh"
   },
   "devDependencies": {
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "turbo": "^2.9.18",
-    "typescript": "~6"
+    "typescript": "~7.0.2"
   },
   "packageManager": "pnpm@10.33.4",
   "engines": {

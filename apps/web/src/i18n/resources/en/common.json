@@ -1,0 +1,30 @@
+{
+  "unknown": "Unknown",
+  "uncategorized": "Uncategorized",
+  "actions": {
+    "add": "Add",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveChanges": "Save changes",
+    "delete": "Delete",
+    "login": "Sign in",
+    "logout": "Sign out",
+    "settings": "Settings",
+    "wait": "Please wait",
+    "clearFilters": "Clear filters",
+    "resetFilters": "Reset filters",
+    "confirm": "Confirm",
+    "acknowledge": "Got it"
+  },
+  "accessibility": {
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "openNavMenu": "Open navigation menu",
+    "toggleTheme": "Toggle theme",
+    "switchLanguage": "Switch language"
+  },
+  "language": {
+    "label": "Language",
+    "description": "Choose the interface language"
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "title": "Settings",
+  "description": "Account, DeepSeek AI, GitHub PAT, and preferences",
+  "toasts": {
+    "deepseekSaved": "DeepSeek AI settings saved",
+    "deepseekSaveFailed": "Failed to save settings",
+    "deepseekCleared": "DeepSeek API Key cleared",
+    "deepseekTestSuccess": "DeepSeek API test succeeded!",
+    "deepseekTestFailed": "DeepSeek API test failed",
+    "patSaved": "GitHub PAT saved",
+    "patSaveFailed": "Failed to save PAT",
+    "trackingSaved": "Tracking thresholds updated and health recalculated",
+    "publicBrowsingEnabled": "Public browsing enabled",
+    "publicBrowsingDisabled": "Public browsing disabled",
+    "publicBrowsingSaveFailed": "Failed to save public browsing setting",
+    "passwordChanged": "Password updated",
+    "passwordChangeFailed": "Failed to change password",
+    "exportSuccess": "Export succeeded",
+    "exportFailed": "Export failed"
+  },
+  "account": {
+    "section": "1. Account",
+    "username": "Username:",
+    "email": "Email:",
+    "noEmail": "No email linked"
+  },
+  "password": {
+    "title": "Change password",
+    "currentLabel": "Current password",
+    "currentPlaceholder": "Enter current password",
+    "newLabel": "New password",
+    "newPlaceholder": "At least 8 characters",
+    "update": "Update password",
+    "currentRequired": "Please enter current password",
+    "newMin": "New password must be at least 8 characters"
+  },
+  "deepseek": {
+    "section": "2. DeepSeek AI",
+    "configuredBadge": "Configured (****{{last4}})",
+    "unconfiguredBadge": "Not configured (rule fallback)",
+    "description": "Used for one-line summaries, folder suggestions, and smart tags. Keys are stored with AES-GCM encryption.",
+    "keyPlaceholder": "Paste DeepSeek API Key",
+    "savedKeyPlaceholder": "Saved key (****{{last4}}), leave blank to keep",
+    "modelLabel": "Model",
+    "modelPlaceholder": "Select DeepSeek model",
+    "modelFlash": "deepseek-v4-flash (recommended, faster)",
+    "modelPro": "deepseek-v4-pro (deeper reasoning)",
+    "save": "Save settings",
+    "test": "Test connection",
+    "clear": "Clear Key",
+    "clearConfirm": "Clear the DeepSeek API Key?"
+  },
+  "github": {
+    "section": "3. GitHub PAT",
+    "configuredBadge": "Configured (****{{last4}})",
+    "unconfiguredBadge": "Not configured",
+    "description": "Optional. A PAT raises GitHub REST API rate limits for stars and sync.",
+    "patPlaceholder": "Paste GitHub Personal Access Token",
+    "savedPatPlaceholder": "Saved PAT (****{{last4}}), leave blank to keep",
+    "save": "Save PAT"
+  },
+  "tracking": {
+    "section": "4. Update tracking",
+    "description": "The system syncs GitHub activity every 6 hours. Adjust hot / stale day thresholds; saving recalculates locally from existing push times without extra GitHub calls. Per-bookmark tracking can be disabled in detail view.",
+    "hotWithinDays": "Hot (pushed within days)",
+    "staleAfterDays": "Stale (no push for days)",
+    "save": "Save thresholds"
+  },
+  "visibility": {
+    "section": "5. Visibility",
+    "description": "Control whether signed-out visitors can read-only browse bookmarks and feed.",
+    "publicBrowsing": "Public browsing",
+    "publicBrowsingDescription": "When enabled, anyone with the link can read bookmarks and feed; when disabled, sign-in is required. Adding bookmarks and creating folders still require sign-in. Private notes stay hidden from guests."
+  },
+  "export": {
+    "section": "6. Backup & export",
+    "description": "Export all bookmarks, folders, and tags as JSON.",
+    "title": "Export full library JSON",
+    "detail": "Includes private notes, AI summaries, tags, and timestamps",
+    "button": "Export data"
+  },
+  "appearance": {
+    "section": "7. Appearance",
+    "description": "Theme and interface language",
+    "themeDescription": "Light / dark theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark",
+    "language": "Language",
+    "languageDescription": "Choose English or Simplified Chinese"
+  }
+}

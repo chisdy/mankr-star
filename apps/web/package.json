@@ -8,16 +8,34 @@
     "build": "tsc -b && vite build",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.worker.json --noEmit",
+    "typecheck:worker": "tsc -p tsconfig.worker.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "preview": "vite preview",
+    "db:migrate:local": "wrangler d1 migrations apply mankr-star --local",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "@mankr/db": "workspace:*",
+    "@mankr/shared": "workspace:*",
     "@phosphor-icons/react": "^2.1.10",
+    "@tanstack/react-query": "^5.101.4",
     "@workspace/ui": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "framer-motion": "^12.43.0",
+    "hono": "^4.13.0",
+    "i18next": "^26.3.6",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "react-i18next": "^17.0.11",
+    "react-router": "^8.3.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.50.0",
+    "@cloudflare/vitest-pool-workers": "^0.20.1",
+    "@cloudflare/workers-types": "^5.20260804.1",
     "@eslint/js": "^10",
     "@tailwindcss/vite": "^4",
     "@types/node": "^24",
@@ -28,8 +46,10 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17",
-    "typescript": "~6",
+    "typescript": "~7.0.2",
     "typescript-eslint": "^8",
-    "vite": "^8"
+    "vite": "^8",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.118.0"
   }
 }

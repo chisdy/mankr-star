@@ -1,0 +1,30 @@
+{
+  "unknown": "未知",
+  "uncategorized": "未分类",
+  "actions": {
+    "add": "添加",
+    "cancel": "取消",
+    "save": "保存",
+    "saveChanges": "保存修改",
+    "delete": "删除",
+    "login": "登录",
+    "logout": "退出登录",
+    "settings": "设置",
+    "wait": "请稍候",
+    "clearFilters": "清除筛选",
+    "resetFilters": "重置筛选条件",
+    "confirm": "确认",
+    "acknowledge": "知道了"
+  },
+  "accessibility": {
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码",
+    "openNavMenu": "打开导航菜单",
+    "toggleTheme": "切换主题",
+    "switchLanguage": "切换语言"
+  },
+  "language": {
+    "label": "语言",
+    "description": "选择界面显示语言"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "breadcrumb": {
+    "aria": "Folder path",
+    "all": "All bookmarks"
+  },
+  "tree": {
+    "expandCollapse": "Expand or collapse {{folderName}}",
+    "empty": "No folders yet"
+  },
+  "select": {
+    "placeholder": "Select folder",
+    "searchPlaceholder": "Search folders…",
+    "searchAria": "Search folders",
+    "noMatch": "No matching folders",
+    "empty": "No folders yet"
+  },
+  "panel": {
+    "title": "Folders",
+    "newFolderAria": "New folder",
+    "allBookmarks": "All bookmarks",
+    "folderMenuAria": "{{folderName}} menu",
+    "edit": "Edit",
+    "newChild": "New subfolder",
+    "delete": "Delete",
+    "emptyManage": "No folders yet. Click above to create one.",
+    "emptyGuest": "No folders yet.",
+    "resizeAria": "Resize folder panel"
+  },
+  "form": {
+    "createdToast": "Folder created",
+    "updatedToast": "Folder updated",
+    "errorToast": "Action failed. Please try again.",
+    "createTitle": "New folder",
+    "editTitle": "Edit folder",
+    "nameLabel": "Folder name",
+    "namePlaceholder": "e.g. Agent Skills",
+    "parentLabel": "Parent folder",
+    "root": "Root",
+    "slugLabel": "Slug (English id)",
+    "generateSlug": "Generate from name",
+    "slugHelp": "Lowercase letters, numbers, and hyphens only. Leave blank to auto-generate on save.",
+    "colorLabel": "Color",
+    "colorAria": "Folder color",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Briefly describe this folder…",
+    "submitCreate": "Create",
+    "submitSave": "Save"
+  },
+  "deleteDialog": {
+    "notSelected": "No folder selected",
+    "successToast": "Folder deleted",
+    "errorToast": "Delete failed",
+    "blockedTitle": "Cannot delete this folder",
+    "title": "Delete folder",
+    "hasChildrenDescription": "“{{folderName}}” has {{count}} subfolders. Delete or move them first.",
+    "hasBookmarksDescription": "“{{folderName}}” has {{count}} bookmarks. Choose how to handle them before deleting.",
+    "confirmDescription": "Delete folder “{{folderName}}”? This cannot be undone.",
+    "dispositionAria": "Bookmark disposition",
+    "dispositionDetachTitle": "Detach from folder",
+    "dispositionDetachDescription": "Keep bookmarks, only remove the folder association (uncategorized).",
+    "dispositionDeleteTitle": "Delete bookmarks too",
+    "dispositionDeleteDescription": "Delete bookmarks under this folder along with the folder.",
+    "dispositionMoveTitle": "Move to another folder",
+    "dispositionMoveDescription": "Move these bookmarks to another folder you choose.",
+    "targetLabel": "Target folder",
+    "noMoveTarget": "No other folder available. Create one or pick another option.",
+    "acknowledge": "Got it",
+    "confirmDelete": "Confirm delete"
+  }
+}

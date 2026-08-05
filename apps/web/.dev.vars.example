@@ -1,0 +1,9 @@
+# 本地开发密钥（复制为 .dev.vars，勿提交真实密钥）
+# cp .dev.vars.example .dev.vars
+
+SESSION_SECRET=dev-session-secret-change-me-to-32chars-min
+PAT_ENCRYPTION_KEY=dev-pat-encryption-key-change-me-32b
+# 可选：独立 DeepSeek Key 加密密钥；未设则回退 PAT_ENCRYPTION_KEY
+# AI_KEY_ENCRYPTION_KEY=dev-ai-key-encryption-key-change-me
+# 可选：公共 GitHub token 兜底
+# GITHUB_TOKEN=

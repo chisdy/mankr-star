@@ -1,0 +1,174 @@
+import { useTranslation } from "react-i18next"
+import { StarIcon, GitForkIcon, ClockIcon } from "@phosphor-icons/react"
+import { Badge } from "@workspace/ui/components/badge"
+import { Skeleton } from "@workspace/ui/components/skeleton"
+import type { Bookmark } from "@/lib/types"
+import { HealthStatusBadge } from "./health-status-badge"
+import { BookmarkOpenButton } from "./bookmark-open-button"
+
+interface BookmarkCardProps {
+  bookmark: Bookmark
+  onClick?: () => void
+}
+
+export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
+  const { t, i18n } = useTranslation("bookmarks")
+  const isPending = bookmark.ai_status === "pending"
+  const maxTagsShow = 3
+  const tags = bookmark.tags || []
+  const visibleTags = tags.slice(0, maxTagsShow)
+  const hiddenTagsCount = tags.length - maxTagsShow
+
+  // Format star count
+  const formattedStars =
+    bookmark.stars !== undefined
+      ? bookmark.stars >= 1000
+        ? `${(bookmark.stars / 1000).toFixed(1)}k`
+        : bookmark.stars
+      : null
+
+  // Format relative or date time
+  const formattedDate = bookmark.pushed_at
+    ? new Date(bookmark.pushed_at).toLocaleDateString(i18n.language, {
+        month: "numeric",
+        day: "numeric",
+      })
+    : null
+
+  return (
+    <div
+      onClick={onClick}
+      className={
+        bookmark.health_status === "unavailable"
+          ? "group relative flex flex-col justify-between h-full rounded-xl border border-border/60 bg-card p-4 text-card-foreground shadow-2xs transition-all hover:border-border hover:bg-accent/30 hover:shadow-xs cursor-pointer opacity-75"
+          : "group relative flex flex-col justify-between h-full rounded-xl border border-border/60 bg-card p-4 text-card-foreground shadow-2xs transition-all hover:border-border hover:bg-accent/30 hover:shadow-xs cursor-pointer"
+      }
+    >
+      <div className="space-y-2.5 min-w-0">
+        {/* Top Header: Title & Badges */}
+        <div className="space-y-1.5 min-w-0">
+          <div className="flex items-start justify-between gap-2 min-w-0">
+            <h3
+              className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors flex-1"
+              title={bookmark.external_id || bookmark.title}
+            >
+              {bookmark.external_id || bookmark.title}
+            </h3>
+            {bookmark.archived_at && (
+              <Badge variant="secondary" className="text-[10px] h-4.5 px-1.5 shrink-0 font-normal">
+                {t("card.archived")}
+              </Badge>
+            )}
+            <HealthStatusBadge status={bookmark.health_status} />
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {bookmark.folder_name && (
+              <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 font-normal text-muted-foreground border-border/80">
+                {bookmark.folder_name}
+              </Badge>
+            )}
+            {bookmark.language && (
+              <span className="inline-flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-primary/80" />
+                {bookmark.language}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* AI Summary / Description */}
+        <div className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+          {isPending ? (
+            bookmark.description ? (
+              <div className="space-y-1">
+                <p className="line-clamp-2">{bookmark.description}</p>
+                <p className="text-[10px] text-muted-foreground/80">{t("card.aiPending")}</p>
+              </div>
+            ) : (
+              <div className="space-y-1.5 py-0.5">
+                <Skeleton className="h-3.5 w-full" />
+                <Skeleton className="h-3.5 w-4/5" />
+                <Skeleton className="h-3.5 w-2/3" />
+              </div>
+            )
+          ) : (
+            bookmark.summary_ai || bookmark.description || t("card.noSummary")
+          )}
+        </div>
+      </div>
+
+      {/* Footer Meta & Tags */}
+      <div className="space-y-2.5 pt-3 mt-3 border-t border-border/40 min-w-0">
+        {/* Tags */}
+        <div className="flex items-center gap-1 flex-wrap min-w-0">
+          {visibleTags.map((tag) => (
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="text-[10px] h-4 px-1.5 font-normal bg-muted/60 hover:bg-muted text-muted-foreground"
+            >
+              #{tag}
+            </Badge>
+          ))}
+          {hiddenTagsCount > 0 && (
+            <span className="text-[10px] text-muted-foreground">
+              +{hiddenTagsCount}
+            </span>
+          )}
+        </div>
+
+        {/* Bottom Stats: Stars, Forks, Open */}
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-2.5">
+            {formattedStars && (
+              <span className="inline-flex items-center gap-1 font-mono text-[11px]">
+                <StarIcon className="size-3.5 text-amber-500" />
+                {formattedStars}
+              </span>
+            )}
+
+            {bookmark.forks !== undefined && (
+              <span className="inline-flex items-center gap-1 font-mono text-[11px]">
+                <GitForkIcon className="size-3.5" />
+                {bookmark.forks}
+              </span>
+            )}
+
+            {formattedDate && (
+              <span className="inline-flex items-center gap-1 font-mono text-[10px] text-muted-foreground/80">
+                <ClockIcon className="size-3" />
+                {formattedDate}
+              </span>
+            )}
+          </div>
+
+          <BookmarkOpenButton bookmark={bookmark} className="-mr-1" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function BookmarkCardSkeleton() {
+  return (
+    <div className="flex flex-col justify-between h-48 rounded-xl border border-border/40 bg-card/60 p-4 space-y-3">
+      <div className="space-y-2">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="h-3.5 w-full mt-2" />
+        <Skeleton className="h-3.5 w-4/5" />
+      </div>
+      <div className="pt-2 border-t border-border/30 space-y-2">
+        <div className="flex gap-1">
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+        <div className="flex justify-between">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-12" />
+        </div>
+      </div>
+    </div>
+  )
+}

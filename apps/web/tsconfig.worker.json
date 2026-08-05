@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.worker.tsbuildinfo",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["@cloudflare/workers-types"],
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@mankr/db": ["../../packages/db/src/index.ts"],
+      "@mankr/db/*": ["../../packages/db/src/*"],
+      "@mankr/shared": ["../../packages/shared/src/index.ts"],
+      "@mankr/shared/*": ["../../packages/shared/src/*"]
+    }
+  },
+  "include": ["src/worker"]
+}
