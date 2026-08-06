@@ -1,6 +1,7 @@
 import type {
   Bookmark,
   BookmarkOwner,
+  BookmarkSite,
   BookmarksQueryParams,
   BookmarksResponse,
   DeepSeekSettings,
@@ -181,6 +182,8 @@ function toBookmarksQuery(params?: BookmarksQueryParams): string {
   if (params.tag) search.set("tag", params.tag)
   if (params.language) search.set("language", params.language)
   if (params.owner) search.set("owner", params.owner)
+  if (params.site) search.set("site", params.site)
+  if (params.source_type) search.set("sourceType", params.source_type)
   if (params.health_status) search.set("healthStatus", params.health_status)
   if (params.q) search.set("q", params.q)
   if (params.page) search.set("page", String(params.page))
@@ -503,10 +506,27 @@ export const api = {
           )
         }
         if (params?.owner) {
-          items = items.filter((b) => b.owner === params.owner)
+          items = items.filter(
+            (b) => b.source_type === "github" && b.owner === params.owner
+          )
+        }
+        if (params?.site) {
+          items = items.filter(
+            (b) =>
+              b.source_type === "url" &&
+              (b.site_name === params.site ||
+                (!b.site_name && b.owner === params.site))
+          )
+        }
+        if (params?.source_type) {
+          items = items.filter((b) => b.source_type === params.source_type)
         }
         if (params?.health_status) {
-          items = items.filter((b) => b.health_status === params.health_status)
+          items = items.filter(
+            (b) =>
+              b.source_type === "github" &&
+              b.health_status === params.health_status
+          )
         }
         if (params?.q) {
           const q = params.q.toLowerCase()
@@ -997,11 +1017,41 @@ export const api = {
       if (shouldFallbackToMock(err)) {
         const counts = new Map<string, number>()
         for (const b of mockStore().bookmarks) {
-          if (b.deleted_at || !b.owner) continue
+          if (b.deleted_at || !b.owner || b.source_type !== "github") continue
           if (q?.trim() && !b.owner.toLowerCase().includes(q.trim().toLowerCase())) {
             continue
           }
           counts.set(b.owner, (counts.get(b.owner) ?? 0) + 1)
+        }
+        return Array.from(counts.entries())
+          .map(([name, usage_count]) => ({ name, usage_count }))
+          .sort((a, b) => a.name.localeCompare(b.name))
+      }
+      throw err
+    }
+  },
+
+  async getSites(q?: string): Promise<BookmarkSite[]> {
+    try {
+      const search = q?.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""
+      const res = await request<{
+        items: Array<{ name: string; usage_count?: number }>
+      }>(`/api/bookmarks/sites${search}`)
+      return res.items.map((o) => ({
+        name: o.name,
+        usage_count: o.usage_count ?? 0,
+      }))
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const counts = new Map<string, number>()
+        for (const b of mockStore().bookmarks) {
+          if (b.deleted_at || b.source_type !== "url") continue
+          const label = b.site_name || b.owner
+          if (!label) continue
+          if (q?.trim() && !label.toLowerCase().includes(q.trim().toLowerCase())) {
+            continue
+          }
+          counts.set(label, (counts.get(label) ?? 0) + 1)
         }
         return Array.from(counts.entries())
           .map(([name, usage_count]) => ({ name, usage_count }))

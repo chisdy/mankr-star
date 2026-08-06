@@ -22,6 +22,10 @@ interface BookmarkPayload {
   forks: number
   topics: string[]
   summary_ai: string | null
+  site_name?: string | null
+  image_url?: string | null
+  favicon_url?: string | null
+  content_excerpt?: string | null
   folder_id: string | null
   folder: {
     id: string
@@ -114,10 +118,80 @@ describe("POST /api/bookmarks", () => {
     expect(second.body.details?.id).toBe(first.body.id)
   })
 
-  it("非 GitHub 链接返回 400 UNSUPPORTED_SOURCE", async () => {
-    const { status, body } = await createBookmark("https://gitlab.com/foo/bar")
+  it("通用网页 URL 可收藏并写入元数据与摘录", async () => {
+    const pageUrl = "https://example.com/docs/guide?utm_source=x"
+    outbound.text(
+      "https://example.com/docs/guide",
+      `<!doctype html><html><head>
+        <title>Fallback Title</title>
+        <meta property="og:title" content="Example Guide" />
+        <meta property="og:description" content="A helpful guide" />
+        <meta property="og:site_name" content="Example Docs" />
+        <link rel="icon" href="/favicon.ico" />
+      </head><body><main><p>UniqueExcerptToken for search</p></main></body></html>`,
+    )
+
+    const { status, body } = await createBookmark(pageUrl)
+    expect(status).toBe(201)
+    expect(body.source_type).toBe("url")
+    expect(body.canonical_url).toBe("https://example.com/docs/guide")
+    expect(body.title).toBe("Example Guide")
+    expect(body.description).toBe("A helpful guide")
+    expect(body.site_name).toBe("Example Docs")
+    expect(body.owner).toBe("example.com")
+    expect(body.track_updates).toBe(false)
+    expect(body.health_status).toBe("unknown")
+    expect(body.content_excerpt).toContain("UniqueExcerptToken")
+    expect(body.favicon_url).toContain("favicon.ico")
+    expect(outbound.calls.some((u) => u.includes("api.github.com"))).toBe(false)
+  })
+
+  it("网页重复收藏返回 409", async () => {
+    outbound.text(
+      "https://example.com/a",
+      "<html><head><title>A</title></head><body>hi</body></html>",
+    )
+    const first = await createBookmark("https://example.com/a")
+    expect(first.status).toBe(201)
+    const second = await createBookmark("https://example.com/a?utm_campaign=1")
+    expect(second.status).toBe(409)
+    expect(second.body.code).toBe("DUPLICATE")
+  })
+
+  it("网页抓取失败仍可降级入库", async () => {
+    outbound.on("https://down.example.com/", () => {
+      throw new Error("network down")
+    })
+    const { status, body } = await createBookmark("https://down.example.com/")
+    expect(status).toBe(201)
+    expect(body.source_type).toBe("url")
+    expect(body.sync_status).toBe("error")
+    expect(body.title).toBe("down.example.com")
+  })
+
+  it("q 可命中 content_excerpt", async () => {
+    outbound.text(
+      "https://example.com/searchable",
+      "<html><head><title>Searchable</title></head><body><p>NeedleInExcerptXYZ</p></body></html>",
+    )
+    await createBookmark("https://example.com/searchable")
+    const list = await client.json<{ items: BookmarkPayload[] }>(
+      "/api/bookmarks?q=NeedleInExcerptXYZ",
+    )
+    expect(list.status).toBe(200)
+    expect(list.body.items.some((i) => i.source_type === "url")).toBe(true)
+  })
+
+  it("twitter 链接仍返回 UNSUPPORTED_SOURCE", async () => {
+    const { status, body } = await createBookmark("https://x.com/someone/status/1")
     expect(status).toBe(400)
     expect(body.code).toBe("UNSUPPORTED_SOURCE")
+  })
+
+  it("SSRF 内网地址拒绝", async () => {
+    const { status, body } = await createBookmark("http://127.0.0.1/secret")
+    expect(status).toBe(400)
+    expect(body.code).toBe("SSRF_BLOCKED")
   })
 
   it("GitHub 仓库不存在返回 404，上游异常返回 502", async () => {
@@ -435,6 +509,66 @@ describe("GET /api/bookmarks/owners", () => {
       items: Array<{ name: string }>
     }>("/api/bookmarks/owners?q=zzz")
     expect(miss.body.items).toEqual([])
+  })
+
+  it("不包含 url 收藏的 hostname", async () => {
+    await createBookmark("facebook/react")
+    outbound.text(
+      "https://example.com/page",
+      `<!doctype html><html><head>
+        <meta property="og:title" content="Example Page" />
+        <meta property="og:site_name" content="Example Docs" />
+      </head><body><main><p>hello</p></main></body></html>`,
+    )
+    await createBookmark("https://example.com/page")
+
+    const all = await client.json<{
+      items: Array<{ name: string }>
+    }>("/api/bookmarks/owners")
+    expect(all.status).toBe(200)
+    expect(all.body.items.map((o) => o.name)).toEqual(["facebook"])
+    expect(all.body.items.some((o) => o.name === "example.com")).toBe(false)
+  })
+})
+
+describe("GET /api/bookmarks/sites", () => {
+  it("返回 url 站点列表，支持 site 列表过滤", async () => {
+    await createBookmark("facebook/react")
+    outbound.text(
+      "https://example.com/a",
+      `<!doctype html><html><head>
+        <meta property="og:title" content="A" />
+        <meta property="og:site_name" content="Example Docs" />
+      </head><body><main><p>a</p></main></body></html>`,
+    )
+    outbound.text(
+      "https://other.test/b",
+      `<!doctype html><html><head>
+        <meta property="og:title" content="B" />
+        <meta property="og:site_name" content="Other Site" />
+      </head><body><main><p>b</p></main></body></html>`,
+    )
+    await createBookmark("https://example.com/a")
+    await createBookmark("https://other.test/b")
+
+    const sites = await client.json<{
+      items: Array<{ name: string; usage_count: number }>
+    }>("/api/bookmarks/sites")
+    expect(sites.status).toBe(200)
+    expect(sites.body.items.map((s) => s.name).sort()).toEqual([
+      "Example Docs",
+      "Other Site",
+    ])
+    expect(sites.body.items.some((s) => s.name === "facebook")).toBe(false)
+
+    const filtered = await client.json<{
+      items: Array<{ source_type: string; site_name?: string | null }>
+      total: number
+    }>("/api/bookmarks?site=Example%20Docs")
+    expect(filtered.status).toBe(200)
+    expect(filtered.body.total).toBe(1)
+    expect(filtered.body.items[0]!.source_type).toBe("url")
+    expect(filtered.body.items[0]!.site_name).toBe("Example Docs")
   })
 })
 

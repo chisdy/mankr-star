@@ -13,21 +13,23 @@ interface BookmarkCardProps {
 
 export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
   const { t, i18n } = useTranslation("bookmarks")
+  const isGithub = bookmark.source_type === "github"
   const isPending = bookmark.ai_status === "pending"
   const maxTagsShow = 3
   const tags = bookmark.tags || []
   const visibleTags = tags.slice(0, maxTagsShow)
   const hiddenTagsCount = tags.length - maxTagsShow
+  const displayTitle = isGithub
+    ? bookmark.external_id || bookmark.title
+    : bookmark.title
 
-  // Format star count
   const formattedStars =
-    bookmark.stars !== undefined
+    isGithub && bookmark.stars !== undefined
       ? bookmark.stars >= 1000
         ? `${(bookmark.stars / 1000).toFixed(1)}k`
         : bookmark.stars
       : null
 
-  // Format relative or date time
   const formattedDate = bookmark.pushed_at
     ? new Date(bookmark.pushed_at).toLocaleDateString(i18n.language, {
         month: "numeric",
@@ -35,31 +37,45 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
       })
     : null
 
+  const siteLabel = bookmark.site_name || bookmark.owner
+
   return (
     <div
       onClick={onClick}
       className={
-        bookmark.health_status === "unavailable"
+        isGithub && bookmark.health_status === "unavailable"
           ? "group relative flex flex-col justify-between h-full rounded-xl border border-border/60 bg-card p-4 text-card-foreground shadow-2xs transition-all hover:border-border hover:bg-accent/30 hover:shadow-xs cursor-pointer opacity-75"
           : "group relative flex flex-col justify-between h-full rounded-xl border border-border/60 bg-card p-4 text-card-foreground shadow-2xs transition-all hover:border-border hover:bg-accent/30 hover:shadow-xs cursor-pointer"
       }
     >
       <div className="space-y-2.5 min-w-0">
-        {/* Top Header: Title & Badges */}
         <div className="space-y-1.5 min-w-0">
           <div className="flex items-start justify-between gap-2 min-w-0">
-            <h3
-              className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors flex-1"
-              title={bookmark.external_id || bookmark.title}
-            >
-              {bookmark.external_id || bookmark.title}
-            </h3>
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              {bookmark.favicon_url ? (
+                <img
+                  src={bookmark.favicon_url}
+                  alt=""
+                  className="size-4 shrink-0 rounded-sm"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+              ) : null}
+              <h3
+                className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors flex-1"
+                title={displayTitle}
+              >
+                {displayTitle}
+              </h3>
+            </div>
             {bookmark.archived_at && (
               <Badge variant="secondary" className="text-[10px] h-4.5 px-1.5 shrink-0 font-normal">
                 {t("card.archived")}
               </Badge>
             )}
-            <HealthStatusBadge status={bookmark.health_status} />
+            {isGithub ? (
+              <HealthStatusBadge status={bookmark.health_status} />
+            ) : null}
           </div>
 
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -68,6 +84,11 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
                 {bookmark.folder_name}
               </Badge>
             )}
+            {!isGithub && siteLabel ? (
+              <span className="text-[10px] text-muted-foreground truncate">
+                {siteLabel}
+              </span>
+            ) : null}
             {bookmark.language && (
               <span className="inline-flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
                 <span className="size-1.5 rounded-full bg-primary/80" />
@@ -77,7 +98,6 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
           </div>
         </div>
 
-        {/* AI Summary / Description */}
         <div className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
           {isPending ? (
             bookmark.description ? (
@@ -98,9 +118,7 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
         </div>
       </div>
 
-      {/* Footer Meta & Tags */}
       <div className="space-y-2.5 pt-3 mt-3 border-t border-border/40 min-w-0">
-        {/* Tags */}
         <div className="flex items-center gap-1 flex-wrap min-w-0">
           {visibleTags.map((tag) => (
             <Badge
@@ -118,17 +136,16 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
           )}
         </div>
 
-        {/* Bottom Stats: Stars, Forks, Open */}
         <div className="flex items-center justify-between text-[11px] text-muted-foreground">
           <div className="flex items-center gap-2.5">
-            {formattedStars && (
+            {formattedStars !== null && (
               <span className="inline-flex items-center gap-1 font-mono text-[11px]">
                 <StarIcon className="size-3.5 text-amber-500" />
                 {formattedStars}
               </span>
             )}
 
-            {bookmark.forks !== undefined && (
+            {isGithub && bookmark.forks !== undefined && (
               <span className="inline-flex items-center gap-1 font-mono text-[11px]">
                 <GitForkIcon className="size-3.5" />
                 {bookmark.forks}

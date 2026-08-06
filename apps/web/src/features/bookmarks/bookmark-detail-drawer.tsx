@@ -217,25 +217,44 @@ export function BookmarkDetailDrawer({
             <div className="space-y-5 p-4 text-sm md:p-6">
               {/* Metadata Bar */}
               <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border/50 bg-muted/30 p-2.5 text-xs text-muted-foreground">
+                {bookmark.favicon_url ? (
+                  <img
+                    src={bookmark.favicon_url}
+                    alt=""
+                    className="size-4 rounded-sm"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : null}
+                {(bookmark.site_name || bookmark.owner) &&
+                bookmark.source_type !== "github" ? (
+                  <span className="truncate text-[11px]">
+                    {bookmark.site_name || bookmark.owner}
+                  </span>
+                ) : null}
                 {bookmark.language && (
                   <span className="flex items-center gap-1 font-mono text-[11px]">
                     <span className="size-2 rounded-full bg-primary" />
                     {bookmark.language}
                   </span>
                 )}
-                {bookmark.stars !== undefined && (
+                {bookmark.source_type === "github" &&
+                  bookmark.stars !== undefined && (
                   <span className="flex items-center gap-1 font-mono text-[11px]">
                     <StarIcon className="size-3.5 text-amber-500" />
                     {bookmark.stars}
                   </span>
                 )}
-                {bookmark.forks !== undefined && (
+                {bookmark.source_type === "github" &&
+                  bookmark.forks !== undefined && (
                   <span className="flex items-center gap-1 font-mono text-[11px]">
                     <GitForkIcon className="size-3.5" />
                     {bookmark.forks}
                   </span>
                 )}
-                <HealthStatusBadge status={bookmark.health_status} />
+                {bookmark.source_type === "github" ? (
+                  <HealthStatusBadge status={bookmark.health_status} />
+                ) : null}
                 {bookmark.pushed_at && (
                   <span className="ml-auto flex items-center gap-1 font-mono text-[11px]">
                     <ClockIcon className="size-3" />
@@ -257,6 +276,17 @@ export function BookmarkDetailDrawer({
                     : ""}
                 </p>
               )}
+
+              {bookmark.content_excerpt ? (
+                <details className="group rounded-lg border border-border/50 bg-muted/20">
+                  <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium text-foreground marker:content-none">
+                    {t("detail.excerptLabel")}
+                  </summary>
+                  <p className="max-h-40 overflow-y-auto border-t border-border/40 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                    {bookmark.content_excerpt}
+                  </p>
+                </details>
+              ) : null}
 
               {/* AI Summary (Editable) */}
               <div className="space-y-1.5">
@@ -359,7 +389,7 @@ export function BookmarkDetailDrawer({
                 </div>
               ) : null}
 
-              {isAuthenticated ? (
+              {isAuthenticated && bookmark.source_type === "github" ? (
                 <>
               <Separator />
 
@@ -379,7 +409,11 @@ export function BookmarkDetailDrawer({
                   }}
                 />
               </div>
+                </>
+              ) : null}
 
+              {isAuthenticated ? (
+                <>
               <Separator />
 
               {/* Actions: Save / Archive / Delete */}

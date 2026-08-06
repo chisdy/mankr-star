@@ -13,21 +13,23 @@ interface BookmarkRowProps {
 
 export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
   const { t, i18n } = useTranslation("bookmarks")
+  const isGithub = bookmark.source_type === "github"
   const isPending = bookmark.ai_status === "pending"
   const maxTagsShow = 3
   const tags = bookmark.tags || []
   const visibleTags = tags.slice(0, maxTagsShow)
   const hiddenTagsCount = tags.length - maxTagsShow
+  const displayTitle = isGithub
+    ? bookmark.external_id || bookmark.title
+    : bookmark.title
 
-  // Format star count
   const formattedStars =
-    bookmark.stars !== undefined
+    isGithub && bookmark.stars !== undefined
       ? bookmark.stars >= 1000
         ? `${(bookmark.stars / 1000).toFixed(1)}k`
         : bookmark.stars
       : null
 
-  // Format relative or date time
   const formattedDate = bookmark.pushed_at
     ? new Date(bookmark.pushed_at).toLocaleDateString(i18n.language, {
         month: "numeric",
@@ -35,16 +37,26 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
       })
     : null
 
+  const siteLabel = bookmark.site_name || bookmark.owner
+
   return (
     <div
       onClick={onClick}
       className="group relative flex flex-col gap-2 rounded-lg border border-border/60 bg-card p-3.5 md:p-4 text-card-foreground shadow-2xs transition-all hover:border-border hover:bg-accent/30 cursor-pointer"
     >
-      {/* Top Header Row: External ID / Title + Category & Meta */}
       <div className="flex items-start justify-between gap-3 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
+          {bookmark.favicon_url ? (
+            <img
+              src={bookmark.favicon_url}
+              alt=""
+              className="size-4 shrink-0 rounded-sm"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : null}
           <h3 className="font-semibold text-sm md:text-base text-foreground truncate group-hover:text-primary transition-colors">
-            {bookmark.external_id || bookmark.title}
+            {displayTitle}
           </h3>
 
           {bookmark.folder_name && (
@@ -53,15 +65,20 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
             </Badge>
           )}
 
+          {!isGithub && siteLabel ? (
+            <span className="hidden sm:inline text-[10px] text-muted-foreground truncate max-w-[8rem]">
+              {siteLabel}
+            </span>
+          ) : null}
+
           {bookmark.archived_at && (
             <Badge variant="secondary" className="text-[10px] h-4.5 px-1.5 font-normal">
               {t("card.archived")}
             </Badge>
           )}
-          <HealthStatusBadge status={bookmark.health_status} />
+          {isGithub ? <HealthStatusBadge status={bookmark.health_status} /> : null}
         </div>
 
-        {/* Top Right Stats */}
         <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
           {bookmark.language && (
             <span className="inline-flex items-center gap-1 font-mono text-[11px]">
@@ -70,14 +87,14 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
             </span>
           )}
 
-          {formattedStars && (
+          {formattedStars !== null && (
             <span className="inline-flex items-center gap-1 font-mono text-[11px]">
               <StarIcon className="size-3.5 text-amber-500" />
               {formattedStars}
             </span>
           )}
 
-          {bookmark.forks !== undefined && (
+          {isGithub && bookmark.forks !== undefined && (
             <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[11px]">
               <GitForkIcon className="size-3.5" />
               {bookmark.forks}
@@ -86,7 +103,6 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
         </div>
       </div>
 
-      {/* AI Summary / Description Row */}
       <div className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
         {isPending ? (
           bookmark.description ? (
@@ -105,9 +121,7 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
         )}
       </div>
 
-      {/* Footer Meta & Tags */}
       <div className="flex items-center justify-between gap-2 pt-1 min-w-0 text-[11px] text-muted-foreground">
-        {/* Tags */}
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
           {visibleTags.map((tag) => (
             <Badge

@@ -115,6 +115,10 @@ export const bookmarks = sqliteTable(
       onDelete: "set null",
     }),
     notes: text("notes"),
+    siteName: text("site_name"),
+    imageUrl: text("image_url"),
+    faviconUrl: text("favicon_url"),
+    contentExcerpt: text("content_excerpt"),
     aiStatus: text("ai_status").notNull().default("pending"),
     trackUpdates: integer("track_updates", { mode: "boolean" })
       .notNull()

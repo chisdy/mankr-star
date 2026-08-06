@@ -49,13 +49,34 @@ describe("ruleBasedClassify", () => {
     expect(out.folder_path).toEqual(["其他"])
   })
 
-  it("TypeScript 兜底到工具与 CLI", () => {
+  it("url 文档类归到学习与教程，不用 webpage/link", () => {
     const out = ruleBasedClassify({
-      title: "acme/misc-util",
-      description: "misc utilities",
-      language: "TypeScript",
+      sourceType: "url",
+      title: "React 入门教程",
+      description: "官方文档指南",
+      language: null,
       topics: [],
+      siteName: "react.dev",
+      contentExcerpt: "本教程介绍如何使用 React 构建界面",
     })
-    expect(out.folder_path).toEqual(["工具与 CLI"])
+    expect(out.folder_path).toEqual(["学习与教程"])
+    expect(out.tags).not.toContain("webpage")
+    expect(out.tags).not.toContain("link")
+    expect(out.summary).not.toMatch(/网页收藏/)
+    expect(out.tags.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it("url 无匹配主题时落到其他，摘要用描述", () => {
+    const out = ruleBasedClassify({
+      sourceType: "url",
+      title: "Interesting Article",
+      description: "关于城市绿化的观察笔记",
+      language: null,
+      topics: [],
+      siteName: "example.com",
+    })
+    expect(out.folder_path).toEqual(["其他"])
+    expect(out.summary).toContain("城市绿化")
+    expect(out.tags).not.toContain("webpage")
   })
 })

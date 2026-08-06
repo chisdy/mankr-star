@@ -2,11 +2,15 @@ import { bookmarkTags, bookmarks, folders, tags, users } from "@mankr/db"
 import {
   DEFAULT_HOT_WITHIN_DAYS,
   DEFAULT_STALE_AFTER_DAYS,
+  SOURCE_CAPABILITIES,
+  canonicalizeUrl,
   computeHealthStatus,
   createBookmarkSchema,
   detectSourceType,
   listBookmarksQuerySchema,
   updateBookmarkSchema,
+  urlExternalId,
+  type SourceType,
 } from "@mankr/shared"
 import {
   and,
@@ -32,6 +36,8 @@ import {
 import { buildPathLabel, collectSubtreeIds } from "../lib/folder-utils"
 import { GithubApiError } from "../lib/github"
 import { parseGithubRepoInput } from "../lib/github-url"
+import { fetchUrlPageMetadata } from "../lib/url-metadata"
+import { UrlFetchError } from "../lib/url-ssrf"
 import { nowIso } from "../lib/utils"
 import { authByMethod } from "../middleware/auth"
 
@@ -124,6 +130,10 @@ function serializeBookmark(
         }
       : null,
     notes: options?.isPublicRead ? null : b.notes,
+    site_name: b.siteName,
+    image_url: b.imageUrl,
+    favicon_url: b.faviconUrl,
+    content_excerpt: b.contentExcerpt,
     ai_status: b.aiStatus,
     track_updates: b.trackUpdates,
     last_synced_at: b.lastSyncedAt,
@@ -164,6 +174,8 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     tag,
     language,
     owner,
+    site,
+    sourceType,
     healthStatus,
     archived,
     includeArchived,
@@ -180,6 +192,10 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     conditions.push(isNull(bookmarks.archivedAt))
   }
 
+  if (sourceType) {
+    conditions.push(eq(bookmarks.sourceType, sourceType))
+  }
+
   if (healthStatus) {
     conditions.push(eq(bookmarks.sourceType, "github"))
     conditions.push(eq(bookmarks.healthStatus, healthStatus))
@@ -191,7 +207,20 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     conditions.push(inArray(bookmarks.folderId, ids))
   }
   if (language) conditions.push(eq(bookmarks.language, language))
-  if (owner) conditions.push(eq(bookmarks.owner, owner))
+  if (owner) {
+    // 开发者筛选仅针对 GitHub，避免命中 url 收藏写入的 hostname-owner
+    conditions.push(eq(bookmarks.sourceType, "github"))
+    conditions.push(eq(bookmarks.owner, owner))
+  }
+  if (site) {
+    conditions.push(eq(bookmarks.sourceType, "url"))
+    conditions.push(
+      or(
+        eq(bookmarks.siteName, site),
+        and(isNull(bookmarks.siteName), eq(bookmarks.owner, site)),
+      )!,
+    )
+  }
 
   if (q) {
     const pattern = `%${q}%`
@@ -200,6 +229,8 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
       like(bookmarks.description, pattern),
       like(bookmarks.summaryAi, pattern),
       like(bookmarks.externalId, pattern),
+      like(bookmarks.siteName, pattern),
+      like(bookmarks.contentExcerpt, pattern),
     ]
     if (!isPublicRead) {
       qClauses.push(like(bookmarks.notes, pattern))
@@ -297,6 +328,7 @@ bookmarkRoutes.get("/bookmarks/owners", async (c) => {
   const conditions = [
     isNull(bookmarks.deletedAt),
     isNotNull(bookmarks.owner),
+    eq(bookmarks.sourceType, "github"),
   ]
   if (q) {
     conditions.push(like(bookmarks.owner, `%${q}%`))
@@ -313,6 +345,45 @@ bookmarkRoutes.get("/bookmarks/owners", async (c) => {
     .where(and(...conditions))
     .groupBy(bookmarks.owner)
     .orderBy(asc(bookmarks.owner))
+
+  return c.json({
+    items: rows
+      .filter((r): r is { name: string; usage_count: number } => Boolean(r.name))
+      .map((r) => ({
+        name: r.name,
+        usage_count: Number(r.usage_count),
+      })),
+  })
+})
+
+bookmarkRoutes.get("/bookmarks/sites", async (c) => {
+  const db = c.get("db")
+  const q = c.req.query("q")?.trim()
+
+  const siteLabel = sql<string>`COALESCE(${bookmarks.siteName}, ${bookmarks.owner})`
+
+  const conditions = [
+    isNull(bookmarks.deletedAt),
+    eq(bookmarks.sourceType, "url"),
+    sql`COALESCE(${bookmarks.siteName}, ${bookmarks.owner}) IS NOT NULL`,
+  ]
+  if (q) {
+    conditions.push(
+      sql`COALESCE(${bookmarks.siteName}, ${bookmarks.owner}) LIKE ${`%${q}%`}`,
+    )
+  }
+
+  const usageCount = count(bookmarks.id).as("usage_count")
+
+  const rows = await db
+    .select({
+      name: siteLabel.as("name"),
+      usage_count: usageCount,
+    })
+    .from(bookmarks)
+    .where(and(...conditions))
+    .groupBy(siteLabel)
+    .orderBy(asc(siteLabel))
 
   return c.json({
     items: rows
@@ -383,10 +454,145 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
     )
   }
 
+  if (detected.sourceType === "url") {
+    const canonical = canonicalizeUrl(parsed.data.url)
+    if (!canonical.ok) {
+      return c.json(
+        { error: canonical.error, code: canonical.code },
+        400,
+      )
+    }
+
+    const existing = await db
+      .select({ id: bookmarks.id, deletedAt: bookmarks.deletedAt })
+      .from(bookmarks)
+      .where(
+        and(
+          eq(bookmarks.sourceType, "url"),
+          eq(bookmarks.canonicalUrl, canonical.canonicalUrl),
+        ),
+      )
+      .get()
+
+    if (existing && !existing.deletedAt) {
+      return c.json(
+        {
+          error: "该网页已收藏",
+          code: "DUPLICATE",
+          details: { id: existing.id },
+        },
+        409,
+      )
+    }
+
+    let pageMeta
+    try {
+      pageMeta = await fetchUrlPageMetadata(canonical.canonicalUrl)
+    } catch (e) {
+      if (e instanceof UrlFetchError) {
+        return c.json({ error: e.message, code: e.code }, 400)
+      }
+      return c.json({ error: "抓取网页失败", code: "FETCH_FAILED" }, 502)
+    }
+
+    // 抓取可能跟随重定向得到最终 URL；再与库内去重
+    const finalCanonical = canonicalizeUrl(pageMeta.finalUrl)
+    const storeUrl = finalCanonical.ok
+      ? finalCanonical.canonicalUrl
+      : pageMeta.finalUrl
+    const storeHost = finalCanonical.ok
+      ? finalCanonical.hostname
+      : canonical.hostname
+    const storePath = finalCanonical.ok
+      ? finalCanonical.pathname
+      : canonical.pathname
+
+    if (storeUrl !== canonical.canonicalUrl) {
+      const existingFinal = await db
+        .select({ id: bookmarks.id, deletedAt: bookmarks.deletedAt })
+        .from(bookmarks)
+        .where(
+          and(
+            eq(bookmarks.sourceType, "url"),
+            eq(bookmarks.canonicalUrl, storeUrl),
+          ),
+        )
+        .get()
+      if (existingFinal && !existingFinal.deletedAt) {
+        return c.json(
+          {
+            error: "该网页已收藏",
+            code: "DUPLICATE",
+            details: { id: existingFinal.id },
+          },
+          409,
+        )
+      }
+    }
+
+    const id = existing?.id ?? crypto.randomUUID()
+    const now = nowIso()
+    const values = {
+      sourceType: "url" as const,
+      canonicalUrl: storeUrl,
+      externalId: urlExternalId(storeHost, storePath),
+      owner: storeHost,
+      title: pageMeta.title,
+      description: pageMeta.description,
+      language: null as string | null,
+      stars: 0,
+      forks: 0,
+      license: null as string | null,
+      homepage: null as string | null,
+      defaultBranch: null as string | null,
+      topicsJson: "[]",
+      folderId: parsed.data.folderId ?? null,
+      notes: parsed.data.notes ?? null,
+      siteName: pageMeta.siteName,
+      imageUrl: pageMeta.imageUrl,
+      faviconUrl: pageMeta.faviconUrl,
+      contentExcerpt: pageMeta.contentExcerpt,
+      aiStatus: "pending" as const,
+      trackUpdates: false,
+      lastSyncedAt: now,
+      pushedAt: null as string | null,
+      githubUpdatedAt: null as string | null,
+      syncStatus: pageMeta.syncOk ? ("ok" as const) : ("error" as const),
+      lastSyncError: pageMeta.syncError,
+      healthStatus: "unknown" as const,
+      githubArchived: false,
+      repoSize: null as number | null,
+      updatedAt: now,
+    }
+
+    if (existing) {
+      await db
+        .update(bookmarks)
+        .set({
+          ...values,
+          summaryAi: null,
+          useCasesJson: null,
+          aiConfidence: null,
+          latestReleaseTag: null,
+          archivedAt: null,
+          deletedAt: null,
+          createdAt: now,
+        })
+        .where(eq(bookmarks.id, id))
+      await db.delete(bookmarkTags).where(eq(bookmarkTags.bookmarkId, id))
+    } else {
+      await db.insert(bookmarks).values({ ...values, id, createdAt: now })
+    }
+
+    c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
+    const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
+    return c.json(serializeBookmark(row!, [], null), 201)
+  }
+
   if (detected.sourceType !== "github") {
     return c.json(
       {
-        error: `识别为${detected.label}，目前仅支持 GitHub 仓库`,
+        error: `识别为${detected.label}，专项能力尚未接入`,
         code: "UNSUPPORTED_SOURCE",
         details: { detected_type: detected.sourceType },
       },
@@ -547,7 +753,14 @@ bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
   if (data.folderId !== undefined) patch.folderId = data.folderId
   if (data.title !== undefined) patch.title = data.title
   if (data.summaryAi !== undefined) patch.summaryAi = data.summaryAi
-  if (data.trackUpdates !== undefined) patch.trackUpdates = data.trackUpdates
+  if (data.trackUpdates !== undefined) {
+    const caps =
+      SOURCE_CAPABILITIES[(existing.sourceType as SourceType) ?? "github"] ??
+      SOURCE_CAPABILITIES.github
+    if (caps.trackUpdates) {
+      patch.trackUpdates = data.trackUpdates
+    }
+  }
   if (data.archived !== undefined) {
     patch.archivedAt = data.archived ? nowIso() : null
   }

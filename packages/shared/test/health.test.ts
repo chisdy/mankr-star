@@ -32,13 +32,19 @@ describe("detectSourceType", () => {
     }
   })
 
-  it("通用 https 返回 UNSUPPORTED_SOURCE (url)", () => {
+  it("通用 https 识别为已实现的 url", () => {
     const res = detectSourceType("https://gitlab.com/foo/bar")
-    expect(res.ok).toBe(false)
-    if (!res.ok) {
-      expect(res.code).toBe("UNSUPPORTED_SOURCE")
-      expect(res.detectedType).toBe("url")
+    expect(res.ok).toBe(true)
+    if (res.ok) {
+      expect(res.sourceType).toBe("url")
+      expect(res.implemented).toBe(true)
     }
+  })
+
+  it("无协议但含点号的多段路径识别为 url", () => {
+    const res = detectSourceType("docs.example.com/guide/intro")
+    expect(res.ok).toBe(true)
+    if (res.ok) expect(res.sourceType).toBe("url")
   })
 
   it("非法输入返回 INVALID_URL", () => {

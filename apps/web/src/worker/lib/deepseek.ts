@@ -7,8 +7,8 @@ import {
   type AiOutput,
   aiOutputSchema,
   type DeepSeekModel,
+  type SourceType,
 } from "@mankr/shared"
-import type { GithubRepoMeta } from "./github"
 import {
   DeepSeekCallError,
   parseDeepSeekUsage,
@@ -23,6 +23,17 @@ export type FolderCatalogEntry = {
   parent_id: string | null
   path_label: string
   description?: string | null
+}
+
+export type BookmarkAiInput = {
+  sourceType: SourceType
+  title: string
+  description: string | null
+  url: string
+  siteName?: string | null
+  contentExcerpt?: string | null
+  language?: string | null
+  topics?: string[]
 }
 
 export type ClassifyWithDeepSeekResult = {
@@ -106,24 +117,184 @@ function formatFolderCatalogForPrompt(catalog: FolderCatalogEntry[]): string {
   )
 }
 
+/** 无 Key 时网页主题 → 文件夹粗分（仅兜底，正式归类仍靠 DeepSeek） */
+const URL_FOLDER_HINTS: Array<{ folder: string[]; patterns: RegExp[] }> = [
+  {
+    folder: ["学习与教程"],
+    patterns: [/教程|指南|入门|文档|docs?|guide|tutorial|how\s*to|手册/i],
+  },
+  {
+    folder: ["AI / LLM"],
+    patterns: [
+      /\bllm\b|大模型|gpt|claude|prompt|agent|embedding|向量|生成式/i,
+    ],
+  },
+  {
+    folder: ["前端框架"],
+    patterns: [/react|vue|svelte|next\.?js|nuxt|angular/i],
+  },
+  {
+    folder: ["UI 组件"],
+    patterns: [/设计系统|design\s*system|component|组件库|tailwind|shadcn/i],
+  },
+  {
+    folder: ["后端与 API"],
+    patterns: [/api|后端|backend|serverless|graphql|rpc/i],
+  },
+  {
+    folder: ["数据库"],
+    patterns: [/sql|postgres|mysql|mongodb|redis|数据库|orm/i],
+  },
+  {
+    folder: ["DevOps 与部署"],
+    patterns: [/docker|kubernetes|k8s|ci\/?cd|deploy|devops|云原生/i],
+  },
+]
+
+const EMPTY_URL_TAGS = new Set([
+  "webpage",
+  "link",
+  "website",
+  "url",
+  "web",
+  "page",
+  "网站",
+  "网页",
+  "链接",
+  "收藏",
+])
+
+function siteBrand(siteName?: string | null): string | null {
+  if (!siteName?.trim()) return null
+  const host = siteName
+    .trim()
+    .toLowerCase()
+    .replace(/^www\./, "")
+    .split(":")[0]!
+  const base = host.split(".")[0]
+  if (!base || base.length < 2) return null
+  return base
+}
+
+function extractUrlTags(parts: Array<string | null | undefined>): string[] {
+  const text = parts.filter(Boolean).join(" ")
+  const tags: string[] = []
+
+  // 中文词块（2–8 字）
+  const zh = text.match(/[\u4e00-\u9fff]{2,8}/g) ?? []
+  for (const w of zh) {
+    if (EMPTY_URL_TAGS.has(w)) continue
+    if (!tags.includes(w)) tags.push(w)
+    if (tags.length >= 6) break
+  }
+
+  // 英文 token
+  const en = text.match(/[A-Za-z][A-Za-z0-9+.#-]{1,24}/g) ?? []
+  for (const raw of en) {
+    const w = raw.toLowerCase()
+    if (EMPTY_URL_TAGS.has(w) || w.length < 2) continue
+    if (
+      [
+        "https",
+        "http",
+        "www",
+        "com",
+        "org",
+        "the",
+        "and",
+        "for",
+        "with",
+        "from",
+      ].includes(w)
+    ) {
+      continue
+    }
+    if (!tags.includes(w)) tags.push(w)
+    if (tags.length >= 8) break
+  }
+
+  return tags.slice(0, 8)
+}
+
+function hintFolderForUrl(text: string): string[] {
+  for (const rule of URL_FOLDER_HINTS) {
+    if (rule.patterns.some((p) => p.test(text))) return rule.folder
+  }
+  return ["其他"]
+}
+
 /**
  * 规则降级仅作无 Key/超时兜底。
  * 正式归类交给 DeepSeek：按用途分析，目录不贴切时 new_folder，不靠领域正则表。
  */
-export function ruleBasedClassify(meta: {
+export function ruleBasedClassify(input: {
+  sourceType?: SourceType
   language: string | null
   topics: string[]
   description: string | null
   title: string
+  siteName?: string | null
+  contentExcerpt?: string | null
+  url?: string | null
 }): AiOutput {
-  const folder_path = meta.language
-    ? (LANGUAGE_FOLDER_HINTS[meta.language] ?? ["其他"])
+  const sourceType = input.sourceType ?? "github"
+
+  if (sourceType === "url") {
+    const blob = [
+      input.title,
+      input.description,
+      input.siteName,
+      input.contentExcerpt?.slice(0, 1200),
+    ]
+      .filter(Boolean)
+      .join("\n")
+
+    const folder_path = hintFolderForUrl(blob)
+    const brand = siteBrand(input.siteName)
+    const tags = extractUrlTags([
+      input.title,
+      input.description,
+      brand,
+      input.contentExcerpt?.slice(0, 400),
+    ])
+    if (brand && !tags.includes(brand) && tags.length < 8) {
+      tags.unshift(brand)
+    }
+    while (tags.length < 3) {
+      const filler = ["阅读", "资料", "参考"][tags.length]!
+      if (!tags.includes(filler)) tags.push(filler)
+      else break
+    }
+
+    const summaryBase =
+      input.description?.trim() ||
+      (input.title.trim()
+        ? `${input.title.trim()}（${brand || "网页"}）`
+        : "网页收藏")
+    const summary =
+      summaryBase.length > AI_SUMMARY_MAX_CHARS
+        ? summaryBase.slice(0, AI_SUMMARY_MAX_CHARS - 1) + "…"
+        : summaryBase
+
+    return {
+      summary,
+      folder_id: null,
+      new_folder: null,
+      folder_path: truncateFolderPath(folder_path),
+      tags: tags.slice(0, 8),
+      use_cases: [],
+      confidence: 0.3,
+    }
+  }
+
+  const folder_path = input.language
+    ? (LANGUAGE_FOLDER_HINTS[input.language] ?? ["其他"])
     : ["其他"]
 
   const tags = Array.from(
     new Set([
-      ...meta.topics.slice(0, 5),
-      ...(meta.language ? [meta.language.toLowerCase()] : []),
+      ...input.topics.slice(0, 5),
+      ...(input.language ? [input.language.toLowerCase()] : []),
     ]),
   ).slice(0, 8)
 
@@ -132,7 +303,7 @@ export function ruleBasedClassify(meta: {
   }
 
   const summaryBase =
-    meta.description?.trim() || `${meta.title} — GitHub 开源项目`
+    input.description?.trim() || `${input.title} — GitHub 开源项目`
   const summary =
     summaryBase.length > AI_SUMMARY_MAX_CHARS
       ? summaryBase.slice(0, AI_SUMMARY_MAX_CHARS - 1) + "…"
@@ -152,22 +323,35 @@ export function ruleBasedClassify(meta: {
 export async function classifyWithDeepSeek(opts: {
   apiKey: string
   model?: DeepSeekModel | string
-  meta: GithubRepoMeta
-  readme?: string | null
+  input: BookmarkAiInput
   catalog: FolderCatalogEntry[]
   signal?: AbortSignal
 }): Promise<ClassifyWithDeepSeekResult> {
   const model = opts.model || DEFAULT_DEEPSEEK_MODEL
   const catalogJson = formatFolderCatalogForPrompt(opts.catalog)
   const started = Date.now()
+  const isUrl = opts.input.sourceType === "url"
 
-  const system = `你是开源项目归档助手。根据仓库元数据与文件夹目录，自行判断归属，输出严格 JSON（不要 markdown）：
+  const system = isUrl
+    ? `你是个人知识库归档助手。当前收藏是「普通网页」而非 GitHub 仓库。根据标题、描述与正文摘录判断主题，输出严格 JSON（不要 markdown）：
+{"summary":"中文一句话概括该网页核心内容/用途，不超过${AI_SUMMARY_MAX_CHARS}字","folder_id":"已有文件夹的 uuid 或 null","new_folder":null或{"name":"新文件夹名","parent_id":"父文件夹 uuid 或 null"},"tags":["3到8个短标签"],"use_cases":["可选用途场景"],"confidence":0到1的小数}
+
+原则：
+1. summary 必须反映页面真实主题，禁止「网页收藏」「链接分享」等空话。
+2. tags 用中文优先的主题词（如「设计系统」「性能优化」）；禁止 webpage/link/网站/网页/url 等空标签。
+3. 现有文件夹目录大多面向开源工具。若网页主题与任一夹都不贴切，必须 new_folder 起准确中文名，并把 folder_id 设为 null；禁止硬塞进「前端框架」「状态管理」等不相关夹。
+4. 教程/文档站可归「学习与教程」；真正的 LLM/Agent 内容才归「AI / LLM」。
+5. new_folder.parent_id 为 null 表示挂在根；非 null 必须是目录中已有 id；一次只新建一级。
+
+现有文件夹目录（JSON）：
+${catalogJson}`
+    : `你是个人知识收藏归档助手。根据收藏内容与文件夹目录，自行判断归属，输出严格 JSON（不要 markdown）：
 {"summary":"中文一句话用途摘要，不超过${AI_SUMMARY_MAX_CHARS}字","folder_id":"已有文件夹的 uuid 或 null","new_folder":null或{"name":"新文件夹名","parent_id":"父文件夹 uuid 或 null"},"tags":["3到8个短标签"],"use_cases":["可选用途场景"],"confidence":0到1的小数}
 
 原则（不要死记关键词表，按真实用途推理）：
-1. 按产品形态/用途归类，不要按编程语言硬套。
+1. 按产品形态/用途归类；来源可能是 GitHub 仓库或普通网页，不要按编程语言硬套。
 2. 优先复用目录中语义真正贴切的 folder_id；只有都不贴切时才 new_folder（此时 folder_id 必须为 null）。
-3. 预置目录覆盖不了所有领域——宁可 new_folder 起准确名字（如「3D 与图形」「边缘网关」），也不要硬塞进不相关的已有夹（尤其不要把非大模型库塞进「AI / LLM」）。
+3. 预置目录覆盖不了所有领域——宁可 new_folder 起准确名字（如「3D 与图形」「边缘网关」），也不要硬塞进不相关的已有夹（尤其不要把非大模型内容塞进「AI / LLM」）。
 4. new_folder.parent_id 为 null 表示挂在根；非 null 必须是目录中已有 id；一次只新建一级。
 5. 「AI / LLM」仅用于大模型、Agent、提示词、向量检索、推理框架等；「学习与教程」仅用于真正的教程/课程；名称含 awesome 不自动等于教程。
 6. 实在无法判断再用「其他」对应的 folder_id。
@@ -176,17 +360,27 @@ export async function classifyWithDeepSeek(opts: {
 ${catalogJson}
 
 示例（说明形态，非穷举）：
-- 明确的 React 框架 → 复用「前端框架」id
+- 明确的 React 框架仓库 → 复用「前端框架」id
 - Agent Skill 集合 → 复用或在「AI / LLM」下 new_folder「Agent Skills」
-- Three.js / WebGL 引擎 → 若无贴切夹则 new_folder「3D 与图形」，不要选「AI / LLM」
+- 设计系统文档网页 → 若无贴切夹则 new_folder「设计系统」
 - 全新品类 → new_folder 自定义名称`
 
+  const excerpt = opts.input.contentExcerpt?.trim()
+  // 网页给模型稍多正文，但控制体积
+  const excerptForPrompt = excerpt
+    ? excerpt.slice(0, isUrl ? 3500 : 4000)
+    : ""
   const user = [
-    `仓库：${opts.meta.fullName}`,
-    `描述：${opts.meta.description ?? "无"}`,
-    `语言：${opts.meta.language ?? "未知"}`,
-    `Topics：${opts.meta.topics.join(", ") || "无"}`,
-    opts.readme ? `README 截断：\n${opts.readme}` : "",
+    `来源类型：${opts.input.sourceType}`,
+    `标题：${opts.input.title}`,
+    `链接：${opts.input.url}`,
+    opts.input.siteName ? `站点：${opts.input.siteName}` : "",
+    `描述：${opts.input.description ?? "无"}`,
+    opts.input.language ? `语言：${opts.input.language}` : "",
+    opts.input.topics?.length
+      ? `Topics：${opts.input.topics.join(", ")}`
+      : "",
+    excerptForPrompt ? `正文摘录：\n${excerptForPrompt}` : "",
   ]
     .filter(Boolean)
     .join("\n")
@@ -326,6 +520,25 @@ ${catalogJson}
 
   if (result.data.folder_id) {
     result.data.new_folder = null
+  }
+
+  // 过滤空标签；网页来源额外丢掉 webpage/link 等无意义词
+  result.data.tags = result.data.tags
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .filter((t) => !(isUrl && EMPTY_URL_TAGS.has(t.toLowerCase())))
+    .slice(0, 8)
+  if (result.data.tags.length < 3 && isUrl) {
+    const brand = siteBrand(opts.input.siteName)
+    const fillers = extractUrlTags([
+      opts.input.title,
+      opts.input.description,
+      brand,
+    ])
+    for (const t of fillers) {
+      if (!result.data.tags.includes(t)) result.data.tags.push(t)
+      if (result.data.tags.length >= 3) break
+    }
   }
 
   return {

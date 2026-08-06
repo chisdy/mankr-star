@@ -173,6 +173,12 @@ describe("listBookmarksQuerySchema", () => {
     expect(res.success).toBe(true)
     if (res.success) expect(res.data.owner).toBe("facebook")
   })
+
+  it("接受 site", () => {
+    const res = listBookmarksQuerySchema.safeParse({ site: "react.dev" })
+    expect(res.success).toBe(true)
+    if (res.success) expect(res.data.site).toBe("react.dev")
+  })
 })
 
 describe("createFolderSchema", () => {

@@ -101,14 +101,23 @@ export function detectSourceType(input: string): DetectSourceResult {
       }
     }
 
-    // 3) 合法 http(s) → url 兜底（本期无适配器）
+    // 3) 合法 http(s) → url 兜底
     if (/^https?:\/\//i.test(raw) || host.includes(".")) {
+      const implemented = isImplemented("url")
+      if (!implemented) {
+        return {
+          ok: false,
+          code: "UNSUPPORTED_SOURCE",
+          error: unsupportedMessage("url", "通用网页"),
+          detectedType: "url",
+          label: "通用网页",
+        }
+      }
       return {
-        ok: false,
-        code: "UNSUPPORTED_SOURCE",
-        error: unsupportedMessage("url", "通用网页"),
-        detectedType: "url",
-        label: "通用网页",
+        ok: true,
+        sourceType: "url",
+        implemented: true,
+        label: labelFor("url"),
       }
     }
   }

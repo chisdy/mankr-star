@@ -74,6 +74,10 @@ export interface Bookmark {
   stars?: number
   forks?: number
   summary_ai?: string | null
+  site_name?: string | null
+  image_url?: string | null
+  favicon_url?: string | null
+  content_excerpt?: string | null
   folder_id?: string | null
   folder_name?: string | null
   folder?: Folder | null
@@ -113,6 +117,8 @@ export interface BookmarksQueryParams {
   tag?: string
   language?: string
   owner?: string
+  site?: string
+  source_type?: string
   health_status?: HealthStatus
   sort?: "recent" | "updated" | "stars" | "name"
   q?: string
@@ -122,6 +128,11 @@ export interface BookmarksQueryParams {
 }
 
 export interface BookmarkOwner {
+  name: string
+  usage_count?: number
+}
+
+export interface BookmarkSite {
   name: string
   usage_count?: number
 }

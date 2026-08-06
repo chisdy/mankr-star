@@ -187,7 +187,14 @@ export function mockOutboundFetch(): OutboundMock {
       )
     },
     text(urlPrefix, body, status = 200) {
-      return mock.on(urlPrefix, () => new Response(body, { status }))
+      return mock.on(
+        urlPrefix,
+        () =>
+          new Response(body, {
+            status,
+            headers: { "content-type": "text/html; charset=utf-8" },
+          }),
+      )
     },
     restore() {
       vi.unstubAllGlobals()

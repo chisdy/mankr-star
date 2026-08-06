@@ -11,6 +11,7 @@ export const queryKeys = {
     detail: (id: string) => ["bookmarks", "detail", id] as const,
     /** 挂在 bookmarks 前缀下，invalidate bookmarks.all 时一并刷新 */
     owners: ["bookmarks", "owners"] as const,
+    sites: ["bookmarks", "sites"] as const,
   },
   folders: {
     all: ["folders"] as const,

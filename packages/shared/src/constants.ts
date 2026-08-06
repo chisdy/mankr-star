@@ -131,7 +131,7 @@ export const SOURCE_TYPES = ["github", "twitter", "url"] as const
 export type SourceType = (typeof SOURCE_TYPES)[number]
 
 /** 本期已实现写库/同步的适配器 */
-export const IMPLEMENTED_SOURCE_TYPES = ["github"] as const
+export const IMPLEMENTED_SOURCE_TYPES = ["github", "url"] as const
 export type ImplementedSourceType = (typeof IMPLEMENTED_SOURCE_TYPES)[number]
 
 export type SourceCapabilities = {
@@ -239,6 +239,20 @@ export const STARS_DELTA_ABS_MIN = 50
 export const CRON_SYNC_BATCH_SIZE = 20
 export const CRON_AI_BACKFILL_BATCH_SIZE = 5
 export const GITHUB_README_MAX_CHARS = 4000
+/** 网页/仓库正文摘录入库与 AI prompt 共用上限 */
+export const CONTENT_EXCERPT_MAX_CHARS = 8000
+/** URL 规范化时剥离的常见追踪参数前缀/全名 */
+export const TRACKING_QUERY_PARAMS = [
+  "fbclid",
+  "gclid",
+  "gbraid",
+  "wbraid",
+  "mc_cid",
+  "mc_eid",
+  "ref",
+  "ref_src",
+  "ref_url",
+] as const
 
 /** 仓库近况：近期活跃 / 疑似停更默认阈值（天） */
 export const DEFAULT_HOT_WITHIN_DAYS = 30

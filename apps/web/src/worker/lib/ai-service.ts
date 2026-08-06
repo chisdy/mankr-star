@@ -8,6 +8,7 @@ import {
 } from "@mankr/db"
 import {
   AI_FOLDER_AUTO_CREATE_MAX_DEPTH,
+  CONTENT_EXCERPT_MAX_CHARS,
   GITHUB_README_MAX_CHARS,
   PRESET_FOLDERS,
   type AiOutput,
@@ -23,13 +24,13 @@ import {
   ruleBasedClassify,
   translateNameToEnglishSlug,
   truncateFolderPath,
+  type BookmarkAiInput,
   type FolderCatalogEntry,
 } from "./deepseek"
 import { buildPathLabel, folderPathOf } from "./folder-utils"
 import {
   fetchGithubRepo,
   fetchReadmeSnippet,
-  type GithubRepoMeta,
 } from "./github"
 import { folderSlugBase, nowIso, slugify } from "./utils"
 
@@ -398,26 +399,7 @@ export async function runAiForBookmark(
     topics = []
   }
 
-  const [owner = "", repo = ""] = bookmark.externalId.split("/")
-  const meta: GithubRepoMeta = {
-    owner,
-    repo,
-    fullName: bookmark.externalId,
-    description: bookmark.description,
-    language: bookmark.language,
-    stars: bookmark.stars,
-    forks: bookmark.forks,
-    license: bookmark.license,
-    homepage: bookmark.homepage,
-    defaultBranch: bookmark.defaultBranch,
-    topics,
-    pushedAt: bookmark.pushedAt,
-    updatedAt: bookmark.githubUpdatedAt,
-    htmlUrl: bookmark.canonicalUrl,
-    archived: bookmark.githubArchived ?? false,
-    disabled: false,
-    size: bookmark.repoSize ?? 0,
-  }
+  const sourceType = (bookmark.sourceType as "github" | "url" | "twitter") || "github"
 
   const applyOpts = {
     overwriteFolder:
@@ -425,15 +407,79 @@ export async function runAiForBookmark(
     existingFolderId: bookmark.folderId,
   }
 
-  const deepseek = await getDeepSeekKey(db, env)
-  if (!deepseek) {
-    const fallback = ruleBasedClassify({
-      language: meta.language,
-      topics: meta.topics,
-      description: meta.description,
+  const buildFallback = () =>
+    ruleBasedClassify({
+      sourceType,
+      language: bookmark.language,
+      topics,
+      description: bookmark.description,
       title: bookmark.title,
+      siteName: bookmark.siteName,
+      contentExcerpt: bookmark.contentExcerpt,
+      url: bookmark.canonicalUrl,
     })
-    await applyAiResult(db, bookmarkId, fallback, "fallback", applyOpts)
+
+  const deepseek = await getDeepSeekKey(db, env)
+
+  // url / 非 github：只用已入库摘录，禁止 GitHub API
+  if (sourceType !== "github") {
+    const input: BookmarkAiInput = {
+      sourceType,
+      title: bookmark.title,
+      description: bookmark.description,
+      url: bookmark.canonicalUrl,
+      siteName: bookmark.siteName,
+      contentExcerpt: bookmark.contentExcerpt,
+      language: bookmark.language,
+      topics,
+    }
+
+    if (!deepseek) {
+      await applyAiResult(db, bookmarkId, buildFallback(), "fallback", applyOpts)
+      return
+    }
+
+    try {
+      const signal = AbortSignal.timeout(AI_RUN_TIMEOUT_MS)
+      const catalog = await loadFolderCatalog(db)
+      const classified = await classifyWithDeepSeek({
+        apiKey: deepseek.key,
+        model: deepseek.model,
+        input,
+        catalog,
+        signal,
+      })
+      await recordAiUsage(db, {
+        kind: "classify",
+        model: classified.model,
+        status: "ok",
+        usage: classified.usage,
+        bookmarkId,
+        latencyMs: classified.latencyMs,
+      })
+      await applyAiResult(db, bookmarkId, classified.output, "done", applyOpts)
+    } catch (err) {
+      if (err instanceof DeepSeekCallError) {
+        await recordAiUsage(db, {
+          kind: "classify",
+          model: err.model,
+          status: "error",
+          usage: err.usage,
+          bookmarkId,
+          errorCode: err.errorCode,
+          latencyMs: err.latencyMs,
+        })
+      }
+      await applyAiResult(db, bookmarkId, buildFallback(), "failed", applyOpts)
+    }
+    return
+  }
+
+  // github
+  const [owner = "", repo = ""] = bookmark.externalId.split("/")
+
+  if (!deepseek) {
+    await applyAiResult(db, bookmarkId, buildFallback(), "fallback", applyOpts)
     return
   }
 
@@ -441,18 +487,40 @@ export async function runAiForBookmark(
     const signal = AbortSignal.timeout(AI_RUN_TIMEOUT_MS)
     const token = await resolveGithubToken(db, env)
     const readme = await fetchReadmeSnippet(
-      meta.owner,
-      meta.repo,
+      owner,
+      repo,
       GITHUB_README_MAX_CHARS,
       token,
       signal,
     )
+    const excerpt =
+      readme && readme.length > CONTENT_EXCERPT_MAX_CHARS
+        ? readme.slice(0, CONTENT_EXCERPT_MAX_CHARS - 1) + "…"
+        : readme
+
+    if (excerpt) {
+      await db
+        .update(bookmarks)
+        .set({ contentExcerpt: excerpt, updatedAt: nowIso() })
+        .where(eq(bookmarks.id, bookmarkId))
+    }
+
+    const input: BookmarkAiInput = {
+      sourceType: "github",
+      title: bookmark.title,
+      description: bookmark.description,
+      url: bookmark.canonicalUrl,
+      siteName: bookmark.siteName,
+      contentExcerpt: excerpt || bookmark.contentExcerpt,
+      language: bookmark.language,
+      topics,
+    }
+
     const catalog = await loadFolderCatalog(db)
     const classified = await classifyWithDeepSeek({
       apiKey: deepseek.key,
       model: deepseek.model,
-      meta,
-      readme,
+      input,
       catalog,
       signal,
     })
@@ -477,13 +545,7 @@ export async function runAiForBookmark(
         latencyMs: err.latencyMs,
       })
     }
-    const fallback = ruleBasedClassify({
-      language: meta.language,
-      topics: meta.topics,
-      description: meta.description,
-      title: bookmark.title,
-    })
-    await applyAiResult(db, bookmarkId, fallback, "failed", applyOpts)
+    await applyAiResult(db, bookmarkId, buildFallback(), "failed", applyOpts)
   }
 }
 

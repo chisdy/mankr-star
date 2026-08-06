@@ -1,3 +1,4 @@
+export * from "./canonicalize-url"
 export * from "./constants"
 export * from "./detect-source"
 export * from "./health"

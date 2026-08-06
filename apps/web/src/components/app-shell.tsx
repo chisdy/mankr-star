@@ -7,6 +7,7 @@ import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import { AppSidebar } from "@/components/app-sidebar"
 import { AddBookmarkDialog } from "@/features/bookmarks/add-bookmark-dialog"
+import { BookmarkFilterPanel } from "@/features/bookmarks/bookmark-filter-panel"
 import { FolderBreadcrumb } from "@/features/folders/folder-breadcrumb"
 import { FolderTreePanel } from "@/features/folders/folder-tree-panel"
 import { LoginDialog } from "@/features/auth/login-dialog"
@@ -67,12 +68,8 @@ function AppShellContent() {
         onMobileOpenChange={setMobileNavOpen}
       />
 
-      {showFolderTree ? (
-        <FolderTreePanel className="hidden md:flex" resizable />
-      ) : null}
-
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border/50 bg-background/95 px-4 backdrop-blur-sm md:gap-4 md:px-6">
+        <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border/50 bg-card/50 px-4 backdrop-blur-sm md:gap-4 md:px-6">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <Button
               variant="ghost"
@@ -113,9 +110,19 @@ function AppShellContent() {
           </div>
         </header>
 
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-6">
-          <Outlet />
-        </main>
+        <div className="flex min-h-0 min-w-0 flex-1">
+          {showFolderTree ? (
+            <FolderTreePanel className="hidden md:flex" resizable />
+          ) : null}
+
+          <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-6">
+            <Outlet />
+          </main>
+
+          {showFolderTree ? (
+            <BookmarkFilterPanel className="hidden md:flex" resizable />
+          ) : null}
+        </div>
       </div>
 
       <AddBookmarkDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
