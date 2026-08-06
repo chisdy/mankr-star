@@ -18,6 +18,7 @@ export default defineConfig(async () => {
             TEST_MIGRATIONS: migrations,
             SESSION_SECRET: "test-session-secret-0123456789abcdef",
             PAT_ENCRYPTION_KEY: "test-pat-encryption-key-0123456789ab",
+            VAULT_ENCRYPTION_KEY: "test-vault-encryption-key-01234567",
           },
         },
       }),

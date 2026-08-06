@@ -214,7 +214,7 @@ mankr-star/
 1. 执行强制 shadcn init 命令（生成 web + ui monorepo）。
 2. 新增 `packages/db`、`packages/shared`。
 3. 在 `apps/web` 接入 `@cloudflare/vite-plugin`、Hono、`/api/*` 路由与 SPA `not_found_handling`。
-4. 配置 D1 binding、Secrets（`SESSION_SECRET`、`PAT_ENCRYPTION_KEY`，以及可选 `AI_KEY_ENCRYPTION_KEY`）。**不配置** Workers AI binding。
+4. 配置 D1 binding、Secrets（`SESSION_SECRET`、`PAT_ENCRYPTION_KEY`、`VAULT_ENCRYPTION_KEY`，以及可选 `AI_KEY_ENCRYPTION_KEY`）。**不配置** Workers AI binding。
 
 ---
 
@@ -312,7 +312,7 @@ mankr-star/
 
 - 需 Session；返回 `id`、`username`、`email`、`deepseek_configured`、`deepseek_last4`（可选）、`deepseek_model`（无 `password_hash`、无 PAT/DeepSeek 明文）。
 
-**Secrets**：`SESSION_SECRET`（签名/加密 Session token）、`PAT_ENCRYPTION_KEY`（GitHub PAT）；DeepSeek Key 加密可用同一 `PAT_ENCRYPTION_KEY`，或独立 `AI_KEY_ENCRYPTION_KEY`（Workers Secrets）。
+**Secrets**：`SESSION_SECRET`（签名/加密 Session token）、`PAT_ENCRYPTION_KEY`（GitHub PAT）；DeepSeek Key 加密可用同一 `PAT_ENCRYPTION_KEY`，或独立 `AI_KEY_ENCRYPTION_KEY`；收藏站点密码专用 `VAULT_ENCRYPTION_KEY`（Workers Secrets，勿与 PAT/AI Key 共用）。
 
 **密码策略（建议）**：最小 8 字符；注册/登录接口按 IP 限流防暴力破解。
 
@@ -413,6 +413,7 @@ Secrets（`wrangler secret put`）：
 - `SESSION_SECRET`
 - `PAT_ENCRYPTION_KEY`（GitHub PAT；也可复用于 DeepSeek Key 加密）
 - 可选 `AI_KEY_ENCRYPTION_KEY`（专用 DeepSeek Key 加密；若未设则回退 `PAT_ENCRYPTION_KEY`）
+- `VAULT_ENCRYPTION_KEY`（收藏站点密码 AES-GCM 加密；**必须**独立于 PAT/AI Key；生产用 32+ 字节随机串）
 - 可选全局 GitHub token（仅作公共元数据兜底，优先用户 PAT）
 
 > MVP **不需要** Google OAuth 相关 Secret；**不需要** Workers AI / 全局 DeepSeek Key Secret（Key 由用户在设置页写入 D1）。`AUTH_KV` 可选（若不用 OAuth state 可省略 KV binding）。
@@ -430,7 +431,8 @@ Secrets（`wrangler secret put`）：
 | 单用户注册 | `register` 在已有 `users` 行时拒绝；防止实例被二次占用 |
 | PAT | AES-GCM 加密后存 D1；接口只接受写入/删除，永不回显明文 |
 | DeepSeek Key | AES-GCM 加密后存 `deepseek_api_key_encrypted`；GET 仅 `configured` + `last4`；仅 Worker 解密后出站 |
-| 限流 | 注册/登录、AI 设置写入、导入、重新生成接口按 IP 限流 |
+| 收藏站点密码 | AES-GCM（`VAULT_ENCRYPTION_KEY`）加密后存 `account_password_encrypted`；列表/详情仅 `account_password_set`；按需 `POST …/account-password/copy` 解密；公开浏览不返回账号字段 |
+| 限流 | 注册/登录、AI 设置写入、导入、重新生成、密码复制接口按 IP 限流 |
 | 依赖 | pnpm audit；D1 路径一般**不需要** `nodejs_compat`（除非引入必须 Node API 的库） |
 
 ---
@@ -452,8 +454,8 @@ pnpm --filter web dev    # Vite + workerd（CF plugin）
 ```
 
 - D1：本地默认走 Miniflare；需要时用 `wrangler d1` 对 remote 执行 migrations。
-- 本地设置 `SESSION_SECRET`、`PAT_ENCRYPTION_KEY`（及可选 `AI_KEY_ENCRYPTION_KEY`）于 `.dev.vars` 或 `wrangler secret put`；首次启动后通过 `/register` 创建唯一账号，再在设置页填入 DeepSeek Key。
-- 勿把 `SESSION_SECRET`、`PAT_ENCRYPTION_KEY`、`AI_KEY_ENCRYPTION_KEY`、用户 DeepSeek Key 明文提交进 git。
+- 本地设置 `SESSION_SECRET`、`PAT_ENCRYPTION_KEY`、`VAULT_ENCRYPTION_KEY`（及可选 `AI_KEY_ENCRYPTION_KEY`）于 `.dev.vars` 或 `wrangler secret put`；首次启动后通过 `/register` 创建唯一账号，再在设置页填入 DeepSeek Key。
+- 勿把 `SESSION_SECRET`、`PAT_ENCRYPTION_KEY`、`AI_KEY_ENCRYPTION_KEY`、`VAULT_ENCRYPTION_KEY`、用户 DeepSeek Key / 站点密码明文提交进 git。
 
 ### 10.2 部署
 

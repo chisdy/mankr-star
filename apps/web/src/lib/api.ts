@@ -185,6 +185,8 @@ function toBookmarksQuery(params?: BookmarksQueryParams): string {
   if (params.site) search.set("site", params.site)
   if (params.source_type) search.set("sourceType", params.source_type)
   if (params.health_status) search.set("healthStatus", params.health_status)
+  if (params.has_account === true) search.set("hasAccount", "true")
+  if (params.has_account === false) search.set("hasAccount", "false")
   if (params.q) search.set("q", params.q)
   if (params.page) search.set("page", String(params.page))
   if (params.limit) search.set("pageSize", String(params.limit))
@@ -528,6 +530,13 @@ export const api = {
               b.health_status === params.health_status
           )
         }
+        if (params?.has_account !== undefined) {
+          items = items.filter(
+            (b) =>
+              b.source_type === "url" &&
+              Boolean(b.account_registered) === params.has_account
+          )
+        }
         if (params?.q) {
           const q = params.q.toLowerCase()
           items = items.filter(
@@ -681,6 +690,10 @@ export const api = {
       track_updates: boolean
       archived: boolean
       title: string
+      account_registered: boolean
+      account_username: string | null
+      /** 明文仅写入时传输；空字符串清除。永不进入 mock/localStorage */
+      account_password: string | null
     }>
   ): Promise<Bookmark> {
     const body: Record<string, unknown> = {}
@@ -691,6 +704,15 @@ export const api = {
     if (data.track_updates !== undefined) body.trackUpdates = data.track_updates
     if (data.archived !== undefined) body.archived = data.archived
     if (data.title !== undefined) body.title = data.title
+    if (data.account_registered !== undefined) {
+      body.accountRegistered = data.account_registered
+    }
+    if (data.account_username !== undefined) {
+      body.accountUsername = data.account_username
+    }
+    if (data.account_password !== undefined) {
+      body.accountPassword = data.account_password
+    }
 
     try {
       const raw = await request<ApiBookmark>(`/api/bookmarks/${id}`, {
@@ -706,6 +728,18 @@ export const api = {
         const folder = data.folder_id
           ? store.folders.find((f) => f.id === data.folder_id)
           : null
+        // mock 不承载密码明文；仅可更新注册态与用户名，语义对齐服务端
+        let accountUsername = store.bookmarks[idx]!.account_username ?? null
+        if (data.account_username !== undefined) {
+          accountUsername =
+            data.account_username === null || data.account_username === ""
+              ? null
+              : data.account_username
+        }
+        const hasCredentials = Boolean(accountUsername)
+        const accountRegistered = hasCredentials
+          ? true
+          : data.account_registered === true
         const updated: Bookmark = {
           ...store.bookmarks[idx]!,
           ...(data.summary_ai !== undefined && { summary_ai: data.summary_ai }),
@@ -719,6 +753,10 @@ export const api = {
           ...(data.archived !== undefined && {
             archived_at: data.archived ? new Date().toISOString() : null,
           }),
+          account_registered: accountRegistered,
+          account_username: accountUsername,
+          account_password_set: false,
+          account_password_updated_at: null,
           updated_at: new Date().toISOString(),
         }
         store.bookmarks[idx] = updated
@@ -727,6 +765,18 @@ export const api = {
       }
       throw err
     }
+  },
+
+  /**
+   * 按需解密站点密码（一次性明文）。调用方须立即写入剪贴板后丢弃，
+   * 不得写入 React state / Query 缓存 / localStorage。
+   */
+  async copyAccountPassword(id: string): Promise<string> {
+    const res = await request<{ password: string }>(
+      `/api/bookmarks/${id}/account-password/copy`,
+      { method: "POST" },
+    )
+    return res.password
   },
 
   async deleteBookmark(id: string): Promise<void> {

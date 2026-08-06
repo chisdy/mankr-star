@@ -9,6 +9,8 @@ import {
   GitForkIcon,
   ClockIcon,
   HeartIcon,
+  CopyIcon,
+  CheckIcon,
 } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
@@ -31,6 +33,7 @@ import { HealthStatusBadge } from "./health-status-badge"
 import { BookmarkOpenButton } from "./bookmark-open-button"
 import { api } from "@/lib/api"
 import { formatApiError } from "@/lib/api-error"
+import { copyText } from "@/lib/clipboard"
 import { queryKeys } from "@/lib/query-keys"
 import { useAuth } from "@/hooks/use-auth"
 
@@ -73,10 +76,42 @@ export function BookmarkDetailDrawer({
   const [tagsInput, setTagsInput] = React.useState("")
   const [notes, setNotes] = React.useState("")
   const [trackUpdates, setTrackUpdates] = React.useState(true)
+  const [accountRegistered, setAccountRegistered] = React.useState(false)
+  const [accountUsername, setAccountUsername] = React.useState("")
+  const [accountPassword, setAccountPassword] = React.useState("")
+  const [passwordDirty, setPasswordDirty] = React.useState(false)
+  const [copyingPassword, setCopyingPassword] = React.useState(false)
+  const [usernameCopied, setUsernameCopied] = React.useState(false)
+  const [passwordCopied, setPasswordCopied] = React.useState(false)
+  const usernameCopyTimer = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  )
+  const passwordCopyTimer = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  )
 
   const markDirty = () => {
     formDirty.current = true
   }
+
+  const flashCopied = (
+    setCopied: React.Dispatch<React.SetStateAction<boolean>>,
+    timerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>,
+  ) => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setCopied(true)
+    timerRef.current = setTimeout(() => {
+      setCopied(false)
+      timerRef.current = null
+    }, 1500)
+  }
+
+  React.useEffect(() => {
+    return () => {
+      if (usernameCopyTimer.current) clearTimeout(usernameCopyTimer.current)
+      if (passwordCopyTimer.current) clearTimeout(passwordCopyTimer.current)
+    }
+  }, [])
 
   const hydrateFromBookmark = (b: NonNullable<typeof bookmark>) => {
     setSummaryAi(b.summary_ai || "")
@@ -84,6 +119,12 @@ export function BookmarkDetailDrawer({
     setTagsInput(b.tags ? b.tags.join(", ") : "")
     setNotes(b.notes || "")
     setTrackUpdates(b.track_updates ?? true)
+    setAccountRegistered(Boolean(b.account_registered))
+    setAccountUsername(b.account_username || "")
+    setAccountPassword("")
+    setPasswordDirty(false)
+    setUsernameCopied(false)
+    setPasswordCopied(false)
   }
 
   // 关闭抽屉时清 hydration，下次打开重新灌入；打开期间仅 id 切换或 AI 终态灌入
@@ -126,16 +167,28 @@ export function BookmarkDetailDrawer({
         .map((tag) => tag.trim().replace(/^#/, ""))
         .filter(Boolean)
 
-      return api.updateBookmark(bookmarkId!, {
+      const payload: Parameters<typeof api.updateBookmark>[1] = {
         summary_ai: summaryAi.trim() || null,
         folder_id: folderId || null,
         tags: parsedTags,
         notes: notes.trim() || null,
         track_updates: trackUpdates,
-      })
+      }
+
+      if (bookmark?.source_type === "url") {
+        payload.account_registered = accountRegistered
+        payload.account_username = accountUsername.trim() || null
+        if (passwordDirty) {
+          payload.account_password = accountPassword
+        }
+      }
+
+      return api.updateBookmark(bookmarkId!, payload)
     },
     onSuccess: () => {
       formDirty.current = false
+      setAccountPassword("")
+      setPasswordDirty(false)
       queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.folders.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.tags.all })
@@ -145,6 +198,49 @@ export function BookmarkDetailDrawer({
       toast.error(formatApiError(err, t) || t("detail.saveFailed"))
     },
   })
+
+  const handleCopyUsername = async () => {
+    const value = accountUsername.trim() || bookmark?.account_username || ""
+    if (!value) {
+      toast.error(t("detail.accountUsernameEmpty"))
+      return
+    }
+    const ok = await copyText(value, {
+      unsupportedMessage: t("detail.copyUnsupported"),
+      silent: true,
+    })
+    if (ok) {
+      flashCopied(setUsernameCopied, usernameCopyTimer)
+    }
+  }
+
+  const handleCopyPassword = async () => {
+    if (!bookmarkId) return
+    if (passwordDirty) {
+      toast.error(t("detail.accountPasswordSaveFirst"))
+      return
+    }
+    if (!bookmark?.account_password_set) {
+      toast.error(t("detail.accountPasswordNotSet"))
+      return
+    }
+    setCopyingPassword(true)
+    try {
+      const password = await api.copyAccountPassword(bookmarkId)
+      // 明文仅作局部变量，立即写入剪贴板后丢弃
+      const ok = await copyText(password, {
+        unsupportedMessage: t("detail.copyUnsupported"),
+        silent: true,
+      })
+      if (ok) {
+        flashCopied(setPasswordCopied, passwordCopyTimer)
+      }
+    } catch (err) {
+      toast.error(formatApiError(err as Error, t) || t("detail.copyFailed"))
+    } finally {
+      setCopyingPassword(false)
+    }
+  }
 
   const regenerateAiMutation = useMutation({
     mutationFn: () => api.regenerateAi(bookmarkId!),
@@ -403,6 +499,146 @@ export function BookmarkDetailDrawer({
                     className="min-h-[100px] resize-none text-xs leading-relaxed"
                   />
                 </div>
+              ) : null}
+
+              {/* 站点账号备忘 — 仅登录 + url 来源 */}
+              {isAuthenticated && bookmark.source_type === "url" ? (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <div className="space-y-0.5">
+                      <div className="text-xs font-medium">
+                        {t("detail.accountSection")}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        {t("detail.accountHint")}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between py-1">
+                      <div className="space-y-0.5">
+                        <Label
+                          htmlFor="account-registered"
+                          className="text-xs font-medium"
+                        >
+                          {t("detail.accountRegistered")}
+                        </Label>
+                      </div>
+                      <Switch
+                        id="account-registered"
+                        checked={accountRegistered}
+                        onCheckedChange={(v) => {
+                          markDirty()
+                          setAccountRegistered(v)
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">
+                        {t("detail.accountUsername")}
+                      </Label>
+                      <div className="relative flex items-center">
+                        <Input
+                          value={accountUsername}
+                          onChange={(e) => {
+                            markDirty()
+                            setAccountUsername(e.target.value)
+                            if (e.target.value.trim()) {
+                              setAccountRegistered(true)
+                            }
+                          }}
+                          placeholder={t("detail.accountUsernamePlaceholder")}
+                          className="h-9 pr-9 text-xs"
+                          autoComplete="off"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void handleCopyUsername()}
+                          disabled={!accountUsername.trim()}
+                          className="absolute right-2.5 flex size-7 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:pointer-events-none disabled:opacity-40"
+                          aria-label={t("detail.copy")}
+                          tabIndex={-1}
+                        >
+                          {usernameCopied ? (
+                            <CheckIcon
+                              className="size-4 text-emerald-500"
+                              weight="bold"
+                            />
+                          ) : (
+                            <CopyIcon className="size-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label className="text-xs font-medium">
+                          {t("detail.accountPassword")}
+                        </Label>
+                        <span className="text-[11px] text-muted-foreground">
+                          {bookmark.account_password_set
+                            ? t("detail.accountPasswordSet")
+                            : t("detail.accountPasswordUnset")}
+                        </span>
+                      </div>
+                      <div className="relative flex items-center">
+                        <Input
+                          type="password"
+                          value={accountPassword}
+                          onChange={(e) => {
+                            markDirty()
+                            setPasswordDirty(true)
+                            setAccountPassword(e.target.value)
+                            if (e.target.value) {
+                              setAccountRegistered(true)
+                            }
+                          }}
+                          placeholder={
+                            bookmark.account_password_set
+                              ? t("detail.accountPasswordReplacePlaceholder")
+                              : t("detail.accountPasswordPlaceholder")
+                          }
+                          className="h-9 pr-9 text-xs"
+                          autoComplete="new-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void handleCopyPassword()}
+                          disabled={
+                            passwordDirty ||
+                            !bookmark.account_password_set ||
+                            copyingPassword
+                          }
+                          className="absolute right-2.5 flex size-7 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:pointer-events-none disabled:opacity-40"
+                          aria-label={
+                            passwordDirty
+                              ? t("detail.accountPasswordSaveFirst")
+                              : t("detail.copy")
+                          }
+                          tabIndex={-1}
+                        >
+                          {passwordCopied ? (
+                            <CheckIcon
+                              className="size-4 text-emerald-500"
+                              weight="bold"
+                            />
+                          ) : (
+                            <CopyIcon className="size-4" />
+                          )}
+                        </button>
+                      </div>
+                      {passwordDirty ? (
+                        <p className="text-[11px] text-muted-foreground">
+                          {accountPassword === ""
+                            ? t("detail.accountPasswordClearHint")
+                            : t("detail.accountPasswordSaveFirst")}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </>
               ) : null}
 
               {isAuthenticated && bookmark.source_type === "github" ? (

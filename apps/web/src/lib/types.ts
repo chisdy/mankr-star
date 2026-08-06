@@ -84,6 +84,13 @@ export interface Bookmark {
   folder?: Folder | null
   tags?: string[]
   notes?: string | null
+  /** 是否已在该站点注册（仅登录态、url 来源） */
+  account_registered?: boolean
+  /** 站点账号明文（仅登录态；可本地复制） */
+  account_username?: string | null
+  /** 是否已设置密码（永不返回密码明文） */
+  account_password_set?: boolean
+  account_password_updated_at?: string | null
   ai_status: AiStatus
   track_updates: boolean
   last_synced_at?: string | null
@@ -121,6 +128,8 @@ export interface BookmarksQueryParams {
   site?: string
   source_type?: string
   health_status?: HealthStatus
+  /** 仅网页模式：是否有账号 */
+  has_account?: boolean
   sort?: "recent" | "updated" | "stars" | "name"
   q?: string
   archived?: boolean

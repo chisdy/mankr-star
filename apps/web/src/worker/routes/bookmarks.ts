@@ -41,7 +41,9 @@ import { parseGithubRepoInput } from "../lib/github-url"
 import { fetchUrlPageMetadata } from "../lib/url-metadata"
 import { fetchTwitterMetadata } from "../lib/twitter"
 import { UrlFetchError } from "../lib/url-ssrf"
-import { nowIso } from "../lib/utils"
+import { decryptSecret, encryptSecret } from "../lib/crypto"
+import { rateLimit } from "../lib/rate-limit"
+import { getClientIp, nowIso } from "../lib/utils"
 import { authByMethod } from "../middleware/auth"
 
 export const bookmarkRoutes = new Hono<AppEnv>()
@@ -83,7 +85,7 @@ function serializeBookmark(
   tagNames: string[],
   folder?: typeof folders.$inferSelect | null,
   allFolders?: Array<typeof folders.$inferSelect>,
-  options?: { isPublicRead?: boolean },
+  options?: { isPublicRead?: boolean; includeAccount?: boolean },
 ) {
   let topics: string[] = []
   let useCases: string[] = []
@@ -110,7 +112,7 @@ function serializeBookmark(
   const byId = new Map((allFolders ?? []).map((f) => [f.id, f]))
   const pathLabel = folder ? buildPathLabel(folder, byId) : null
 
-  return {
+  const base = {
     id: b.id,
     source_type: b.sourceType,
     canonical_url: b.canonicalUrl,
@@ -163,6 +165,24 @@ function serializeBookmark(
     created_at: b.createdAt,
     updated_at: b.updatedAt,
   }
+
+  // 账号字段默认不输出；仅登录态 + 具备 accountCredentials 的来源（url）显式 opt-in
+  if (options?.includeAccount) {
+    const caps =
+      SOURCE_CAPABILITIES[(b.sourceType as SourceType) ?? "github"] ??
+      SOURCE_CAPABILITIES.github
+    if (caps.accountCredentials) {
+      return {
+        ...base,
+        account_registered: Boolean(b.accountRegistered),
+        account_username: b.accountUsername,
+        account_password_set: Boolean(b.accountPasswordEncrypted),
+        account_password_updated_at: b.accountPasswordUpdatedAt,
+      }
+    }
+  }
+
+  return base
 }
 
 bookmarkRoutes.get("/bookmarks", async (c) => {
@@ -192,6 +212,7 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     healthStatus,
     archived,
     includeArchived,
+    hasAccount,
     q,
     sort,
     order,
@@ -235,6 +256,12 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     )
   }
 
+  // 公开浏览忽略 hasAccount，避免访客枚举「哪些站点有账号」
+  if (!isPublicRead && hasAccount !== undefined) {
+    conditions.push(eq(bookmarks.sourceType, "url"))
+    conditions.push(eq(bookmarks.accountRegistered, hasAccount))
+  }
+
   if (q) {
     const pattern = `%${q}%`
     const qClauses = [
@@ -248,6 +275,7 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     if (!isPublicRead) {
       qClauses.push(like(bookmarks.notes, pattern))
     }
+    // 账号名 / 密码永不进入 q 匹配
     conditions.push(or(...qClauses)!)
   }
 
@@ -315,7 +343,10 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
 
   const allFolders = await db.select().from(folders)
   const folderMap = new Map(allFolders.map((f) => [f.id, f]))
-  const serializeOpts = { isPublicRead }
+  const serializeOpts = {
+    isPublicRead,
+    includeAccount: !isPublicRead,
+  }
 
   return c.json({
     items: rows.map((r) => {
@@ -434,6 +465,7 @@ bookmarkRoutes.get("/bookmarks/:id", async (c) => {
   return c.json(
     serializeBookmark(row, tagMap.get(id) ?? [], folder, allFolders, {
       isPublicRead,
+      includeAccount: !isPublicRead,
     }),
   )
 })
@@ -605,7 +637,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
 
     c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
     const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
-    return c.json(serializeBookmark(row!, [], null), 201)
+    return c.json(serializeBookmark(row!, [], null, undefined, { includeAccount: true }), 201)
   }
 
   if (detected.sourceType === "twitter") {
@@ -726,7 +758,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
 
     c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
     const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
-    return c.json(serializeBookmark(row!, [], null), 201)
+    return c.json(serializeBookmark(row!, [], null, undefined, { includeAccount: true }), 201)
   }
 
   if (detected.sourceType !== "github") {
@@ -853,7 +885,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
   c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
 
   const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
-  return c.json(serializeBookmark(row!, [], null), 201)
+  return c.json(serializeBookmark(row!, [], null, undefined, { includeAccount: true }), 201)
 })
 
 bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
@@ -905,6 +937,56 @@ bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
     patch.archivedAt = data.archived ? nowIso() : null
   }
 
+  const accountCaps =
+    SOURCE_CAPABILITIES[(existing.sourceType as SourceType) ?? "github"] ??
+    SOURCE_CAPABILITIES.github
+  if (accountCaps.accountCredentials) {
+    const now = nowIso()
+
+    if (data.accountUsername !== undefined) {
+      const username =
+        data.accountUsername === null || data.accountUsername === ""
+          ? null
+          : data.accountUsername.trim() || null
+      patch.accountUsername = username
+    }
+
+    if (data.accountPassword !== undefined) {
+      if (data.accountPassword === null || data.accountPassword === "") {
+        patch.accountPasswordEncrypted = null
+        patch.accountPasswordUpdatedAt = null
+      } else {
+        patch.accountPasswordEncrypted = await encryptSecret(
+          data.accountPassword,
+          c.env.VAULT_ENCRYPTION_KEY,
+        )
+        patch.accountPasswordUpdatedAt = now
+      }
+    }
+
+    // 落库后仍有账号或密码 → 强制已注册；两者都清空 → 强制未注册。
+    // 避免「关掉已注册但仍有凭据」导致筛选与卡片复制语义分叉。
+    const nextUsername =
+      patch.accountUsername !== undefined
+        ? patch.accountUsername
+        : existing.accountUsername
+    const nextPasswordEncrypted =
+      patch.accountPasswordEncrypted !== undefined
+        ? patch.accountPasswordEncrypted
+        : existing.accountPasswordEncrypted
+    const hasCredentials = Boolean(nextUsername) || Boolean(nextPasswordEncrypted)
+
+    if (hasCredentials) {
+      patch.accountRegistered = true
+    } else if (
+      data.accountUsername !== undefined ||
+      data.accountPassword !== undefined ||
+      data.accountRegistered !== undefined
+    ) {
+      patch.accountRegistered = data.accountRegistered === true
+    }
+  }
+
   await db.update(bookmarks).set(patch).where(eq(bookmarks.id, id))
 
   if (data.tagNames) {
@@ -919,7 +1001,9 @@ bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
     : null
 
   return c.json(
-    serializeBookmark(row!, tagMap.get(id) ?? [], folder, allFolders),
+    serializeBookmark(row!, tagMap.get(id) ?? [], folder, allFolders, {
+      includeAccount: true,
+    }),
   )
 })
 
@@ -939,6 +1023,59 @@ bookmarkRoutes.delete("/bookmarks/:id", async (c) => {
     .where(eq(bookmarks.id, id))
 
   return c.json({ ok: true })
+})
+
+bookmarkRoutes.post("/bookmarks/:id/account-password/copy", async (c) => {
+  const ip = getClientIp(c.req.raw)
+  const rl = rateLimit(`vault-copy:${ip}`, 30, 60_000)
+  if (!rl.ok) {
+    return c.json({ error: "请求过于频繁", code: "RATE_LIMITED" }, 429)
+  }
+
+  // 公开浏览访客不得调用：authByMethod 对非 GET 默认 requireAuth
+  if (c.get("isPublicRead")) {
+    return c.json({ error: "未登录", code: "UNAUTHORIZED" }, 401)
+  }
+
+  const db = c.get("db")
+  const id = c.req.param("id")
+  const row = await db
+    .select({
+      id: bookmarks.id,
+      sourceType: bookmarks.sourceType,
+      accountPasswordEncrypted: bookmarks.accountPasswordEncrypted,
+    })
+    .from(bookmarks)
+    .where(and(eq(bookmarks.id, id), isNull(bookmarks.deletedAt)))
+    .get()
+  if (!row) return c.json({ error: "收藏不存在", code: "NOT_FOUND" }, 404)
+
+  const caps =
+    SOURCE_CAPABILITIES[(row.sourceType as SourceType) ?? "github"] ??
+    SOURCE_CAPABILITIES.github
+  if (!caps.accountCredentials) {
+    return c.json(
+      { error: "该来源不支持站点账号", code: "UNSUPPORTED_SOURCE" },
+      400,
+    )
+  }
+
+  if (!row.accountPasswordEncrypted) {
+    return c.json({ error: "未设置密码", code: "PASSWORD_NOT_SET" }, 404)
+  }
+
+  let password: string
+  try {
+    password = await decryptSecret(
+      row.accountPasswordEncrypted,
+      c.env.VAULT_ENCRYPTION_KEY,
+    )
+  } catch {
+    return c.json({ error: "解密失败", code: "DECRYPT_FAILED" }, 500)
+  }
+
+  c.header("Cache-Control", "no-store")
+  return c.json({ password })
 })
 
 bookmarkRoutes.post("/bookmarks/:id/open", async (c) => {
@@ -970,6 +1107,7 @@ bookmarkRoutes.post("/bookmarks/:id/open", async (c) => {
   return c.json(
     serializeBookmark(row!, tagMap.get(id) ?? [], folder, allFolders, {
       isPublicRead,
+      includeAccount: !isPublicRead,
     }),
   )
 })

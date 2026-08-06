@@ -63,6 +63,15 @@ export const updateBookmarkSchema = z.object({
   trackUpdates: z.boolean().optional(),
   archived: z.boolean().optional(),
   tagNames: z.array(z.string().min(1).max(64)).max(20).optional(),
+  /** 是否已注册账号（仅 url 来源生效） */
+  accountRegistered: z.boolean().optional(),
+  /** 站点账号；空字符串表示清除 */
+  accountUsername: z.string().max(256).optional().nullable(),
+  /**
+   * 站点密码明文（仅写入时传输；空字符串表示清除）。
+   * 列表/详情永不回传明文或密文。
+   */
+  accountPassword: z.string().max(512).optional().nullable(),
 })
 export type UpdateBookmarkInput = z.infer<typeof updateBookmarkSchema>
 
@@ -87,6 +96,14 @@ export const listBookmarksQuerySchema = z.object({
     .enum(["true", "false", "1", "0"])
     .optional()
     .transform((v) => v === "true" || v === "1"),
+  /** 仅网页来源：是否有账号。公开浏览时服务端忽略该参数 */
+  hasAccount: z
+    .enum(["true", "false", "1", "0"])
+    .optional()
+    .transform((v) => {
+      if (v === undefined) return undefined
+      return v === "true" || v === "1"
+    }),
   q: z.string().optional(),
   sort: z.enum(BOOKMARK_SORT_OPTIONS).default("created_at"),
   order: z.enum(["asc", "desc"]).default("desc"),

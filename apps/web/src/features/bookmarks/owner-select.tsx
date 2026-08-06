@@ -9,7 +9,6 @@ import {
   UserIcon,
 } from "@phosphor-icons/react"
 
-import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import { cn } from "@workspace/ui/lib/utils"
 
@@ -273,24 +272,23 @@ export function FacetSelect({
       ref={rootRef}
       className={cn("relative", fullWidth && "w-full", className)}
     >
-      <Button
+      <button
         type="button"
-        variant="outline"
-        size={size === "sm" ? "sm" : "default"}
         disabled={disabled}
         aria-expanded={open}
         aria-haspopup="listbox"
         className={cn(
-          "justify-between gap-1.5 border-input px-2.5 font-normal shadow-xs",
-          fullWidth ? "h-8 w-full text-xs" : "min-w-28",
+          "inline-flex items-center justify-between gap-1.5 rounded-md border border-input bg-transparent px-2.5 font-normal shadow-xs transition-[color,box-shadow] outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+          fullWidth ? "h-8 w-full text-xs" : "h-9 min-w-28 text-sm",
           size === "sm" && !fullWidth && "h-8 text-xs",
           !value && "text-muted-foreground",
+          value && "border-primary/50 bg-primary/10 hover:bg-primary/10",
         )}
         onClick={() => setOpenSafe(!open)}
       >
         <span className="truncate">{label}</span>
         <CaretDownIcon className="size-3.5 shrink-0 opacity-50" />
-      </Button>
+      </button>
       {panel}
     </div>
   )

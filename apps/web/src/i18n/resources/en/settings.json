@@ -74,9 +74,9 @@
   },
   "export": {
     "section": "6. Backup & export",
-    "description": "Export all bookmarks, folders, and tags as JSON.",
+    "description": "Export all bookmarks, folders, and tags as JSON. Site accounts and passwords are excluded.",
     "title": "Export full library JSON",
-    "detail": "Includes private notes, AI summaries, tags, and timestamps",
+    "detail": "Includes private notes, AI summaries, tags, and timestamps — not site accounts or passwords",
     "button": "Export data"
   },
   "appearance": {

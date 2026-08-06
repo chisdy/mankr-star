@@ -4,6 +4,7 @@ import { Badge } from "@workspace/ui/components/badge"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import type { Bookmark } from "@/lib/types"
 import { HealthStatusBadge } from "./health-status-badge"
+import { BookmarkAccountCopyButton } from "./bookmark-account-copy-button"
 import { BookmarkOpenButton } from "./bookmark-open-button"
 
 interface BookmarkCardProps {
@@ -179,7 +180,10 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
             )}
           </div>
 
-          <BookmarkOpenButton bookmark={bookmark} className="-mr-1" />
+          <div className="flex items-center gap-0.5">
+            <BookmarkAccountCopyButton bookmark={bookmark} />
+            <BookmarkOpenButton bookmark={bookmark} className="-mr-1" />
+          </div>
         </div>
       </div>
     </div>

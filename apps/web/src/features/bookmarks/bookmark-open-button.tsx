@@ -3,6 +3,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { ArrowSquareOutIcon } from "@phosphor-icons/react"
 import { buttonVariants } from "@workspace/ui/components/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip"
 import { cn } from "@workspace/ui/lib/utils"
 import { ExternalLink } from "@/components/external-link"
 import { api } from "@/lib/api"
@@ -42,20 +48,30 @@ export function BookmarkOpenButton({ bookmark, className }: BookmarkOpenButtonPr
     openMutation.mutate()
   }
 
+  const label = t("open.title")
+
   return (
-    <ExternalLink
-      href={safeHref}
-      onClick={handleClick}
-      className={cn(
-        buttonVariants({ variant: "ghost", size: "xs" }),
-        "h-6 gap-1 px-1.5 font-mono text-[11px] text-muted-foreground hover:text-foreground",
-        className,
-      )}
-      aria-label={t("open.aria", { count: clickCount })}
-      title={t("open.title")}
-    >
-      <ArrowSquareOutIcon className="size-3.5" data-icon="inline-start" />
-      <span>{clickCount}</span>
-    </ExternalLink>
+    <TooltipProvider delay={200}>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <ExternalLink
+              href={safeHref}
+              onClick={handleClick}
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "xs" }),
+                "h-6 gap-1 px-1.5 font-mono text-[11px] text-muted-foreground hover:text-foreground",
+                className,
+              )}
+              aria-label={t("open.aria", { count: clickCount })}
+            >
+              <ArrowSquareOutIcon className="size-3.5" data-icon="inline-start" />
+              <span>{clickCount}</span>
+            </ExternalLink>
+          }
+        />
+        <TooltipContent side="top">{label}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }

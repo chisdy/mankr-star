@@ -5,5 +5,7 @@ SESSION_SECRET=dev-session-secret-change-me-to-32chars-min
 PAT_ENCRYPTION_KEY=dev-pat-encryption-key-change-me-32b
 # 可选：独立 DeepSeek Key 加密密钥；未设则回退 PAT_ENCRYPTION_KEY
 # AI_KEY_ENCRYPTION_KEY=dev-ai-key-encryption-key-change-me
+# 收藏站点密码加密密钥（生产须为 32+ 字节随机串，勿与 PAT 共用）
+VAULT_ENCRYPTION_KEY=dev-vault-encryption-key-change-me-32b
 # 可选：公共 GitHub token 兜底
 # GITHUB_TOKEN=

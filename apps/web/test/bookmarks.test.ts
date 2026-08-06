@@ -39,6 +39,11 @@ interface BookmarkPayload {
   } | null
   tags: string[]
   notes: string | null
+  account_registered?: boolean
+  account_username?: string | null
+  account_password_set?: boolean
+  account_password_updated_at?: string | null
+  account_password_encrypted?: string | null
   ai_status: string
   track_updates: boolean
   health_status?: string
@@ -925,5 +930,175 @@ describe("POST /api/bookmarks/:id/open", () => {
     )
     expect(status).toBe(404)
     expect(body.code).toBe("NOT_FOUND")
+  })
+})
+
+describe("站点账号密码 vault", () => {
+  async function createUrlBookmark(path = "/vault") {
+    const pageUrl = `https://vault.example.com${path}`
+    outbound.text(
+      pageUrl,
+      `<html><head><title>Vault Site</title></head><body>ok</body></html>`,
+    )
+    const created = await createBookmark(pageUrl)
+    expect(created.status).toBe(201)
+    return created.body
+  }
+
+  it("PATCH 写入账号密码后只回 account_password_set，永不回传明文/密文", async () => {
+    const bookmark = await createUrlBookmark("/login")
+    const { status, body } = await client.patch<BookmarkPayload>(
+      `/api/bookmarks/${bookmark.id}`,
+      {
+        accountUsername: "alice@example.com",
+        accountPassword: "s3cret-pass",
+      },
+    )
+    expect(status).toBe(200)
+    expect(body.account_registered).toBe(true)
+    expect(body.account_username).toBe("alice@example.com")
+    expect(body.account_password_set).toBe(true)
+    expect(body.account_password_updated_at).toBeTruthy()
+    expect(
+      (body as Record<string, unknown>).account_password,
+    ).toBeUndefined()
+    expect(body.account_password_encrypted).toBeUndefined()
+
+    const detail = await client.json<BookmarkPayload>(
+      `/api/bookmarks/${bookmark.id}`,
+    )
+    expect(detail.status).toBe(200)
+    expect(detail.body.account_password_set).toBe(true)
+    expect(detail.body.account_username).toBe("alice@example.com")
+    expect(
+      (detail.body as Record<string, unknown>).account_password,
+    ).toBeUndefined()
+  })
+
+  it("按需 copy 返回明文；空字符串清除密码", async () => {
+    const bookmark = await createUrlBookmark("/copy")
+    await client.patch(`/api/bookmarks/${bookmark.id}`, {
+      accountUsername: "bob",
+      accountPassword: "copy-me-now",
+    })
+
+    const copied = await client.post<{ password?: string; code?: string }>(
+      `/api/bookmarks/${bookmark.id}/account-password/copy`,
+    )
+    expect(copied.status).toBe(200)
+    expect(copied.body.password).toBe("copy-me-now")
+
+    const cleared = await client.patch<BookmarkPayload>(
+      `/api/bookmarks/${bookmark.id}`,
+      { accountPassword: "" },
+    )
+    expect(cleared.status).toBe(200)
+    expect(cleared.body.account_password_set).toBe(false)
+    expect(cleared.body.account_password_updated_at).toBeNull()
+
+    const missing = await client.post<{ code?: string }>(
+      `/api/bookmarks/${bookmark.id}/account-password/copy`,
+    )
+    expect(missing.status).toBe(404)
+    expect(missing.body.code).toBe("PASSWORD_NOT_SET")
+  })
+
+  it("非 url 来源静默忽略账号字段；copy 返回 400", async () => {
+    const created = await createBookmark("facebook/react")
+    const patched = await client.patch<BookmarkPayload>(
+      `/api/bookmarks/${created.body.id}`,
+      {
+        accountUsername: "should-ignore",
+        accountPassword: "nope",
+        accountRegistered: true,
+      },
+    )
+    expect(patched.status).toBe(200)
+    expect(patched.body.account_registered).toBeUndefined()
+    expect(patched.body.account_username).toBeUndefined()
+    expect(patched.body.account_password_set).toBeUndefined()
+
+    const copy = await client.post<{ code?: string }>(
+      `/api/bookmarks/${created.body.id}/account-password/copy`,
+    )
+    expect(copy.status).toBe(400)
+    expect(copy.body.code).toBe("UNSUPPORTED_SOURCE")
+  })
+
+  it("hasAccount 仅匹配 url；q 不匹配账号名", async () => {
+    const withAccount = await createUrlBookmark("/has-yes")
+    await client.patch(`/api/bookmarks/${withAccount.id}`, {
+      accountUsername: "UniqueVaultUserXYZ",
+      accountPassword: "p@ss",
+    })
+    const withoutAccount = await createUrlBookmark("/has-no")
+    expect(withoutAccount.account_registered ?? false).toBe(false)
+
+    const yes = await client.json<BookmarkList>(
+      "/api/bookmarks?sourceType=url&hasAccount=true",
+    )
+    expect(yes.status).toBe(200)
+    expect(yes.body.items.every((i) => i.source_type === "url")).toBe(true)
+    expect(yes.body.items.some((i) => i.id === withAccount.id)).toBe(true)
+    expect(yes.body.items.some((i) => i.id === withoutAccount.id)).toBe(false)
+
+    const no = await client.json<BookmarkList>(
+      "/api/bookmarks?sourceType=url&hasAccount=false",
+    )
+    expect(no.body.items.some((i) => i.id === withoutAccount.id)).toBe(true)
+    expect(no.body.items.some((i) => i.id === withAccount.id)).toBe(false)
+
+    const byQ = await client.json<BookmarkList>(
+      `/api/bookmarks?q=${encodeURIComponent("UniqueVaultUserXYZ")}`,
+    )
+    expect(byQ.status).toBe(200)
+    expect(byQ.body.items.length).toBe(0)
+  })
+
+  it("有凭据时强制 account_registered=true，清凭据后可为 false", async () => {
+    const bookmark = await createUrlBookmark("/force-registered")
+    const forced = await client.patch<BookmarkPayload>(
+      `/api/bookmarks/${bookmark.id}`,
+      {
+        accountUsername: "keep-me",
+        accountPassword: "secret",
+        accountRegistered: false,
+      },
+    )
+    expect(forced.status).toBe(200)
+    expect(forced.body.account_registered).toBe(true)
+    expect(forced.body.account_username).toBe("keep-me")
+    expect(forced.body.account_password_set).toBe(true)
+
+    const cleared = await client.patch<BookmarkPayload>(
+      `/api/bookmarks/${bookmark.id}`,
+      {
+        accountUsername: "",
+        accountPassword: "",
+        accountRegistered: false,
+      },
+    )
+    expect(cleared.status).toBe(200)
+    expect(cleared.body.account_registered).toBe(false)
+    expect(cleared.body.account_username).toBeNull()
+    expect(cleared.body.account_password_set).toBe(false)
+  })
+
+  it("export 不含账号字段", async () => {
+    const bookmark = await createUrlBookmark("/export")
+    await client.patch(`/api/bookmarks/${bookmark.id}`, {
+      accountUsername: "export-user",
+      accountPassword: "export-secret",
+    })
+    const exported = await client.json<{
+      bookmarks: Array<Record<string, unknown>>
+    }>("/api/export")
+    expect(exported.status).toBe(200)
+    const row = exported.body.bookmarks.find((b) => b.id === bookmark.id)
+    expect(row).toBeTruthy()
+    expect(row!.account_username).toBeUndefined()
+    expect(row!.account_registered).toBeUndefined()
+    expect(row!.account_password_encrypted).toBeUndefined()
+    expect(row!.account_password_set).toBeUndefined()
   })
 })

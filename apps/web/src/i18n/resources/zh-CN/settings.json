@@ -74,9 +74,9 @@
   },
   "export": {
     "section": "6. 数据备份与导出",
-    "description": "导出全部收藏、分类与标签数据为 JSON 格式。",
+    "description": "导出全部收藏、分类与标签数据为 JSON 格式。不含站点账号与密码。",
     "title": "导出全库 JSON",
-    "detail": "包含私有笔记、AI 摘要、标签与时间戳",
+    "detail": "包含私有笔记、AI 摘要、标签与时间戳；不含站点账号与密码",
     "button": "导出数据"
   },
   "appearance": {

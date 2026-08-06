@@ -102,6 +102,13 @@ export function BookmarksPage() {
         : sortRaw
   const q = searchParams.get("q") || ""
   const archived = searchParams.get("archived") === "true"
+  const hasAccountParam = searchParams.get("has_account")
+  const hasAccount =
+    hasAccountParam === "true"
+      ? true
+      : hasAccountParam === "false"
+        ? false
+        : undefined
 
   const isGithubSource = sourceType === "github"
   const isUrlSource = sourceType === "url"
@@ -128,6 +135,7 @@ export function BookmarksPage() {
     !(sourceType === "" && owner)
       ? site
       : undefined
+  const effectiveHasAccount = isUrlSource ? hasAccount : undefined
 
   const queryParams = React.useMemo(
     () => ({
@@ -138,6 +146,7 @@ export function BookmarksPage() {
       site: effectiveSite,
       source_type: sourceType || undefined,
       health_status: effectiveHealth,
+      has_account: effectiveHasAccount,
       sort,
       q: q || undefined,
       archived: archived || undefined,
@@ -150,6 +159,7 @@ export function BookmarksPage() {
       effectiveSite,
       sourceType,
       effectiveHealth,
+      effectiveHasAccount,
       sort,
       q,
       archived,

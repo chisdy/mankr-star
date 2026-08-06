@@ -139,6 +139,8 @@ export type SourceCapabilities = {
   sortByPushedAt: boolean
   trackUpdates: boolean
   languages: boolean
+  /** 站点账号/密码备忘（仅通用网页） */
+  accountCredentials: boolean
 }
 
 export const SOURCE_CAPABILITIES: Record<SourceType, SourceCapabilities> = {
@@ -147,18 +149,21 @@ export const SOURCE_CAPABILITIES: Record<SourceType, SourceCapabilities> = {
     sortByPushedAt: true,
     trackUpdates: true,
     languages: true,
+    accountCredentials: false,
   },
   twitter: {
     healthStatus: false,
     sortByPushedAt: false,
     trackUpdates: false,
     languages: false,
+    accountCredentials: false,
   },
   url: {
     healthStatus: false,
     sortByPushedAt: false,
     trackUpdates: false,
     languages: false,
+    accountCredentials: true,
   },
 }
 

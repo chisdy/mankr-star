@@ -36,9 +36,15 @@ const PANEL_FILTER_KEYS = [
   "owner",
   "site",
   "health_status",
+  "has_account",
   "sort",
   "archived",
 ] as const
+
+/** Non-default filter control: primary border + tinted background.
+ *  `bg-…!` beats SelectTrigger's built-in `dark:bg-input/30` without adding dark: variants. */
+const ACTIVE_FILTER_CLASS =
+  "border-primary/65 bg-primary/5! hover:bg-primary/10! text-foreground!"
 
 type SourceFilter = "" | "github" | "twitter" | "url"
 
@@ -86,6 +92,13 @@ export function FilterPanelBody({
   const owner = searchParams.get("owner") || ""
   const site = searchParams.get("site") || ""
   const healthStatus = searchParams.get("health_status") || ""
+  const hasAccountParam = searchParams.get("has_account")
+  const hasAccount =
+    hasAccountParam === "true"
+      ? "true"
+      : hasAccountParam === "false"
+        ? "false"
+        : ""
   const sortParam = searchParams.get("sort")
   const sort: "recent" | "updated" | "stars" | "name" =
     sortParam === "stars" || sortParam === "name" || sortParam === "updated"
@@ -95,6 +108,8 @@ export function FilterPanelBody({
 
   const showGithubFilters = sourceType === "github"
   const showWebFilters = sourceType === "url" || sourceType === ""
+  /** 是否有账号：严格仅网页模式 */
+  const showAccountFilter = sourceType === "url"
   const showOwner =
     sourceType === "" || sourceType === "github" || sourceType === "twitter"
   const showStarsSort = sourceType === "github" || sourceType === "twitter"
@@ -125,7 +140,7 @@ export function FilterPanelBody({
         name: tagItem.name,
         usage_count: tagItem.count,
       })),
-    [tags],
+    [tags]
   )
 
   const popularLanguages = [
@@ -142,7 +157,7 @@ export function FilterPanelBody({
       { value: null, label: t("list.languageAll") },
       ...popularLanguages.map((lang) => ({ value: lang, label: lang })),
     ],
-    [t],
+    [t]
   )
 
   const healthItems = React.useMemo(
@@ -154,6 +169,15 @@ export function FilterPanelBody({
       { value: "archived", label: t("health.archived") },
       { value: "empty", label: t("health.empty") },
       { value: "unavailable", label: t("health.unavailable") },
+    ],
+    [t]
+  )
+
+  const hasAccountItems = React.useMemo(
+    () => [
+      { value: null, label: t("list.hasAccountAll") },
+      { value: "true", label: t("list.hasAccountYes") },
+      { value: "false", label: t("list.hasAccountNo") },
     ],
     [t]
   )
@@ -174,11 +198,7 @@ export function FilterPanelBody({
         base[1]!,
       ]
     }
-    return [
-      base[0]!,
-      { value: "stars", label: starsLabel },
-      base[1]!,
-    ]
+    return [base[0]!, { value: "stars", label: starsLabel }, base[1]!]
   }, [showStarsSort, showUpdatedSort, sourceType, t])
 
   const sourceOptions: { value: SourceFilter; label: string }[] = [
@@ -194,7 +214,7 @@ export function FilterPanelBody({
       mutate(next)
       setSearchParams(next)
     },
-    [searchParams, setSearchParams],
+    [searchParams, setSearchParams]
   )
 
   const updateParam = (key: string, value: string | null | undefined) => {
@@ -217,15 +237,18 @@ export function FilterPanelBody({
         if (sortVal === "stars" || sortVal === "updated") next.delete("sort")
       } else if (nextSource === "github") {
         next.delete("site")
+        next.delete("has_account")
       } else if (nextSource === "twitter") {
         next.delete("language")
         next.delete("health_status")
         next.delete("site")
+        next.delete("has_account")
         const sortVal = next.get("sort")
         if (sortVal === "updated") next.delete("sort")
       } else {
         next.delete("language")
         next.delete("health_status")
+        next.delete("has_account")
         const sortVal = next.get("sort")
         if (sortVal === "stars" || sortVal === "updated") next.delete("sort")
       }
@@ -244,7 +267,7 @@ export function FilterPanelBody({
     <div
       className={cn(
         "flex h-full min-h-0 min-w-0 flex-col overflow-hidden",
-        className,
+        className
       )}
     >
       <div className="flex h-12 shrink-0 items-center justify-between gap-2 pr-2 pl-4">
@@ -290,7 +313,13 @@ export function FilterPanelBody({
                 setSourceType((val || "") as SourceFilter)
               }
             >
-              <SelectTrigger size="sm" className="h-8 w-full text-xs">
+              <SelectTrigger
+                size="sm"
+                className={cn(
+                  "h-8 w-full text-xs",
+                  sourceType && ACTIVE_FILTER_CLASS
+                )}
+              >
                 <SelectValue placeholder={t("list.sourceAll")} />
               </SelectTrigger>
               <SelectContent>
@@ -376,6 +405,35 @@ export function FilterPanelBody({
             </Field>
           ) : null}
 
+          {showAccountFilter ? (
+            <Field label={t("list.hasAccountLabel")}>
+              <Select
+                items={hasAccountItems}
+                value={hasAccount || null}
+                onValueChange={(val) =>
+                  updateParam("has_account", val || null)
+                }
+              >
+                <SelectTrigger
+                  size="sm"
+                  className={cn(
+                    "h-8 w-full text-xs",
+                    hasAccount && ACTIVE_FILTER_CLASS
+                  )}
+                >
+                  <SelectValue placeholder={t("list.hasAccountAll")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {hasAccountItems.map((item) => (
+                    <SelectItem key={String(item.value)} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : null}
+
           {showGithubFilters ? (
             <>
               <Field label={t("list.languageLabel")}>
@@ -384,7 +442,13 @@ export function FilterPanelBody({
                   value={language || null}
                   onValueChange={(val) => updateParam("language", val || null)}
                 >
-                  <SelectTrigger size="sm" className="h-8 w-full text-xs">
+                  <SelectTrigger
+                    size="sm"
+                    className={cn(
+                      "h-8 w-full text-xs",
+                      language && ACTIVE_FILTER_CLASS
+                    )}
+                  >
                     <SelectValue placeholder={t("list.languageAll")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -405,7 +469,13 @@ export function FilterPanelBody({
                     updateParam("health_status", val || null)
                   }
                 >
-                  <SelectTrigger size="sm" className="h-8 w-full text-xs">
+                  <SelectTrigger
+                    size="sm"
+                    className={cn(
+                      "h-8 w-full text-xs",
+                      healthStatus && ACTIVE_FILTER_CLASS
+                    )}
+                  >
                     <SelectValue placeholder={t("list.healthPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -432,7 +502,13 @@ export function FilterPanelBody({
                 updateParam("sort", !val || val === "recent" ? null : val)
               }
             >
-              <SelectTrigger size="sm" className="h-8 w-full text-xs">
+              <SelectTrigger
+                size="sm"
+                className={cn(
+                  "h-8 w-full text-xs",
+                  sort !== "recent" && ACTIVE_FILTER_CLASS
+                )}
+              >
                 <SelectValue placeholder={t("list.sortRecent")} />
               </SelectTrigger>
               <SelectContent>
@@ -446,7 +522,12 @@ export function FilterPanelBody({
           </Field>
 
           <Field label={t("list.archivedLabel")}>
-            <div className="flex h-8 w-full min-w-0 items-center gap-2 rounded-md border border-input bg-transparent px-2.5 text-xs shadow-xs transition-[color,box-shadow] dark:bg-input/30 dark:hover:bg-input/50">
+            <div
+              className={cn(
+                "flex h-8 w-full min-w-0 items-center gap-2 rounded-md border border-input bg-transparent px-2.5 text-xs shadow-xs transition-[color,box-shadow]",
+                archived && ACTIVE_FILTER_CLASS
+              )}
+            >
               <Label
                 id="filter-archived-label"
                 htmlFor="filter-archived"

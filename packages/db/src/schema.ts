@@ -115,6 +115,13 @@ export const bookmarks = sqliteTable(
       onDelete: "set null",
     }),
     notes: text("notes"),
+    /** 是否已在该站点注册账号（仅 url 来源有意义；筛选用，默认 false） */
+    accountRegistered: integer("account_registered", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    accountUsername: text("account_username"),
+    accountPasswordEncrypted: text("account_password_encrypted"),
+    accountPasswordUpdatedAt: text("account_password_updated_at"),
     siteName: text("site_name"),
     imageUrl: text("image_url"),
     faviconUrl: text("favicon_url"),

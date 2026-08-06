@@ -5,6 +5,7 @@ import { Badge } from "@workspace/ui/components/badge"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import type { Bookmark } from "@/lib/types"
 import { HealthStatusBadge } from "./health-status-badge"
+import { BookmarkAccountCopyButton } from "./bookmark-account-copy-button"
 import { BookmarkOpenButton } from "./bookmark-open-button"
 
 interface BookmarkRowProps {
@@ -175,13 +176,14 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-0.5 shrink-0">
             {formattedDate && (
               <span className="inline-flex items-center gap-1 text-[10px] font-mono text-muted-foreground/80">
                 <ClockIcon className="size-3" />
                 {formattedDate}
               </span>
             )}
+            <BookmarkAccountCopyButton bookmark={bookmark} />
             <BookmarkOpenButton bookmark={bookmark} className="-mr-1" />
           </div>
         </div>
