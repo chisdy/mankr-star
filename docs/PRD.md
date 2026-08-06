@@ -268,7 +268,7 @@ GitHub 原生 Star 能力难以支撑长期知识管理：
 |---------|------|--------|
 | X-01 | `bookmarks.source_type`: `github` \| `twitter` \| `url` … | P0（模型）/ P3（实现） |
 | X-02 | 解析器接口：`parse(url) -> NormalizedBookmark` | 架构 P0 |
-| X-03 | Twitter：保存推文 URL、作者、文本摘要、媒体占位；分类/标签同样走 AI | P3 |
+| X-03 | X：保存帖子 URL、作者、文本摘要、媒体占位；分类/标签同样走 AI（已落地一期：status 链接 + 公开元数据） | P3（已实现） |
 | X-04 | 通用 URL：Open Graph 元数据（注意 Workers 抓取限制与版权） | P3 |
 
 ---

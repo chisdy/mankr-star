@@ -131,7 +131,7 @@ export const SOURCE_TYPES = ["github", "twitter", "url"] as const
 export type SourceType = (typeof SOURCE_TYPES)[number]
 
 /** 本期已实现写库/同步的适配器 */
-export const IMPLEMENTED_SOURCE_TYPES = ["github", "url"] as const
+export const IMPLEMENTED_SOURCE_TYPES = ["github", "twitter", "url"] as const
 export type ImplementedSourceType = (typeof IMPLEMENTED_SOURCE_TYPES)[number]
 
 export type SourceCapabilities = {
@@ -151,7 +151,7 @@ export const SOURCE_CAPABILITIES: Record<SourceType, SourceCapabilities> = {
   twitter: {
     healthStatus: false,
     sortByPushedAt: false,
-    trackUpdates: true,
+    trackUpdates: false,
     languages: false,
   },
   url: {
@@ -172,7 +172,7 @@ export const SOURCE_DETECT_RULES: Array<{
   {
     type: "twitter",
     match: /(?:^|\.)(?:x|twitter)\.com$/i,
-    label: "X / Twitter",
+    label: "X",
   },
   { type: "url", match: /^https?:\/\//i, label: "通用网页" },
 ]

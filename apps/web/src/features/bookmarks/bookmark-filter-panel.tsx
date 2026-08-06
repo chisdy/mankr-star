@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next"
 
 import { cn } from "@workspace/ui/lib/utils"
+import { useFilterPanelOpen } from "@/hooks/use-filter-panel-open"
 import { useResizablePanel } from "@/hooks/use-resizable-panel"
 import { FilterPanelBody } from "./filter-panel-body"
 
@@ -17,6 +18,7 @@ export function BookmarkFilterPanel({
   resizable?: boolean
 }) {
   const { t } = useTranslation("bookmarks")
+  const { open, setOpen } = useFilterPanelOpen()
   const {
     panelRef,
     panelWidth,
@@ -31,8 +33,10 @@ export function BookmarkFilterPanel({
     minWidth: FILTER_PANEL_MIN_WIDTH,
     maxWidth: FILTER_PANEL_MAX_WIDTH,
     defaultWidth: FILTER_PANEL_DEFAULT_WIDTH,
-    enabled: resizable,
+    enabled: resizable && open,
   })
+
+  if (!open) return null
 
   return (
     <aside
@@ -52,7 +56,7 @@ export function BookmarkFilterPanel({
           isResizing && "pointer-events-none",
         )}
       >
-        <FilterPanelBody />
+        <FilterPanelBody onCollapse={() => setOpen(false)} />
       </div>
 
       {resizable ? (

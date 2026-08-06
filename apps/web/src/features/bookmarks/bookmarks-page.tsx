@@ -26,6 +26,7 @@ import {
 import { api } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useFilterPanelOpen } from "@/hooks/use-filter-panel-open"
 import {
   useRedirectGuestOnUnauthorized,
   useRequireAuthAction,
@@ -38,6 +39,14 @@ import {
   FilterPanelBody,
   countPanelFilters,
 } from "./filter-panel-body"
+import Masonry from "react-masonry-css"
+import "./bookmark-masonry.css"
+
+const BOOKMARK_MASONRY_BREAKPOINTS = {
+  default: 3,
+  1023: 2,
+  767: 1,
+}
 
 export function BookmarksPage() {
   const { t } = useTranslation(["bookmarks", "common"])
@@ -45,6 +54,8 @@ export function BookmarksPage() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const requireAuth = useRequireAuthAction()
+  const { open: filterPanelOpen, setOpen: setFilterPanelOpen } =
+    useFilterPanelOpen()
 
   const [selectedBookmarkId, setSelectedBookmarkId] = React.useState<
     string | null
@@ -82,17 +93,19 @@ export function BookmarksPage() {
     sortParam === "updated"
       ? sortParam
       : "recent"
-  // 非 GitHub 来源时忽略 stars / updated（近况推送语义）
+  // updated 仅 github；stars 允许 github / twitter / 全部
   const sort: "recent" | "updated" | "stars" | "name" =
-    sourceType !== "github" &&
-    (sortRaw === "stars" || sortRaw === "updated")
+    sortRaw === "updated" && sourceType !== "github"
       ? "recent"
-      : sortRaw
+      : sortRaw === "stars" && sourceType === "url"
+        ? "recent"
+        : sortRaw
   const q = searchParams.get("q") || ""
   const archived = searchParams.get("archived") === "true"
 
   const isGithubSource = sourceType === "github"
   const isUrlSource = sourceType === "url"
+  const isTwitterSource = sourceType === "twitter"
   // 隐藏控件对应的 URL 残留参数不参与查询；全部来源下 owner/site 互斥（并存时保留 owner）
   const effectiveLanguage = isGithubSource ? language || undefined : undefined
   const effectiveHealth = isGithubSource
@@ -106,9 +119,13 @@ export function BookmarksPage() {
         | "unknown"
         | undefined)
     : undefined
-  const effectiveOwner = !isUrlSource && owner ? owner : undefined
+  const effectiveOwner =
+    !isUrlSource && owner ? owner : undefined
   const effectiveSite =
-    !isGithubSource && site && !(sourceType === "" && owner)
+    !isGithubSource &&
+    !isTwitterSource &&
+    site &&
+    !(sourceType === "" && owner)
       ? site
       : undefined
 
@@ -152,6 +169,7 @@ export function BookmarksPage() {
   useRedirectGuestOnUnauthorized(isError ? (error as Error) : null)
 
   const panelFilterCount = countPanelFilters(searchParams)
+  const filterUiOpen = isMobile ? filterSheetOpen : filterPanelOpen
   const hasActiveFilters = !!(
     folderId ||
     q ||
@@ -172,7 +190,7 @@ export function BookmarksPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 pb-12">
+    <div className="mx-auto min-w-0 w-full max-w-6xl space-y-4 pb-12">
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
           {data ? <span>{t("list.total", { total: data.total })}</span> : null}
@@ -184,21 +202,51 @@ export function BookmarksPage() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="relative h-8 gap-1.5 px-2.5 text-xs md:hidden"
-            onClick={() => setFilterSheetOpen(true)}
-            aria-label={t("list.filterOpenAria")}
-          >
-            <FunnelIcon className="size-4" />
-            {panelFilterCount > 0 ? (
-              <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-                {panelFilterCount}
-              </span>
-            ) : null}
-          </Button>
+          <TooltipProvider delay={200}>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant={
+                      panelFilterCount > 0
+                        ? "default"
+                        : filterUiOpen
+                          ? "secondary"
+                          : "outline"
+                    }
+                    size="sm"
+                    className="relative h-8 gap-1.5 px-2.5 text-xs"
+                    aria-pressed={filterUiOpen}
+                    aria-label={
+                      filterUiOpen
+                        ? t("list.filterCollapseAria")
+                        : t("list.filterOpenAria")
+                    }
+                    onClick={() => {
+                      if (isMobile) setFilterSheetOpen((open) => !open)
+                      else setFilterPanelOpen(!filterPanelOpen)
+                    }}
+                  >
+                    <FunnelIcon
+                      className="size-4"
+                      weight={panelFilterCount > 0 ? "fill" : "regular"}
+                    />
+                    {panelFilterCount > 0 ? (
+                      <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-background text-[10px] text-foreground shadow-xs">
+                        {panelFilterCount}
+                      </span>
+                    ) : null}
+                  </Button>
+                }
+              />
+              <TooltipContent side="top">
+                {filterUiOpen
+                  ? t("list.filterCollapseAria")
+                  : t("list.filterOpenAria")}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           <TooltipProvider delay={200}>
             <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-card p-0.5 shadow-2xs">
@@ -240,14 +288,18 @@ export function BookmarksPage() {
 
       {isLoading ? (
         viewMode === "grid" ? (
-          <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-3">
+          <Masonry
+            breakpointCols={BOOKMARK_MASONRY_BREAKPOINTS}
+            className="bookmark-masonry"
+            columnClassName="bookmark-masonry_column"
+          >
             <BookmarkCardSkeleton />
             <BookmarkCardSkeleton />
             <BookmarkCardSkeleton />
             <BookmarkCardSkeleton />
             <BookmarkCardSkeleton />
             <BookmarkCardSkeleton />
-          </div>
+          </Masonry>
         ) : (
           <div className="space-y-3">
             <BookmarkRowSkeleton />
@@ -295,7 +347,11 @@ export function BookmarksPage() {
           )}
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-3">
+        <Masonry
+          breakpointCols={BOOKMARK_MASONRY_BREAKPOINTS}
+          className="bookmark-masonry"
+          columnClassName="bookmark-masonry_column"
+        >
           {data.items.map((bookmark) => (
             <BookmarkCard
               key={bookmark.id}
@@ -303,9 +359,9 @@ export function BookmarksPage() {
               onClick={() => handleRowClick(bookmark.id)}
             />
           ))}
-        </div>
+        </Masonry>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid min-w-0 w-full gap-3">
           {data.items.map((bookmark) => (
             <BookmarkRow
               key={bookmark.id}

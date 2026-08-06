@@ -1003,9 +1003,17 @@ export const api = {
     }
   },
 
-  async getOwners(q?: string): Promise<BookmarkOwner[]> {
+  async getOwners(opts?: {
+    q?: string
+    sourceType?: "github" | "twitter" | "url"
+  }): Promise<BookmarkOwner[]> {
+    const q = opts?.q
+    const sourceType = opts?.sourceType
     try {
-      const search = q?.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""
+      const params = new URLSearchParams()
+      if (q?.trim()) params.set("q", q.trim())
+      if (sourceType) params.set("sourceType", sourceType)
+      const search = params.toString() ? `?${params.toString()}` : ""
       const res = await request<{
         items: Array<{ name: string; usage_count?: number }>
       }>(`/api/bookmarks/owners${search}`)
@@ -1015,9 +1023,10 @@ export const api = {
       }))
     } catch (err) {
       if (shouldFallbackToMock(err)) {
+        const filterType = sourceType ?? "github"
         const counts = new Map<string, number>()
         for (const b of mockStore().bookmarks) {
-          if (b.deleted_at || !b.owner || b.source_type !== "github") continue
+          if (b.deleted_at || !b.owner || b.source_type !== filterType) continue
           if (q?.trim() && !b.owner.toLowerCase().includes(q.trim().toLowerCase())) {
             continue
           }

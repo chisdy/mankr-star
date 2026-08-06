@@ -78,6 +78,7 @@ export interface Bookmark {
   image_url?: string | null
   favicon_url?: string | null
   content_excerpt?: string | null
+  platform_meta?: Record<string, unknown> | null
   folder_id?: string | null
   folder_name?: string | null
   folder?: Folder | null

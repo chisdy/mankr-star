@@ -53,6 +53,7 @@ export const BookmarkSchema = z.object({
   image_url: z.string().nullable().optional(),
   favicon_url: z.string().nullable().optional(),
   content_excerpt: z.string().nullable().optional(),
+  platform_meta: z.record(z.string(), z.unknown()).optional(),
   folder_id: z.string().nullable().optional(),
   folder_name: z.string().nullable().optional(),
   folder: FolderSchema.nullable().optional(),
@@ -108,7 +109,7 @@ export const LoginFormSchema = z.object({
 })
 
 export const AddBookmarkSchema = z.object({
-  url: z.string().min(1, "请输入 GitHub 链接或 owner/repo"),
+  url: z.string().min(1, "请输入 GitHub、X 帖子或网页链接"),
   folder_id: z.string().optional(),
   notes: z.string().optional(),
 })

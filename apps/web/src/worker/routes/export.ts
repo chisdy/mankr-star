@@ -72,6 +72,16 @@ exportRoutes.get("/export", async (c) => {
       image_url: b.imageUrl,
       favicon_url: b.faviconUrl,
       content_excerpt: b.contentExcerpt,
+      platform_meta: (() => {
+        try {
+          return JSON.parse(b.platformMetaJson || "{}") as Record<
+            string,
+            unknown
+          >
+        } catch {
+          return {}
+        }
+      })(),
       folder_id: b.folderId,
       notes: b.notes,
       ai_status: b.aiStatus,

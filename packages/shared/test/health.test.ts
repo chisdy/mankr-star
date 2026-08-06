@@ -23,12 +23,13 @@ describe("detectSourceType", () => {
     if (res.ok) expect(res.sourceType).toBe("github")
   })
 
-  it("twitter 返回 UNSUPPORTED_SOURCE", () => {
+  it("twitter 识别为已实现的 X 来源", () => {
     const res = detectSourceType("https://x.com/someone/status/1")
-    expect(res.ok).toBe(false)
-    if (!res.ok) {
-      expect(res.code).toBe("UNSUPPORTED_SOURCE")
-      expect(res.detectedType).toBe("twitter")
+    expect(res.ok).toBe(true)
+    if (res.ok) {
+      expect(res.sourceType).toBe("twitter")
+      expect(res.implemented).toBe(true)
+      expect(res.label).toBe("X")
     }
   })
 

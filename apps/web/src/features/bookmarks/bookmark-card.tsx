@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { StarIcon, GitForkIcon, ClockIcon } from "@phosphor-icons/react"
+import { StarIcon, GitForkIcon, ClockIcon, HeartIcon } from "@phosphor-icons/react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import type { Bookmark } from "@/lib/types"
@@ -14,6 +14,7 @@ interface BookmarkCardProps {
 export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
   const { t, i18n } = useTranslation("bookmarks")
   const isGithub = bookmark.source_type === "github"
+  const isTwitter = bookmark.source_type === "twitter"
   const isPending = bookmark.ai_status === "pending"
   const maxTagsShow = 3
   const tags = bookmark.tags || []
@@ -23,11 +24,12 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
     ? bookmark.external_id || bookmark.title
     : bookmark.title
 
-  const formattedStars =
-    isGithub && bookmark.stars !== undefined
-      ? bookmark.stars >= 1000
-        ? `${(bookmark.stars / 1000).toFixed(1)}k`
-        : bookmark.stars
+  const formatCount = (n: number) =>
+    n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
+
+  const popularity =
+    (isGithub || isTwitter) && bookmark.stars !== undefined
+      ? formatCount(bookmark.stars)
       : null
 
   const formattedDate = bookmark.pushed_at
@@ -44,11 +46,22 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
       onClick={onClick}
       className={
         isGithub && bookmark.health_status === "unavailable"
-          ? "group relative flex flex-col justify-between h-full rounded-xl border border-border/60 bg-card p-4 text-card-foreground shadow-2xs transition-all hover:border-border hover:bg-accent/30 hover:shadow-xs cursor-pointer opacity-75"
-          : "group relative flex flex-col justify-between h-full rounded-xl border border-border/60 bg-card p-4 text-card-foreground shadow-2xs transition-all hover:border-border hover:bg-accent/30 hover:shadow-xs cursor-pointer"
+          ? "group relative flex flex-col justify-between rounded-xl border border-border/60 bg-card p-4 text-card-foreground shadow-2xs transition-all hover:border-border hover:bg-accent/30 hover:shadow-xs cursor-pointer opacity-75"
+          : "group relative flex flex-col justify-between rounded-xl border border-border/60 bg-card p-4 text-card-foreground shadow-2xs transition-all hover:border-border hover:bg-accent/30 hover:shadow-xs cursor-pointer"
       }
     >
-      <div className="space-y-2.5 min-w-0">
+      <div className="space-y-3 min-w-0">
+        {isTwitter && bookmark.image_url ? (
+          <div className="-mx-4 -mt-4 overflow-hidden rounded-t-xl">
+            <img
+              src={bookmark.image_url}
+              alt=""
+              className="aspect-[16/9] w-full object-cover"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        ) : null}
         <div className="space-y-1.5 min-w-0">
           <div className="flex items-start justify-between gap-2 min-w-0">
             <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -86,7 +99,9 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
             )}
             {!isGithub && siteLabel ? (
               <span className="text-[10px] text-muted-foreground truncate">
-                {siteLabel}
+                {isTwitter && bookmark.owner
+                  ? `@${bookmark.owner}`
+                  : siteLabel}
               </span>
             ) : null}
             {bookmark.language && (
@@ -138,10 +153,14 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
 
         <div className="flex items-center justify-between text-[11px] text-muted-foreground">
           <div className="flex items-center gap-2.5">
-            {formattedStars !== null && (
+            {popularity !== null && (
               <span className="inline-flex items-center gap-1 font-mono text-[11px]">
-                <StarIcon className="size-3.5 text-amber-500" />
-                {formattedStars}
+                {isTwitter ? (
+                  <HeartIcon className="size-3.5 text-rose-500" weight="fill" />
+                ) : (
+                  <StarIcon className="size-3.5 text-amber-500" />
+                )}
+                {popularity}
               </span>
             )}
 

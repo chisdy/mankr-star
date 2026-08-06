@@ -2,7 +2,11 @@ import * as React from "react"
 import { useSearchParams } from "react-router"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
-import { ArrowCounterClockwiseIcon, FunnelIcon } from "@phosphor-icons/react"
+import {
+  ArrowCounterClockwiseIcon,
+  CaretRightIcon,
+  FunnelIcon,
+} from "@phosphor-icons/react"
 
 import { Button } from "@workspace/ui/components/button"
 import { Label } from "@workspace/ui/components/label"
@@ -36,7 +40,7 @@ const PANEL_FILTER_KEYS = [
   "archived",
 ] as const
 
-type SourceFilter = "" | "github" | "url"
+type SourceFilter = "" | "github" | "twitter" | "url"
 
 function Field({
   label,
@@ -68,8 +72,10 @@ export function countPanelFilters(searchParams: URLSearchParams): number {
 
 export function FilterPanelBody({
   className,
+  onCollapse,
 }: {
   className?: string
+  onCollapse?: () => void
 }) {
   const { t } = useTranslation("bookmarks")
   const [searchParams, setSearchParams] = useSearchParams()
@@ -89,8 +95,12 @@ export function FilterPanelBody({
 
   const showGithubFilters = sourceType === "github"
   const showWebFilters = sourceType === "url" || sourceType === ""
-  const showOwner = sourceType === "" || sourceType === "github"
-  const showGithubSort = sourceType === "github"
+  const showOwner =
+    sourceType === "" || sourceType === "github" || sourceType === "twitter"
+  const showStarsSort = sourceType === "github" || sourceType === "twitter"
+  const showUpdatedSort = sourceType === "github"
+  const ownersSourceType: "github" | "twitter" =
+    sourceType === "twitter" ? "twitter" : "github"
 
   const { data: tags = [], isLoading: tagsLoading } = useQuery({
     queryKey: queryKeys.tags.all,
@@ -98,8 +108,8 @@ export function FilterPanelBody({
   })
 
   const { data: owners = [], isLoading: ownersLoading } = useQuery({
-    queryKey: queryKeys.bookmarks.owners,
-    queryFn: () => api.getOwners(),
+    queryKey: queryKeys.bookmarks.owners(ownersSourceType),
+    queryFn: () => api.getOwners({ sourceType: ownersSourceType }),
     enabled: showOwner,
   })
 
@@ -153,18 +163,28 @@ export function FilterPanelBody({
       { value: "recent", label: t("list.sortRecent") },
       { value: "name", label: t("list.sortName") },
     ]
-    if (!showGithubSort) return base
+    if (!showStarsSort) return base
+    const starsLabel =
+      sourceType === "twitter" ? t("list.sortLikes") : t("list.sortStars")
+    if (showUpdatedSort) {
+      return [
+        base[0]!,
+        { value: "updated", label: t("list.sortUpdated") },
+        { value: "stars", label: starsLabel },
+        base[1]!,
+      ]
+    }
     return [
       base[0]!,
-      { value: "updated", label: t("list.sortUpdated") },
-      { value: "stars", label: t("list.sortStars") },
+      { value: "stars", label: starsLabel },
       base[1]!,
     ]
-  }, [showGithubSort, t])
+  }, [showStarsSort, showUpdatedSort, sourceType, t])
 
   const sourceOptions: { value: SourceFilter; label: string }[] = [
     { value: "", label: t("list.sourceAll") },
     { value: "github", label: t("list.sourceGithub") },
+    { value: "twitter", label: t("list.sourceX") },
     { value: "url", label: t("list.sourceWeb") },
   ]
 
@@ -197,6 +217,12 @@ export function FilterPanelBody({
         if (sortVal === "stars" || sortVal === "updated") next.delete("sort")
       } else if (nextSource === "github") {
         next.delete("site")
+      } else if (nextSource === "twitter") {
+        next.delete("language")
+        next.delete("health_status")
+        next.delete("site")
+        const sortVal = next.get("sort")
+        if (sortVal === "updated") next.delete("sort")
       } else {
         next.delete("language")
         next.delete("health_status")
@@ -226,7 +252,7 @@ export function FilterPanelBody({
           <FunnelIcon className="size-4 shrink-0" weight="duotone" />
           {t("list.filterTitle")}
         </span>
-        {hasPanelFilters ? (
+        {onCollapse ? (
           <TooltipProvider delay={200}>
             <Tooltip>
               <TooltipTrigger
@@ -236,44 +262,48 @@ export function FilterPanelBody({
                     variant="ghost"
                     size="icon-xs"
                     className="size-7 shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    onClick={clearPanelFilters}
-                    aria-label={t("list.filterClear")}
+                    onClick={onCollapse}
+                    aria-label={t("list.filterCollapseAria")}
                   >
-                    <ArrowCounterClockwiseIcon
-                      className="size-4"
-                      weight="bold"
-                    />
+                    <CaretRightIcon className="size-4" weight="bold" />
                   </Button>
                 }
               />
               <TooltipContent side="bottom">
-                {t("list.filterClear")}
+                {t("list.filterCollapseAria")}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         ) : null}
       </div>
 
-      <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3 pb-3">
-        <div className="w-full min-w-0 space-y-4 pt-1">
+      <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3">
+        <div className="w-full min-w-0 space-y-4 pt-1 pb-3">
           <Field label={t("list.sourceLabel")}>
-            <div className="grid min-w-0 grid-cols-3 gap-1 rounded-md bg-muted/50 p-0.5">
-              {sourceOptions.map((opt) => (
-                <button
-                  key={opt.value || "all"}
-                  type="button"
-                  className={cn(
-                    "min-w-0 truncate rounded-sm px-1 py-1.5 text-center text-[11px] transition-colors",
-                    sourceType === opt.value
-                      ? "bg-background font-medium text-foreground shadow-2xs"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                  onClick={() => setSourceType(opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <Select
+              items={sourceOptions.map((opt) => ({
+                value: opt.value || null,
+                label: opt.label,
+              }))}
+              value={sourceType || null}
+              onValueChange={(val) =>
+                setSourceType((val || "") as SourceFilter)
+              }
+            >
+              <SelectTrigger size="sm" className="h-8 w-full text-xs">
+                <SelectValue placeholder={t("list.sourceAll")} />
+              </SelectTrigger>
+              <SelectContent>
+                {sourceOptions.map((opt) => (
+                  <SelectItem
+                    key={opt.value || "all"}
+                    value={opt.value || null}
+                  >
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
 
           <Field label={t("list.tagLabel")}>
@@ -394,7 +424,7 @@ export function FilterPanelBody({
             <Select
               items={sortItems}
               value={
-                showGithubSort || sort === "recent" || sort === "name"
+                showStarsSort || sort === "recent" || sort === "name"
                   ? sort
                   : "recent"
               }
@@ -438,6 +468,21 @@ export function FilterPanelBody({
           </Field>
         </div>
       </div>
+
+      {hasPanelFilters ? (
+        <div className="shrink-0 border-t border-border/50 p-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-full gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            onClick={clearPanelFilters}
+          >
+            <ArrowCounterClockwiseIcon className="size-3.5" weight="bold" />
+            {t("list.filterClear")}
+          </Button>
+        </div>
+      ) : null}
     </div>
   )
 }

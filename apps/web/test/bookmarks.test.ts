@@ -26,6 +26,7 @@ interface BookmarkPayload {
   image_url?: string | null
   favicon_url?: string | null
   content_excerpt?: string | null
+  platform_meta?: Record<string, unknown> | null
   folder_id: string | null
   folder: {
     id: string
@@ -182,10 +183,70 @@ describe("POST /api/bookmarks", () => {
     expect(list.body.items.some((i) => i.source_type === "url")).toBe(true)
   })
 
-  it("twitter 链接仍返回 UNSUPPORTED_SOURCE", async () => {
-    const { status, body } = await createBookmark("https://x.com/someone/status/1")
-    expect(status).toBe(400)
-    expect(body.code).toBe("UNSUPPORTED_SOURCE")
+  it("收藏 X status 链接并写入元数据", async () => {
+    outbound.json("https://api.fxtwitter.com/someone/status/1", {
+      code: 200,
+      tweet: {
+        id: "1",
+        text: "Hello from X",
+        lang: "en",
+        likes: 42,
+        retweets: 3,
+        created_at: "2026-01-01T00:00:00Z",
+        author: {
+          name: "Someone",
+          screen_name: "someone",
+          avatar_url: "https://pbs.twimg.com/profile.jpg",
+        },
+        media: {
+          photos: [{ url: "https://pbs.twimg.com/media/abc.jpg", type: "photo" }],
+        },
+      },
+    })
+
+    const { status, body } = await createBookmark(
+      "https://x.com/someone/status/1",
+    )
+    expect(status).toBe(201)
+    expect(body.source_type).toBe("twitter")
+    expect(body.external_id).toBe("1")
+    expect(body.owner).toBe("someone")
+    expect(body.site_name).toBe("X")
+    expect(body.stars).toBe(42)
+    expect(body.track_updates).toBe(false)
+    expect(body.canonical_url).toBe("https://x.com/someone/status/1")
+    expect(body.image_url).toBe("https://pbs.twimg.com/media/abc.jpg")
+    expect(body.platform_meta).toMatchObject({ kind: "tweet" })
+  })
+
+  it("拒绝纯 article URL 与个人主页", async () => {
+    const article = await createBookmark("https://x.com/i/article/123")
+    expect(article.status).toBe(400)
+    expect(article.body.code).toBe("INVALID_URL")
+    expect(String(article.body.error)).toContain("X")
+    expect(String(article.body.error)).not.toMatch(/twitter/i)
+
+    const profile = await createBookmark("https://x.com/someone")
+    expect(profile.status).toBe(400)
+    expect(profile.body.code).toBe("INVALID_URL")
+  })
+
+  it("X 帖子去重", async () => {
+    outbound.json("https://api.fxtwitter.com/someone/status/99", {
+      code: 200,
+      tweet: {
+        id: "99",
+        text: "dup",
+        author: { screen_name: "someone", name: "Someone" },
+      },
+    })
+    const first = await createBookmark("https://x.com/someone/status/99")
+    expect(first.status).toBe(201)
+    const second = await createBookmark(
+      "https://twitter.com/someone/status/99",
+    )
+    expect(second.status).toBe(409)
+    expect(second.body.code).toBe("DUPLICATE")
   })
 
   it("SSRF 内网地址拒绝", async () => {

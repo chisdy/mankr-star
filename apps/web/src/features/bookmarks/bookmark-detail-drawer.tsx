@@ -8,6 +8,7 @@ import {
   StarIcon,
   GitForkIcon,
   ClockIcon,
+  HeartIcon,
 } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
@@ -238,10 +239,15 @@ export function BookmarkDetailDrawer({
                     {bookmark.language}
                   </span>
                 )}
-                {bookmark.source_type === "github" &&
+                {(bookmark.source_type === "github" ||
+                  bookmark.source_type === "twitter") &&
                   bookmark.stars !== undefined && (
                   <span className="flex items-center gap-1 font-mono text-[11px]">
-                    <StarIcon className="size-3.5 text-amber-500" />
+                    {bookmark.source_type === "twitter" ? (
+                      <HeartIcon className="size-3.5 text-rose-500" weight="fill" />
+                    ) : (
+                      <StarIcon className="size-3.5 text-amber-500" />
+                    )}
                     {bookmark.stars}
                   </span>
                 )}
@@ -262,6 +268,16 @@ export function BookmarkDetailDrawer({
                   </span>
                 )}
               </div>
+
+              {bookmark.source_type === "twitter" && bookmark.image_url ? (
+                <img
+                  src={bookmark.image_url}
+                  alt=""
+                  className="max-h-48 w-full rounded-lg border border-border/40 object-cover"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+              ) : null}
 
               {(bookmark.sync_status || bookmark.last_synced_at) && (
                 <p className="text-[11px] text-muted-foreground">

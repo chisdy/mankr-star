@@ -1,4 +1,4 @@
-import { CONTENT_EXCERPT_MAX_CHARS } from "@mankr/shared"
+import { CONTENT_EXCERPT_MAX_CHARS, isLikelySiteIconUrl } from "@mankr/shared"
 import { assertPublicHttpUrl, UrlFetchError } from "./url-ssrf"
 
 export type UrlPageMetadata = {
@@ -327,14 +327,21 @@ export async function fetchUrlPageMetadata(
     const siteName =
       pickMeta(parsed.meta, "og:site_name") || new URL(finalUrl).hostname
 
-    const imageUrl = absolutize(
-      finalUrl,
-      pickMeta(parsed.meta, "og:image", "twitter:image", "twitter:image:src"),
-    )
-
     const faviconUrl =
       absolutize(finalUrl, parsed.faviconHref) ||
       absolutize(finalUrl, "/favicon.ico")
+
+    const rawImageUrl = absolutize(
+      finalUrl,
+      pickMeta(parsed.meta, "og:image", "twitter:image", "twitter:image:src"),
+    )
+    // 站点常把 logo/favicon 写进 og:image，不当作封面入库
+    const imageUrl =
+      rawImageUrl &&
+      rawImageUrl !== faviconUrl &&
+      !isLikelySiteIconUrl(rawImageUrl)
+        ? rawImageUrl
+        : null
 
     const contentExcerpt = parsed.excerpt
       ? truncate(parsed.excerpt, CONTENT_EXCERPT_MAX_CHARS)

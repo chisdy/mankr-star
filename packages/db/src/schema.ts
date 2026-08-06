@@ -119,6 +119,7 @@ export const bookmarks = sqliteTable(
     imageUrl: text("image_url"),
     faviconUrl: text("favicon_url"),
     contentExcerpt: text("content_excerpt"),
+    platformMetaJson: text("platform_meta_json").notNull().default("{}"),
     aiStatus: text("ai_status").notNull().default("pending"),
     trackUpdates: integer("track_updates", { mode: "boolean" })
       .notNull()

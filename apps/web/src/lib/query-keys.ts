@@ -10,7 +10,8 @@ export const queryKeys = {
     list: (params?: BookmarksQueryParams) => ["bookmarks", "list", params] as const,
     detail: (id: string) => ["bookmarks", "detail", id] as const,
     /** 挂在 bookmarks 前缀下，invalidate bookmarks.all 时一并刷新 */
-    owners: ["bookmarks", "owners"] as const,
+    owners: (sourceType?: string) =>
+      ["bookmarks", "owners", sourceType ?? "github"] as const,
     sites: ["bookmarks", "sites"] as const,
   },
   folders: {

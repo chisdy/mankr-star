@@ -3,11 +3,13 @@ import {
   DEFAULT_HOT_WITHIN_DAYS,
   DEFAULT_STALE_AFTER_DAYS,
   SOURCE_CAPABILITIES,
+  SOURCE_TYPES,
   canonicalizeUrl,
   computeHealthStatus,
   createBookmarkSchema,
   detectSourceType,
   listBookmarksQuerySchema,
+  parseTwitterStatusInput,
   updateBookmarkSchema,
   urlExternalId,
   type SourceType,
@@ -37,6 +39,7 @@ import { buildPathLabel, collectSubtreeIds } from "../lib/folder-utils"
 import { GithubApiError } from "../lib/github"
 import { parseGithubRepoInput } from "../lib/github-url"
 import { fetchUrlPageMetadata } from "../lib/url-metadata"
+import { fetchTwitterMetadata } from "../lib/twitter"
 import { UrlFetchError } from "../lib/url-ssrf"
 import { nowIso } from "../lib/utils"
 import { authByMethod } from "../middleware/auth"
@@ -84,6 +87,7 @@ function serializeBookmark(
 ) {
   let topics: string[] = []
   let useCases: string[] = []
+  let platformMeta: Record<string, unknown> = {}
   try {
     topics = JSON.parse(b.topicsJson || "[]") as string[]
   } catch {
@@ -91,6 +95,14 @@ function serializeBookmark(
   }
   try {
     useCases = JSON.parse(b.useCasesJson || "[]") as string[]
+  } catch {
+    /* ignore */
+  }
+  try {
+    platformMeta = JSON.parse(b.platformMetaJson || "{}") as Record<
+      string,
+      unknown
+    >
   } catch {
     /* ignore */
   }
@@ -134,6 +146,7 @@ function serializeBookmark(
     image_url: b.imageUrl,
     favicon_url: b.faviconUrl,
     content_excerpt: b.contentExcerpt,
+    platform_meta: platformMeta,
     ai_status: b.aiStatus,
     track_updates: b.trackUpdates,
     last_synced_at: b.lastSyncedAt,
@@ -324,11 +337,17 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
 bookmarkRoutes.get("/bookmarks/owners", async (c) => {
   const db = c.get("db")
   const q = c.req.query("q")?.trim()
+  const sourceTypeRaw = c.req.query("sourceType")?.trim()
+  const sourceType =
+    sourceTypeRaw &&
+    (SOURCE_TYPES as readonly string[]).includes(sourceTypeRaw)
+      ? (sourceTypeRaw as SourceType)
+      : "github"
 
   const conditions = [
     isNull(bookmarks.deletedAt),
     isNotNull(bookmarks.owner),
-    eq(bookmarks.sourceType, "github"),
+    eq(bookmarks.sourceType, sourceType),
   ]
   if (q) {
     conditions.push(like(bookmarks.owner, `%${q}%`))
@@ -566,6 +585,127 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
     }
 
     if (existing) {
+      await db
+        .update(bookmarks)
+        .set({
+          ...values,
+          summaryAi: null,
+          useCasesJson: null,
+          aiConfidence: null,
+          latestReleaseTag: null,
+          archivedAt: null,
+          deletedAt: null,
+          createdAt: now,
+        })
+        .where(eq(bookmarks.id, id))
+      await db.delete(bookmarkTags).where(eq(bookmarkTags.bookmarkId, id))
+    } else {
+      await db.insert(bookmarks).values({ ...values, id, createdAt: now })
+    }
+
+    c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
+    const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
+    return c.json(serializeBookmark(row!, [], null), 201)
+  }
+
+  if (detected.sourceType === "twitter") {
+    const parsedTw = parseTwitterStatusInput(parsed.data.url)
+    if (!parsedTw.ok) {
+      return c.json(
+        { error: parsedTw.error, code: parsedTw.code },
+        400,
+      )
+    }
+
+    const { tweetId, handle } = parsedTw.data
+
+    const existingById = await db
+      .select({ id: bookmarks.id, deletedAt: bookmarks.deletedAt })
+      .from(bookmarks)
+      .where(
+        and(
+          eq(bookmarks.sourceType, "twitter"),
+          eq(bookmarks.externalId, tweetId),
+        ),
+      )
+      .get()
+
+    if (existingById && !existingById.deletedAt) {
+      return c.json(
+        {
+          error: "该帖子已收藏",
+          code: "DUPLICATE",
+          details: { id: existingById.id },
+        },
+        409,
+      )
+    }
+
+    const meta = await fetchTwitterMetadata(tweetId, handle)
+
+    const existingByUrl = await db
+      .select({ id: bookmarks.id, deletedAt: bookmarks.deletedAt })
+      .from(bookmarks)
+      .where(
+        and(
+          eq(bookmarks.sourceType, "twitter"),
+          eq(bookmarks.canonicalUrl, meta.canonicalUrl),
+        ),
+      )
+      .get()
+
+    if (
+      existingByUrl &&
+      !existingByUrl.deletedAt &&
+      existingByUrl.id !== existingById?.id
+    ) {
+      return c.json(
+        {
+          error: "该帖子已收藏",
+          code: "DUPLICATE",
+          details: { id: existingByUrl.id },
+        },
+        409,
+      )
+    }
+
+    const id = existingById?.id ?? existingByUrl?.id ?? crypto.randomUUID()
+    const now = nowIso()
+    const values = {
+      sourceType: "twitter" as const,
+      canonicalUrl: meta.canonicalUrl,
+      externalId: meta.tweetId,
+      owner: meta.owner,
+      title: meta.title,
+      description: meta.description,
+      language: meta.language,
+      stars: meta.stars,
+      forks: 0,
+      license: null as string | null,
+      homepage: meta.homepage,
+      defaultBranch: null as string | null,
+      topicsJson: JSON.stringify(meta.topics),
+      folderId: parsed.data.folderId ?? null,
+      notes: parsed.data.notes ?? null,
+      siteName: meta.siteName,
+      imageUrl: meta.imageUrl,
+      faviconUrl: meta.faviconUrl,
+      contentExcerpt: meta.contentExcerpt,
+      platformMetaJson: JSON.stringify(meta.platformMeta),
+      aiStatus: "pending" as const,
+      trackUpdates: false,
+      lastSyncedAt: now,
+      pushedAt: meta.pushedAt,
+      githubUpdatedAt: null as string | null,
+      syncStatus: meta.syncOk ? ("ok" as const) : ("error" as const),
+      lastSyncError: meta.syncError,
+      healthStatus: "unknown" as const,
+      githubArchived: false,
+      repoSize: null as number | null,
+      updatedAt: now,
+    }
+
+    if (existingById || existingByUrl) {
       await db
         .update(bookmarks)
         .set({
