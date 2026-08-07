@@ -1,0 +1,20 @@
+{
+  "title": "Tags",
+  "description": "Browse all tags. Click one to filter bookmarks.",
+  "searchPlaceholder": "Search tags…",
+  "sortLabel": "Sort",
+  "sortCount": "By count",
+  "sortName": "By name",
+  "empty": "No tags yet. Tags appear here after bookmarks are tagged.",
+  "emptySearch": "No matching tags",
+  "count": "{{count}} bookmarks",
+  "error": "Could not load tags. Please try again.",
+  "pagination": {
+    "navAria": "Tag pagination",
+    "prev": "Previous",
+    "next": "Next",
+    "pageAria": "Page {{page}}",
+    "currentPageAria": "Page {{page}} (current)",
+    "pageStatus": "Page {{page}} / {{pageCount}}"
+  }
+}

@@ -29,7 +29,12 @@ import { useRequireAuthAction } from "@/hooks/use-auth"
 import { BOOKMARK_PAGE_PARAM } from "@/features/bookmarks/bookmark-pagination"
 import { APP_SCROLL_ROOT_ID } from "@/lib/scroll-root"
 
-const FOLDER_TREE_HIDDEN_PATHS = new Set(["/feed", "/insights", "/settings"])
+const FOLDER_TREE_HIDDEN_PATHS = new Set([
+  "/tags",
+  "/feed",
+  "/insights",
+  "/settings",
+])
 
 export function AppShell() {
   return (

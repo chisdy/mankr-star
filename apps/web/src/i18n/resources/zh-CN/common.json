@@ -26,5 +26,11 @@
   "language": {
     "label": "语言",
     "description": "选择界面显示语言"
+  },
+  "theme": {
+    "label": "主题",
+    "system": "跟随系统",
+    "light": "浅色",
+    "dark": "深色"
   }
 }

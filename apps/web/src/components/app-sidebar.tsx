@@ -3,12 +3,15 @@ import { Link, NavLink, useNavigate } from "react-router"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import {
-  StarIcon,
+  BookmarksIcon,
+  HashIcon,
   RssIcon,
   GearIcon,
   SunIcon,
   MoonIcon,
+  DesktopIcon,
   SignOutIcon,
+  TranslateIcon,
   UserIcon,
   ChartBarIcon,
   type Icon,
@@ -21,6 +24,8 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu"
@@ -43,17 +48,20 @@ import { useTheme } from "@/components/theme-provider"
 import { FolderTreePanel } from "@/features/folders/folder-tree-panel"
 import { useAuth } from "@/hooks/use-auth"
 import { useLoginDialog } from "@/hooks/login-dialog-context"
+import { getLocale, setLocale } from "@/i18n"
+import { LOCALES, LOCALE_LABELS, type Locale } from "@/i18n/locales"
 
 type NavItem = {
   to: string
-  labelKey: "bookmarks" | "feed" | "insights" | "settings"
+  labelKey: "bookmarks" | "tags" | "feed" | "insights" | "settings"
   icon: Icon
   /** 未登录时是否可见；默认 true */
   guestVisible?: boolean
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { to: "/", labelKey: "bookmarks", icon: StarIcon },
+  { to: "/", labelKey: "bookmarks", icon: BookmarksIcon },
+  { to: "/tags", labelKey: "tags", icon: HashIcon },
   { to: "/feed", labelKey: "feed", icon: RssIcon },
   {
     to: "/insights",
@@ -114,11 +122,16 @@ function RailTooltip({
 }
 
 function UserMenu() {
-  const { t } = useTranslation("nav")
+  const { t, i18n } = useTranslation("nav")
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { user, isAuthenticated, publicBrowsingEnabled } = useAuth()
   const { openLogin } = useLoginDialog()
+  const { theme, setTheme } = useTheme()
+
+  const currentLocale = (LOCALES as readonly string[]).includes(i18n.language)
+    ? (i18n.language as Locale)
+    : getLocale()
 
   const logoutMutation = useMutation({
     mutationFn: () => api.logout(),
@@ -128,68 +141,132 @@ function UserMenu() {
     },
   })
 
-  if (!isAuthenticated) {
-    return (
-      <RailTooltip label={t("loginTooltip")}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full text-muted-foreground hover:text-foreground"
-          aria-label={t("loginTooltip")}
-          onClick={() => {
-            if (publicBrowsingEnabled) {
-              openLogin()
-            } else {
-              navigate("/login")
-            }
-          }}
-        >
-          <UserIcon className="size-5" />
-        </Button>
-      </RailTooltip>
-    )
+  const handleLogin = () => {
+    if (publicBrowsingEnabled) {
+      openLogin()
+    } else {
+      navigate("/login")
+    }
   }
+
+  const tooltipLabel = isAuthenticated ? t("userMenuAria") : t("loginTooltip")
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full text-muted-foreground hover:text-foreground"
-            aria-label={t("userMenuAria")}
-          />
-        }
-      >
-        <UserIcon className="size-5" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent side="right" align="end" className="w-48">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>
-            <div className="font-medium text-foreground">
-              {user?.username || t("fallbackName")}
-            </div>
-            {user?.email && (
-              <div className="truncate text-xs text-muted-foreground">
-                {user.email}
-              </div>
-            )}
-          </DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => navigate("/settings")}>
-          <GearIcon className="mr-2 size-4" />
-          <span>{t("settings")}</span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          onClick={() => logoutMutation.mutate()}
+      <RailTooltip label={tooltipLabel}>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full text-muted-foreground hover:text-foreground"
+              aria-label={tooltipLabel}
+            />
+          }
         >
-          <SignOutIcon className="mr-2 size-4" />
-          <span>{t("common:actions.logout")}</span>
-        </DropdownMenuItem>
+          <UserIcon className="size-5" />
+        </DropdownMenuTrigger>
+      </RailTooltip>
+      <DropdownMenuContent side="right" align="end" className="w-56">
+        {isAuthenticated ? (
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>
+              <div className="font-medium text-foreground">
+                {user?.username || t("fallbackName")}
+              </div>
+              {user?.email ? (
+                <div className="truncate text-xs text-muted-foreground">
+                  {user.email}
+                </div>
+              ) : null}
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
+        ) : (
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="font-normal text-muted-foreground">
+              {t("loginPrompt")}
+            </DropdownMenuLabel>
+            <DropdownMenuItem onClick={handleLogin}>
+              <UserIcon className="size-4" />
+              <span>{t("common:actions.login")}</span>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        )}
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
+            <TranslateIcon className="size-3.5" />
+            {t("common:language.label")}
+          </DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={currentLocale}
+            onValueChange={(value) => {
+              if (value) setLocale(value as Locale)
+            }}
+          >
+            {LOCALES.map((locale) => (
+              <DropdownMenuRadioItem key={locale} value={locale}>
+                {LOCALE_LABELS[locale]}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
+            {theme === "dark" ? (
+              <MoonIcon className="size-3.5" />
+            ) : theme === "light" ? (
+              <SunIcon className="size-3.5" />
+            ) : (
+              <DesktopIcon className="size-3.5" />
+            )}
+            {t("common:theme.label")}
+          </DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={theme}
+            onValueChange={(value) => {
+              if (value === "light" || value === "dark" || value === "system") {
+                setTheme(value)
+              }
+            }}
+          >
+            <DropdownMenuRadioItem value="system">
+              <DesktopIcon className="size-4" />
+              {t("common:theme.system")}
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="light">
+              <SunIcon className="size-4" />
+              {t("common:theme.light")}
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="dark">
+              <MoonIcon className="size-4" />
+              {t("common:theme.dark")}
+            </DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuGroup>
+
+        {isAuthenticated ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate("/settings")}>
+              <GearIcon className="size-4" />
+              <span>{t("settings")}</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => logoutMutation.mutate()}
+            >
+              <SignOutIcon className="size-4" />
+              <span>{t("common:actions.logout")}</span>
+            </DropdownMenuItem>
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -197,8 +274,6 @@ function UserMenu() {
 
 function DesktopRail() {
   const { t } = useTranslation("nav")
-  const { theme, setTheme } = useTheme()
-  const { isAuthenticated } = useAuth()
   const navItems = useVisibleNavItems(false)
 
   return (
@@ -235,33 +310,6 @@ function DesktopRail() {
         </div>
 
         <div className="flex flex-col items-center gap-2 px-2">
-          <LocaleSwitcher variant="menu" menuSide="right" />
-
-          <RailTooltip label={t("common:accessibility.toggleTheme")}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              aria-label={t("common:accessibility.toggleTheme")}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              {theme === "dark" ? (
-                <SunIcon className="size-5" />
-              ) : (
-                <MoonIcon className="size-5" />
-              )}
-            </Button>
-          </RailTooltip>
-
-          {isAuthenticated ? (
-            <RailTooltip label={t(SETTINGS_ITEM.labelKey)}>
-              <NavLink to={SETTINGS_ITEM.to} className={railLinkClass}>
-                <GearIcon className="size-5" />
-                <span className="sr-only">{t(SETTINGS_ITEM.labelKey)}</span>
-              </NavLink>
-            </RailTooltip>
-          ) : null}
-
           <UserMenu />
         </div>
       </aside>

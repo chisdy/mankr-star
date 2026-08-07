@@ -1,10 +1,12 @@
 {
   "bookmarks": "Bookmarks",
+  "tags": "Tags",
   "feed": "Feed",
   "insights": "Insights",
   "settings": "Settings",
   "brand": "Mankr Star",
   "loginTooltip": "Sign in",
+  "loginPrompt": "Sign in to sync and manage bookmarks",
   "userMenuAria": "User menu",
   "fallbackName": "User",
   "searchPlaceholder": "Search name, summary, tags…",

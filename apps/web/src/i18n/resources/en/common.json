@@ -26,5 +26,11 @@
   "language": {
     "label": "Language",
     "description": "Choose the interface language"
+  },
+  "theme": {
+    "label": "Theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
   }
 }

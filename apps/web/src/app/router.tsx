@@ -8,6 +8,7 @@ import { RegisterPage } from "@/features/auth/register-page"
 import { BookmarksPage } from "@/features/bookmarks/bookmarks-page"
 import { BookmarkDetailPage } from "@/features/bookmarks/bookmark-detail-page"
 import { FeedPage } from "@/features/feed/feed-page"
+import { TagsPage } from "@/features/tags/tags-page"
 import { InsightsPage } from "@/features/insights/insights-page"
 import { SettingsPage } from "@/features/settings/settings-page"
 import { Skeleton } from "@workspace/ui/components/skeleton"
@@ -106,6 +107,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "/", element: <BookmarksPage /> },
           { path: "/folders", element: <Navigate to="/" replace /> },
+          { path: "/tags", element: <TagsPage /> },
           { path: "/feed", element: <FeedPage /> },
           { path: "/bookmarks/:id", element: <BookmarkDetailPage /> },
           {

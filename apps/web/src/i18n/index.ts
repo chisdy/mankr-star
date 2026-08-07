@@ -17,6 +17,7 @@ import enSettings from "./resources/en/settings.json"
 import enBookmarks from "./resources/en/bookmarks.json"
 import enFolders from "./resources/en/folders.json"
 import enFeed from "./resources/en/feed.json"
+import enTags from "./resources/en/tags.json"
 import enInsights from "./resources/en/insights.json"
 import enKb from "./resources/en/kb.json"
 import enErrors from "./resources/en/errors.json"
@@ -28,6 +29,7 @@ import zhSettings from "./resources/zh-CN/settings.json"
 import zhBookmarks from "./resources/zh-CN/bookmarks.json"
 import zhFolders from "./resources/zh-CN/folders.json"
 import zhFeed from "./resources/zh-CN/feed.json"
+import zhTags from "./resources/zh-CN/tags.json"
 import zhInsights from "./resources/zh-CN/insights.json"
 import zhKb from "./resources/zh-CN/kb.json"
 import zhErrors from "./resources/zh-CN/errors.json"
@@ -41,6 +43,7 @@ const resources = {
     bookmarks: enBookmarks,
     folders: enFolders,
     feed: enFeed,
+    tags: enTags,
     insights: enInsights,
     kb: enKb,
     errors: enErrors,
@@ -53,6 +56,7 @@ const resources = {
     bookmarks: zhBookmarks,
     folders: zhFolders,
     feed: zhFeed,
+    tags: zhTags,
     insights: zhInsights,
     kb: zhKb,
     errors: zhErrors,
@@ -80,6 +84,7 @@ void i18n.use(initReactI18next).init({
     "bookmarks",
     "folders",
     "feed",
+    "tags",
     "insights",
     "kb",
     "errors",
