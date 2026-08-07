@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm"
 import {
+  check,
   index,
   integer,
   real,
@@ -8,6 +9,22 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core"
 
+/**
+ * 实例级设置：一行一个领域，value 是该领域的 JSON 对象。
+ * 领域内新增字段不需要再改表结构。
+ */
+export const settings = sqliteTable(
+  "settings",
+  {
+    key: text("key").primaryKey(),
+    value: text("value").notNull(),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [check("settings_value_json", sql`json_valid(${t.value})`)],
+)
+
 export const users = sqliteTable(
   "users",
   {
@@ -15,19 +32,6 @@ export const users = sqliteTable(
     username: text("username").notNull(),
     email: text("email"),
     passwordHash: text("password_hash").notNull(),
-    githubPatEncrypted: text("github_pat_encrypted"),
-    deepseekApiKeyEncrypted: text("deepseek_api_key_encrypted"),
-    deepseekKeyLast4: text("deepseek_key_last4"),
-    deepseekModel: text("deepseek_model").default("deepseek-v4-flash"),
-    anysearchApiKeyEncrypted: text("anysearch_api_key_encrypted"),
-    anysearchKeyLast4: text("anysearch_key_last4"),
-    hotWithinDays: integer("hot_within_days").notNull().default(30),
-    staleAfterDays: integer("stale_after_days").notNull().default(180),
-    publicBrowsingEnabled: integer("public_browsing_enabled", {
-      mode: "boolean",
-    })
-      .notNull()
-      .default(false),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -257,6 +261,12 @@ export const aiUsageLogs = sqliteTable(
     promptTokens: integer("prompt_tokens").notNull().default(0),
     completionTokens: integer("completion_tokens").notNull().default(0),
     totalTokens: integer("total_tokens").notNull().default(0),
+    /**
+     * 提供方无关的缓存计量：各厂商的 hit/cached/read 字段统一归一到这两列
+     * （见 llm-provider.ts），换厂商不必再加列。
+     */
+    cacheReadTokens: integer("cache_read_tokens").notNull().default(0),
+    cacheWriteTokens: integer("cache_write_tokens").notNull().default(0),
     bookmarkId: text("bookmark_id").references(() => bookmarks.id, {
       onDelete: "set null",
     }),
@@ -282,6 +292,20 @@ export const kbConversations = sqliteTable(
   {
     id: text("id").primaryKey(),
     title: text("title").notNull(),
+    /**
+     * 滚动摘要：把已经滑出近窗的旧轮次压成一段文本，替代原文进 prompt。
+     * 两次压缩之间保持不变，因此它仍属于可被前缀缓存命中的稳定段。
+     */
+    contextSummary: text("context_summary"),
+    /**
+     * 摘要覆盖到的最后一条消息 id（kb_messages.id），未压缩过则为 null。
+     *
+     * 用消息 id 而不是条数或 seq 下标：客户端会丢掉空内容的回合、也会在
+     * 超过请求上限时截掉最旧的几条，所以「从头数第几条」在两端并不一致，
+     * 差一条就会让后续每轮都重发并重压同一段历史。指针只指向服务端确实
+     * 总结过的那条消息，无论中间少了什么都不会错位。
+     */
+    summaryCoversThroughId: text("summary_covers_through_id"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),

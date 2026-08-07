@@ -30,6 +30,7 @@ import { formatApiError } from "@/lib/api-error"
 import { queryKeys } from "@/lib/query-keys"
 import { useTheme } from "@/components/theme-provider"
 import { LocaleSwitcher } from "@/components/locale-switcher"
+import { BookmarkListSection } from "./bookmark-list-section"
 
 export function SettingsPage() {
   const { t } = useTranslation(["settings", "common", "errors"])
@@ -706,7 +707,10 @@ export function SettingsPage() {
         </form>
       </section>
 
-      {/* Section 6: Visibility */}
+      {/* Section 6: Bookmark list pagination */}
+      <BookmarkListSection user={user} />
+
+      {/* Section 7: Visibility */}
       <section className="space-y-4 border-t border-border pt-6">
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">

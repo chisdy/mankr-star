@@ -5,6 +5,7 @@ import {
   kbConversationUpsertSchema,
   kbStoredMessageSchema,
   type KbConversationDetail,
+  type KbConversationSummary,
   type KbStoredMessage,
 } from "@mankr/shared"
 import { asc, count, desc, eq, sql } from "drizzle-orm"
@@ -30,6 +31,7 @@ kbConversationRoutes.get("/kb/conversations", async (c) => {
       created_at: kbConversations.createdAt,
       updated_at: kbConversations.updatedAt,
       message_count: messageCount,
+      summary_covers_through_id: kbConversations.summaryCoversThroughId,
     })
     .from(kbConversations)
     .leftJoin(kbMessages, eq(kbConversations.id, kbMessages.conversationId))
@@ -67,6 +69,7 @@ kbConversationRoutes.get("/kb/conversations/:id", async (c) => {
     created_at: conversation.createdAt,
     updated_at: conversation.updatedAt,
     messages: rows.map(toStoredMessage).filter((m): m is KbStoredMessage => !!m),
+    summary_covers_through_id: conversation.summaryCoversThroughId,
   }
   return c.json(detail)
 })
@@ -103,12 +106,22 @@ kbConversationRoutes.put("/kb/conversations/:id", async (c) => {
   const title = deriveTitle(messages)
   const now = nowIso()
 
-  await db
+  // set 只写 title / updatedAt：context_summary 与 summary_covers_through_id
+  // 由后台压缩单独维护，存档是每轮收尾的整体回写，把它们一起 set 会把水位清空，
+  // 下一轮就会把已经压缩过的旧消息再压一遍。
+  //
+  // RETURNING 顺路把当前水位带回给客户端，省掉一次单独的请求。它可能比实际
+  // 落库的值旧一轮（压缩是并发的，可能还没写完），这不影响正确性：
+  // 服务端每轮都会按同一个 id 再对齐一次，客户端水位只决定上传多少条。
+  const [row] = await db
     .insert(kbConversations)
     .values({ id, title, createdAt: now, updatedAt: now })
     .onConflictDoUpdate({
       target: kbConversations.id,
       set: { title, updatedAt: now },
+    })
+    .returning({
+      summary_covers_through_id: kbConversations.summaryCoversThroughId,
     })
 
   // 覆盖式写入：先清空再整批插入。D1 单请求内没有事务，
@@ -135,13 +148,15 @@ kbConversationRoutes.put("/kb/conversations/:id", async (c) => {
 
   await pruneConversations(db)
 
-  return c.json({
+  const summary: KbConversationSummary = {
     id,
     title,
     created_at: now,
     updated_at: now,
     message_count: messages.length,
-  })
+    summary_covers_through_id: row?.summary_covers_through_id ?? null,
+  }
+  return c.json(summary)
 })
 
 kbConversationRoutes.delete("/kb/conversations/:id", async (c) => {

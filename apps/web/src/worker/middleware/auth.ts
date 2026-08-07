@@ -1,8 +1,9 @@
-import { createDb, users } from "@mankr/db"
+import { createDb } from "@mankr/db"
 import type { MiddlewareHandler } from "hono"
 import type { AppEnv } from "../env"
 import { pruneRateLimitBuckets, rateLimit } from "../lib/rate-limit"
 import { resolveSessionUser } from "../lib/session"
+import { readSetting } from "../lib/settings-store"
 import { getClientIp } from "../lib/utils"
 
 export const withDb: MiddlewareHandler<AppEnv> = async (c, next) => {
@@ -46,12 +47,9 @@ export const requireAuthOrPublicRead: MiddlewareHandler<AppEnv> = async (
   }
 
   const db = c.get("db")
-  const row = await db
-    .select({ enabled: users.publicBrowsingEnabled })
-    .from(users)
-    .get()
+  const browsing = await readSetting(db, "browsing")
 
-  if (!row?.enabled) {
+  if (!browsing.publicBrowsingEnabled) {
     return c.json({ error: "未登录", code: "UNAUTHORIZED" }, 401)
   }
 

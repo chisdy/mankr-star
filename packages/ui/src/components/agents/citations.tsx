@@ -1,5 +1,6 @@
 import { BookOpenText, ChevronDown, ExternalLink, Globe2 } from "lucide-react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import type { MouseEvent } from "react"
 import { type ReactNode, useCallback, useId, useState } from "react"
 
 import { EASE_OUT, SPRING_LAYOUT, SPRING_SWAP } from "@workspace/ui/lib/ease"
@@ -13,6 +14,15 @@ export interface CitationItem {
   title: ReactNode
   domain?: ReactNode
   url?: string
+  /**
+   * 站内链接。存在时行主体链到站内，原始外链降级为行尾的独立图标按钮。
+   * 仍然是真 href，右键新标签、复制链接照常可用。
+   */
+  internalHref?: string
+  /** 拦截站内链接的左键点击，交给前端路由原地导航 */
+  onInternalClick?: (event: MouseEvent<HTMLAnchorElement>) => void
+  /** 行尾外链图标的无障碍标签 */
+  externalLabel?: string
 }
 
 export interface CitationsProps {
@@ -135,32 +145,71 @@ function CitationRow({
   idPrefix: string
 }) {
   const href = safeHttpHref(citation.url)
-  const content = (
+  const externalLabel = citation.externalLabel ?? "Open original in new tab"
+  // favicon 始终按原始外链的域名取，站内路径算不出图标
+  const label = (
     <>
-      <CitationFavicon url={citation.url} />
-      <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <span className="truncate text-sm font-medium text-foreground/80 transition-colors group-hover/citation:text-foreground">
+      <span className="flex shrink-0 items-start gap-1.5 pt-0.5">
+        <span className="grid size-5 place-items-center rounded-md bg-foreground/[0.05] text-[10px] font-semibold tabular-nums text-muted-foreground">
+          {index}
+        </span>
+        <CitationFavicon url={citation.url} />
+      </span>
+      <span className="min-w-0 flex-1 overflow-hidden">
+        <span className="block truncate text-sm font-medium text-foreground/80 transition-colors group-hover/citation:text-foreground">
           {citation.title}
         </span>
         {citation.domain ? (
-          <span className="min-w-0 truncate text-xs text-muted-foreground/60">
+          <span className="mt-0.5 block truncate text-xs text-muted-foreground/60">
             {citation.domain}
           </span>
         ) : null}
       </span>
-      <span className="flex shrink-0 items-center gap-1.5">
-        <span className="grid size-5 place-items-center rounded-md bg-foreground/[0.05] text-[10px] font-semibold tabular-nums text-muted-foreground">
-          {index}
+    </>
+  )
+  const content = (
+    <>
+      {label}
+      {href ? (
+        <span
+          aria-hidden="true"
+          className="grid size-5 shrink-0 place-items-center pt-0.5 text-muted-foreground/40 transition-colors group-hover/citation:text-muted-foreground"
+        >
+          <ExternalLink className="size-3.5" />
         </span>
-        {href ? (
-          <ExternalLink className="size-3.5 text-muted-foreground/40 transition-colors group-hover/citation:text-muted-foreground" />
-        ) : null}
-      </span>
+      ) : null}
     </>
   )
   const className =
-    "group/citation flex items-center gap-2 rounded-md px-1.5 py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    "group/citation flex min-w-0 items-start gap-2 rounded-md px-1.5 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"
   const id = citationTargetId(idPrefix, citation.id)
+
+  // 站内来源：行主体进站内，原始外链退到行尾。两个 <a> 必须并列，不能嵌套。
+  if (citation.internalHref) {
+    return (
+      <div id={id} className={className}>
+        <a
+          href={citation.internalHref}
+          onClick={citation.onInternalClick}
+          className="flex min-w-0 flex-1 items-start gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {label}
+        </a>
+        {href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer noopener"
+            referrerPolicy="no-referrer"
+            aria-label={externalLabel}
+            className="grid size-5 shrink-0 place-items-center rounded-md pt-0.5 text-muted-foreground/40 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ExternalLink className="size-3.5" />
+          </a>
+        ) : null}
+      </div>
+    )
+  }
 
   return href ? (
     <a
@@ -189,34 +238,44 @@ export function CitationList({
   const baseId = useId()
   const resolvedPrefix = idPrefix ?? `citation-list-${baseId.replace(/:/g, "")}`
 
+  // 不用依赖父级显式高度的 ScrollArea：嵌在 AgentDisclosure / 对话滚动区里时
+  // viewport 的 h-full 算不出上限。max-h + overflow-y-auto 才能又收缩又滚动。
   return (
-    <div className={cn("grid gap-0.5", className)}>
-      <AnimatePresence mode="popLayout">
-        {citations.map((citation, index) => (
-          <motion.div
-            layout="position"
-            key={citation.id}
-            initial={reduce ? { opacity: 1 } : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -3 }}
-            transition={
-              reduce
-                ? { duration: 0 }
-                : {
-                    opacity: { duration: 0.18, ease: EASE_OUT },
-                    y: SPRING_LAYOUT,
-                    layout: SPRING_LAYOUT,
-                  }
-            }
-          >
-            <CitationRow
-              citation={citation}
-              index={index + 1}
-              idPrefix={resolvedPrefix}
-            />
-          </motion.div>
-        ))}
-      </AnimatePresence>
+    <div
+      className={cn(
+        "max-h-60 min-w-0 overflow-y-auto overscroll-contain",
+        className
+      )}
+    >
+      <div className="grid min-w-0 gap-0.5">
+        <AnimatePresence mode="popLayout">
+          {citations.map((citation, index) => (
+            <motion.div
+              layout="position"
+              key={citation.id}
+              className="min-w-0"
+              initial={reduce ? { opacity: 1 } : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, y: -3 }}
+              transition={
+                reduce
+                  ? { duration: 0 }
+                  : {
+                      opacity: { duration: 0.18, ease: EASE_OUT },
+                      y: SPRING_LAYOUT,
+                      layout: SPRING_LAYOUT,
+                    }
+              }
+            >
+              <CitationRow
+                citation={citation}
+                index={index + 1}
+                idPrefix={resolvedPrefix}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </div>
   )
 }

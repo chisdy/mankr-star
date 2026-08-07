@@ -3,12 +3,12 @@ import {
   bookmarks,
   folders,
   tags,
-  users,
   type Db,
 } from "@mankr/db"
 import {
   AI_FOLDER_AUTO_CREATE_MAX_DEPTH,
   CONTENT_EXCERPT_MAX_CHARS,
+  DEFAULT_DEEPSEEK_MODEL,
   GITHUB_README_MAX_CHARS,
   PRESET_FOLDERS,
   type AiOutput,
@@ -28,6 +28,7 @@ import {
   type FolderCatalogEntry,
 } from "./deepseek"
 import { buildPathLabel, folderPathOf } from "./folder-utils"
+import { readSetting } from "./settings-store"
 import {
   fetchGithubRepo,
   fetchReadmeSnippet,
@@ -72,13 +73,10 @@ export async function resolveGithubToken(
   db: Db,
   env: Env,
 ): Promise<string | null> {
-  const user = await db.select().from(users).get()
-  if (user?.githubPatEncrypted) {
+  const github = await readSetting(db, "github")
+  if (github.patEncrypted) {
     try {
-      return await decryptSecret(
-        user.githubPatEncrypted,
-        env.PAT_ENCRYPTION_KEY,
-      )
+      return await decryptSecret(github.patEncrypted, env.PAT_ENCRYPTION_KEY)
     } catch {
       /* fallthrough */
     }
@@ -90,15 +88,12 @@ export async function getDeepSeekKey(
   db: Db,
   env: Env,
 ): Promise<{ key: string; model: string } | null> {
-  const user = await db.select().from(users).get()
-  if (!user?.deepseekApiKeyEncrypted) return null
+  const ai = await readSetting(db, "ai")
+  if (!ai.deepseekApiKeyEncrypted) return null
   const encKey = env.AI_KEY_ENCRYPTION_KEY || env.PAT_ENCRYPTION_KEY
   try {
-    const key = await decryptSecret(user.deepseekApiKeyEncrypted, encKey)
-    return {
-      key,
-      model: user.deepseekModel || "deepseek-v4-flash",
-    }
+    const key = await decryptSecret(ai.deepseekApiKeyEncrypted, encKey)
+    return { key, model: ai.deepseekModel || DEFAULT_DEEPSEEK_MODEL }
   } catch {
     return null
   }

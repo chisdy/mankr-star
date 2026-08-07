@@ -1,9 +1,5 @@
 import { users } from "@mankr/db"
-import {
-  DEFAULT_DEEPSEEK_MODEL,
-  loginSchema,
-  registerSchema,
-} from "@mankr/shared"
+import { loginSchema, registerSchema } from "@mankr/shared"
 import { count, eq, or } from "drizzle-orm"
 import { Hono } from "hono"
 import type { AppEnv } from "../env"
@@ -15,6 +11,8 @@ import {
   resolveSessionUser,
   revokeSession,
 } from "../lib/session"
+import { initializeSettings, readAllSettings } from "../lib/settings-store"
+import { serializeUser } from "../lib/user-response"
 import { getClientIp, nowIso } from "../lib/utils"
 import { requireAuth } from "../middleware/auth"
 
@@ -26,22 +24,18 @@ authRoutes.get("/auth/status", async (c) => {
   const sessionUser = await resolveSessionUser(c)
   const authenticated = Boolean(sessionUser)
 
+  // 一次取全部领域：这个接口每次进页面都会调，别为两个领域走两趟
+  const { bookmarks, browsing } = await readAllSettings(db)
+
   const [{ value: userCount }] = await db.select({ value: count() }).from(users)
-  if (userCount === 0) {
-    return c.json({
-      initialized: false,
-      public_browsing_enabled: false,
-      authenticated: false,
-    })
-  }
-  const row = await db
-    .select({ enabled: users.publicBrowsingEnabled })
-    .from(users)
-    .get()
+  const initialized = userCount > 0
+
   return c.json({
-    initialized: true,
-    public_browsing_enabled: Boolean(row?.enabled),
+    initialized,
+    public_browsing_enabled: initialized && browsing.publicBrowsingEnabled,
     authenticated,
+    bookmark_pagination_mode: bookmarks.paginationMode,
+    bookmark_page_size: bookmarks.pageSize,
   })
 })
 
@@ -99,30 +93,21 @@ authRoutes.post("/auth/register", async (c) => {
     username,
     email,
     passwordHash,
-    deepseekModel: DEFAULT_DEEPSEEK_MODEL,
     createdAt: now,
     updatedAt: now,
     lastLoginAt: now,
   })
 
+  await initializeSettings(db)
   await seedPresetFolders(db)
   await createSession(c, id)
 
   return c.json(
     {
-      user: {
-        id,
-        username,
-        email,
-        deepseek_configured: false,
-        deepseek_last4: null,
-        deepseek_model: DEFAULT_DEEPSEEK_MODEL,
-        anysearch_configured: false,
-        anysearch_last4: null,
-        github_pat_configured: false,
-        public_browsing_enabled: false,
-        created_at: now,
-      },
+      user: serializeUser(
+        { id, username, email, createdAt: now },
+        await readAllSettings(db),
+      ),
     },
     201,
   )
@@ -176,21 +161,7 @@ authRoutes.post("/auth/login", async (c) => {
   await seedPresetFolders(db)
   await createSession(c, user.id)
 
-  return c.json({
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      deepseek_configured: Boolean(user.deepseekApiKeyEncrypted),
-      deepseek_last4: user.deepseekKeyLast4,
-      deepseek_model: user.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
-      anysearch_configured: Boolean(user.anysearchApiKeyEncrypted),
-      anysearch_last4: user.anysearchKeyLast4,
-      github_pat_configured: Boolean(user.githubPatEncrypted),
-      public_browsing_enabled: Boolean(user.publicBrowsingEnabled),
-      created_at: user.createdAt,
-    },
-  })
+  return c.json({ user: serializeUser(user, await readAllSettings(db)) })
 })
 
 authRoutes.post("/auth/logout", requireAuth, async (c) => {

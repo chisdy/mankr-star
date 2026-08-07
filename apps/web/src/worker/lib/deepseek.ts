@@ -14,6 +14,7 @@ import {
   parseDeepSeekUsage,
   type DeepSeekTokenUsage,
 } from "./ai-usage"
+import { emptyLlmUsage } from "./llm-provider"
 import { asciiSlugify, folderSlugBase } from "./utils"
 
 /** 注入 AI prompt 的文件夹目录项 */
@@ -385,11 +386,7 @@ ${catalogJson}
     .filter(Boolean)
     .join("\n")
 
-  let usage: DeepSeekTokenUsage = {
-    prompt_tokens: 0,
-    completion_tokens: 0,
-    total_tokens: 0,
-  }
+  let usage: DeepSeekTokenUsage = emptyLlmUsage()
 
   let res: Response
   try {

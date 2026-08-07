@@ -326,6 +326,53 @@ describe("GET /api/bookmarks", () => {
     expect(page1.body.items[0]!.id).not.toBe(page2.body.items[0]!.id)
   })
 
+  it("同值排序下逐页翻完不重不漏", async () => {
+    // 默认 payload 的 stars 相同，专门制造并列排序
+    outbound.json(`${GITHUB}vercel/next.js`, githubRepoPayload("vercel/next.js"))
+    outbound.json(`${GITHUB}vitejs/vite`, githubRepoPayload("vitejs/vite"))
+    await createBookmark("vercel/next.js")
+    await createBookmark("vitejs/vite")
+
+    const total = (await client.json<BookmarkList>("/api/bookmarks")).body.total
+    expect(total).toBe(4)
+
+    const seen: string[] = []
+    for (let page = 1; page <= total; page += 1) {
+      // title 排序在这里没有并列，用 stars 制造更容易抖动的同值场景
+      const res = await client.json<BookmarkList>(
+        `/api/bookmarks?sort=stars&order=desc&pageSize=1&page=${page}`,
+      )
+      expect(res.body.total).toBe(total)
+      expect(res.body.items).toHaveLength(1)
+      seen.push(res.body.items[0]!.id)
+    }
+
+    expect(new Set(seen).size).toBe(total)
+  })
+
+  it("超出总页数时返回空页但保留 total", async () => {
+    const res = await client.json<BookmarkList>("/api/bookmarks?pageSize=1&page=99")
+    expect(res.status).toBe(200)
+    expect(res.body.items).toHaveLength(0)
+    expect(res.body.total).toBe(2)
+    expect(res.body.page).toBe(99)
+  })
+
+  it("pageSize 边界 1 与 100 可用，越界返回 400", async () => {
+    expect(
+      (await client.json<BookmarkList>("/api/bookmarks?pageSize=1")).status,
+    ).toBe(200)
+    expect(
+      (await client.json<BookmarkList>("/api/bookmarks?pageSize=100")).status,
+    ).toBe(200)
+    expect(
+      (await client.json<BookmarkList>("/api/bookmarks?pageSize=0")).status,
+    ).toBe(400)
+    expect(
+      (await client.json<BookmarkList>("/api/bookmarks?pageSize=101")).status,
+    ).toBe(400)
+  })
+
   it("支持 q / language / tag / folderId / owner 过滤", async () => {
     const byQuery = await client.json<BookmarkList>("/api/bookmarks?q=uv")
     expect(byQuery.body.items).toHaveLength(1)

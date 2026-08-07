@@ -1,16 +1,12 @@
-import { bookmarks, users } from "@mankr/db"
-import {
-  DEFAULT_HOT_WITHIN_DAYS,
-  DEFAULT_STALE_AFTER_DAYS,
-  computeHealthStatus,
-  importGithubSchema,
-} from "@mankr/shared"
+import { bookmarks } from "@mankr/db"
+import { computeHealthStatus, importGithubSchema } from "@mankr/shared"
 import { and, eq, isNull } from "drizzle-orm"
 import { Hono } from "hono"
 import type { AppEnv } from "../env"
 import { resolveGithubToken, runAiForBookmark } from "../lib/ai-service"
 import { GithubApiError, fetchStarredPage } from "../lib/github"
 import { rateLimit } from "../lib/rate-limit"
+import { readSetting } from "../lib/settings-store"
 import { getClientIp, nowIso } from "../lib/utils"
 import { requireAuth } from "../middleware/auth"
 
@@ -59,9 +55,7 @@ importRoutes.post("/bookmarks/import/github", async (c) => {
     )
   }
 
-  const user = await db.select().from(users).get()
-  const hotWithinDays = user?.hotWithinDays ?? DEFAULT_HOT_WITHIN_DAYS
-  const staleAfterDays = user?.staleAfterDays ?? DEFAULT_STALE_AFTER_DAYS
+  const { hotWithinDays, staleAfterDays } = await readSetting(db, "tracking")
 
   const startPage = parsed.data.page ?? 1
   const perPage = parsed.data.perPage ?? 30

@@ -8,6 +8,9 @@ export const queryKeys = {
   bookmarks: {
     all: ["bookmarks"] as const,
     list: (params?: BookmarksQueryParams) => ["bookmarks", "list", params] as const,
+    /** 追加模式的分页缓存与传统列表分开，避免两种形态互相污染 */
+    infinite: (params?: BookmarksQueryParams) =>
+      ["bookmarks", "infinite", params] as const,
     detail: (id: string) => ["bookmarks", "detail", id] as const,
     /** 挂在 bookmarks 前缀下，invalidate bookmarks.all 时一并刷新 */
     owners: (sourceType?: string) =>

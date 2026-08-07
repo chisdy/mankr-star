@@ -16,17 +16,35 @@ import { ApiError } from "./api"
  * 把面板里的会话记录裁成服务端能接受的请求体。
  * 空命中与被中止的回合内容为空、长回答会顶破单条上限，
  * 原样回传会让校验失败，并且失败消息会一直留在历史里卡死后续每一轮。
+ *
+ * coversThroughId 是滚动摘要覆盖到的最后一条消息：它之前的历史已被摘要代表，
+ * 再回传就是白付上传流量。按 id 定位而不是按条数，正是因为上面那个 filter
+ * 会丢掉空内容的回合、末尾还要按上限截断 —— 条数在两端根本对不齐。
+ *
+ * 跳过失败（指针找不到）不会出错：服务端拿同一个 id 再对齐一次，
+ * 这里只是省流量的优化。
  */
 export function buildKbChatPayload(
-  history: readonly { role: "user" | "assistant"; content: string }[],
+  history: readonly { id: string; role: "user" | "assistant"; content: string }[],
+  coversThroughId: string | null = null,
 ): KbChatMessage[] {
-  return history
+  const sendable = history
     .map((m) => ({
+      id: m.id,
       role: m.role,
       content: m.content.trim().slice(0, KB_CHAT_MESSAGE_MAX_CHARS),
     }))
     .filter((m) => m.content.length > 0)
-    .slice(-KB_CHAT_REQUEST_MAX_MESSAGES)
+
+  const at = coversThroughId
+    ? sendable.findIndex((m) => m.id === coversThroughId)
+    : -1
+  const kept = sendable.slice(at + 1)
+
+  // 至少留一条：请求体的 messages 有 min(1) 约束，而重试会截掉尾部消息，
+  // 极端情况下水位可能反超当前历史，全跳过会直接打成 VALIDATION_ERROR。
+  const tail = kept.length > 0 ? kept : sendable.slice(-1)
+  return tail.slice(-KB_CHAT_REQUEST_MAX_MESSAGES)
 }
 
 export type KbChatHandlers = {
@@ -52,6 +70,8 @@ export async function streamKbChat(
     webSearch: boolean
     /** 按轮次生效的模型；缺省时后端回落到用户设置里的模型 */
     model?: KbChatModelId
+    /** 带上才能读写该会话的滚动摘要 */
+    conversationId?: string
   },
   handlers: KbChatHandlers,
   signal?: AbortSignal,

@@ -1,9 +1,7 @@
-import { bookmarks, createDb, updateEvents, users, type Db } from "@mankr/db"
+import { bookmarks, createDb, updateEvents, type Db } from "@mankr/db"
 import {
   CRON_AI_BACKFILL_BATCH_SIZE,
   CRON_SYNC_BATCH_SIZE,
-  DEFAULT_HOT_WITHIN_DAYS,
-  DEFAULT_STALE_AFTER_DAYS,
   STARS_DELTA_ABS_MIN,
   STARS_DELTA_THRESHOLD,
   computeHealthStatus,
@@ -14,6 +12,7 @@ import { and, asc, eq, isNull, sql } from "drizzle-orm"
 import type { Env } from "../env"
 import { resolveGithubToken, runAiForBookmark } from "../lib/ai-service"
 import { GithubApiError, fetchGithubRepo, fetchLatestRelease } from "../lib/github"
+import { readSetting } from "../lib/settings-store"
 import { nowIso } from "../lib/utils"
 
 async function insertEventIdempotent(
@@ -50,11 +49,7 @@ async function loadTrackingThresholds(db: Db): Promise<{
   hotWithinDays: number
   staleAfterDays: number
 }> {
-  const user = await db.select().from(users).get()
-  return {
-    hotWithinDays: user?.hotWithinDays ?? DEFAULT_HOT_WITHIN_DAYS,
-    staleAfterDays: user?.staleAfterDays ?? DEFAULT_STALE_AFTER_DAYS,
-  }
+  return readSetting(db, "tracking")
 }
 
 function healthFromMeta(

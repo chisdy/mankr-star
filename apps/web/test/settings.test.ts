@@ -429,6 +429,144 @@ describe("PUT /api/settings/tracking", () => {
   })
 })
 
+describe("PUT /api/settings/bookmark-pagination", () => {
+  it("默认是 auto / 20，登录用户与公开状态一致", async () => {
+    const me = await client.json<{
+      bookmark_pagination_mode: string
+      bookmark_page_size: number
+    }>("/api/me")
+    expect(me.body.bookmark_pagination_mode).toBe("auto")
+    expect(me.body.bookmark_page_size).toBe(20)
+
+    const status = await new TestClient().json<{
+      bookmark_pagination_mode: string
+      bookmark_page_size: number
+    }>("/api/auth/status")
+    expect(status.body.bookmark_pagination_mode).toBe("auto")
+    expect(status.body.bookmark_page_size).toBe(20)
+  })
+
+  it("保存后在 /me、/auth/status 与重新登录时都回显", async () => {
+    const saved = await client.put<{
+      bookmark_pagination_mode: string
+      bookmark_page_size: number
+    }>("/api/settings/bookmark-pagination", {
+      paginationMode: "pagination",
+      pageSize: 37,
+    })
+    expect(saved.status).toBe(200)
+    expect(saved.body.bookmark_pagination_mode).toBe("pagination")
+    expect(saved.body.bookmark_page_size).toBe(37)
+
+    const me = await client.json<{
+      bookmark_pagination_mode: string
+      bookmark_page_size: number
+    }>("/api/me")
+    expect(me.body.bookmark_pagination_mode).toBe("pagination")
+    expect(me.body.bookmark_page_size).toBe(37)
+
+    // 未登录访客读到同一实例值
+    const guest = await new TestClient().json<{
+      bookmark_pagination_mode: string
+      bookmark_page_size: number
+      authenticated: boolean
+    }>("/api/auth/status")
+    expect(guest.body.authenticated).toBe(false)
+    expect(guest.body.bookmark_pagination_mode).toBe("pagination")
+    expect(guest.body.bookmark_page_size).toBe(37)
+
+    const relogin = new TestClient()
+    const login = await relogin.post<{
+      user: { bookmark_pagination_mode: string; bookmark_page_size: number }
+    }>("/api/auth/login", {
+      username: OWNER.username,
+      password: OWNER.password,
+    })
+    expect(login.body.user.bookmark_pagination_mode).toBe("pagination")
+    expect(login.body.user.bookmark_page_size).toBe(37)
+  })
+
+  it("只改一项时保留另一项", async () => {
+    await client.put("/api/settings/bookmark-pagination", {
+      paginationMode: "manual",
+      pageSize: 50,
+    })
+    const onlyMode = await client.put<{
+      bookmark_pagination_mode: string
+      bookmark_page_size: number
+    }>("/api/settings/bookmark-pagination", { paginationMode: "auto" })
+    expect(onlyMode.body.bookmark_pagination_mode).toBe("auto")
+    expect(onlyMode.body.bookmark_page_size).toBe(50)
+  })
+
+  it("非法模式与越界 pageSize 返回 400", async () => {
+    for (const body of [
+      { paginationMode: "spiral" },
+      { pageSize: 0 },
+      { pageSize: 101 },
+      { pageSize: 12.5 },
+      {},
+    ]) {
+      const res = await client.put<{ code: string }>(
+        "/api/settings/bookmark-pagination",
+        body,
+      )
+      expect(res.status).toBe(400)
+    }
+  })
+
+  it("未登录访客不能修改", async () => {
+    const res = await new TestClient().put<{ code: string }>(
+      "/api/settings/bookmark-pagination",
+      { paginationMode: "manual" },
+    )
+    expect(res.status).toBe(401)
+  })
+
+  it("pageSize 生效于收藏列表切片", async () => {
+    await client.post("/api/bookmarks", { url: "facebook/react" })
+    const list = await client.json<{ page: number; pageSize: number }>(
+      "/api/bookmarks?pageSize=1&page=1",
+    )
+    expect(list.body.pageSize).toBe(1)
+  })
+})
+
+describe("清空数据后保留实例设置", () => {
+  it("密钥配置状态、分页偏好与公开浏览在清空后仍在", async () => {
+    await client.put("/api/settings/deepseek", { apiKey: FAKE_KEY })
+    await client.put("/api/settings/bookmark-pagination", {
+      paginationMode: "pagination",
+      pageSize: 9,
+    })
+    await client.put("/api/settings/public-browsing", { enabled: true })
+
+    const cleared = await client.post<{ ok: boolean }>(
+      "/api/settings/clear-data",
+    )
+    expect(cleared.status).toBe(200)
+
+    const relogin = new TestClient()
+    await relogin.post("/api/auth/login", {
+      username: OWNER.username,
+      password: OWNER.password,
+    })
+    const me = await relogin.json<{
+      deepseek_configured: boolean
+      deepseek_last4: string | null
+      bookmark_pagination_mode: string
+      bookmark_page_size: number
+      public_browsing_enabled: boolean
+    }>("/api/me")
+
+    expect(me.body.deepseek_configured).toBe(true)
+    expect(me.body.deepseek_last4).toBe(FAKE_KEY.slice(-4))
+    expect(me.body.bookmark_pagination_mode).toBe("pagination")
+    expect(me.body.bookmark_page_size).toBe(9)
+    expect(me.body.public_browsing_enabled).toBe(true)
+  })
+})
+
 describe("导出数据不含任何密钥", () => {
   it("export 响应不包含加密后的 Key 字段", async () => {
     await client.put("/api/settings/deepseek", { apiKey: FAKE_KEY })

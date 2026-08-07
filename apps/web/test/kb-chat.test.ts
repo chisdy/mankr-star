@@ -1,4 +1,4 @@
-import type { KbChatStreamEvent } from "@mankr/shared"
+import { DEFAULT_DEEPSEEK_MODEL, type KbChatStreamEvent } from "@mankr/shared"
 import { env } from "cloudflare:test"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import {
@@ -257,6 +257,350 @@ describe("POST /api/kb/chat 模型选择", () => {
     expect(
       outbound.calls.slice(before).some((u) => u.startsWith(DEEPSEEK)),
     ).toBe(false)
+  })
+})
+
+describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
+  beforeEach(async () => {
+    await client.put("/api/settings/deepseek", { apiKey: DEEPSEEK_KEY })
+  })
+
+  /**
+   * 长到必然触发压缩的历史：条数超近窗（6），
+   * 且按 chars/4 估算超过 KB_CONTEXT_COMPRESS_TOKEN_THRESHOLD（6000）。
+   * 单条上限是 KB_CHAT_MESSAGE_MAX_CHARS（4000），所以靠条数堆量。
+   *
+   * 必须带 id：水位是「覆盖到哪条消息」的指针，没有 id 就没有能落库的水位。
+   */
+  function longHistory() {
+    return Array.from({ length: 12 }, (_, i) => ({
+      id: `h${i}`,
+      role: (i % 2 === 0 ? "user" : "assistant") as "user" | "assistant",
+      content:
+        i % 2 === 0
+          ? `第 ${i} 轮我想了解 react ${"補".repeat(3000)}`
+          : `第 ${i} 轮的回答 ${"答".repeat(3000)}`,
+    }))
+  }
+
+  /** 压缩走 JSON 模式，生成走流式，据此分流 */
+  function summarizeAndStream(summary: string) {
+    const models: string[] = []
+    outbound.on(DEEPSEEK, async (req) => {
+      const body = (await req.json()) as {
+        response_format?: unknown
+        model?: string
+      }
+      if (!body.response_format) return deepseekStream("答案")
+      models.push(body.model ?? "")
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { content: JSON.stringify({ summary }) } }],
+          usage: { prompt_tokens: 500, completion_tokens: 30, total_tokens: 530 },
+        }),
+      )
+    })
+    return models
+  }
+
+  it("超长会话触发压缩，摘要与水位落库", async () => {
+    await seedBookmark()
+    const id = crypto.randomUUID()
+    summarizeAndStream("早期在聊 react")
+
+    const history = longHistory()
+    await readEvents(
+      await chat({
+        messages: [
+          ...history,
+          { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
+        ],
+        conversationId: id,
+      }),
+    )
+
+    const row = await env.DB.prepare(
+      "SELECT context_summary, summary_covers_through_id FROM kb_conversations WHERE id = ?",
+    )
+      .bind(id)
+      .first<{ context_summary: string; summary_covers_through_id: string }>()
+    expect(row?.context_summary).toBe("早期在聊 react")
+    // 近窗 6 条留原文，水位落在它之前那条上
+    expect(row?.summary_covers_through_id).toBe("h6")
+  })
+
+  it("压缩不改写本轮 prompt：触发压缩的这一轮仍带完整历史", async () => {
+    // 压缩跑在 waitUntil 里、摘要下一轮才生效，本轮没有理由自我阉割。
+    await seedBookmark()
+    let prompt: Array<{ role: string; content: string }> = []
+    outbound.on(DEEPSEEK, async (req) => {
+      const body = (await req.json()) as {
+        response_format?: unknown
+        messages: Array<{ role: string; content: string }>
+      }
+      if (body.response_format) {
+        return new Response(
+          JSON.stringify({
+            choices: [{ message: { content: JSON.stringify({ summary: "摘要" }) } }],
+            usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+          }),
+        )
+      }
+      prompt = body.messages
+      return deepseekStream("答案")
+    })
+
+    await readEvents(
+      await chat({
+        messages: [
+          ...longHistory(),
+          { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
+        ],
+        conversationId: crypto.randomUUID(),
+      }),
+    )
+
+    const joined = prompt.map((m) => m.content).join("\n")
+    expect(joined).toContain("第 0 轮我想了解 react")
+  })
+
+  it("压缩失败不影响本轮回答，也不推进水位", async () => {
+    await seedBookmark()
+    const id = crypto.randomUUID()
+    outbound.on(DEEPSEEK, async (req) => {
+      const body = (await req.json()) as { response_format?: unknown }
+      return body.response_format
+        ? new Response(JSON.stringify({ error: "boom" }), { status: 500 })
+        : deepseekStream("答案")
+    })
+
+    const events = await readEvents(
+      await chat({
+        messages: [
+          ...longHistory(),
+          { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
+        ],
+        conversationId: id,
+      }),
+    )
+
+    expect(events.some((e) => e.type === "delta")).toBe(true)
+    expect(events.some((e) => e.type === "error")).toBe(false)
+
+    const row = await env.DB.prepare(
+      "SELECT summary_covers_through_id FROM kb_conversations WHERE id = ?",
+    )
+      .bind(id)
+      .first<{ summary_covers_through_id: string | null }>()
+    expect(row?.summary_covers_through_id ?? null).toBeNull()
+  })
+
+  it("摘要进入下一轮 prompt，且排在检索资料之前", async () => {
+    await seedBookmark()
+    const id = crypto.randomUUID()
+    await env.DB.prepare(
+      "INSERT INTO kb_conversations (id, title, context_summary, summary_covers_through_id) VALUES (?, ?, ?, ?)",
+    )
+      .bind(id, "旧会话", "用户此前确认偏好 TypeScript", "h6")
+      .run()
+
+    let prompt: Array<{ role: string; content: string }> = []
+    outbound.on(DEEPSEEK, async (req) => {
+      const body = (await req.json()) as {
+        messages: Array<{ role: string; content: string }>
+      }
+      prompt = body.messages
+      return deepseekStream("答案")
+    })
+
+    await readEvents(
+      await chat({
+        messages: [{ id: "q", role: "user", content: "有哪些和 react 相关的收藏？" }],
+        conversationId: id,
+      }),
+    )
+
+    const at = (needle: string) =>
+      prompt.findIndex((m) => m.content.includes(needle))
+    expect(at("用户此前确认偏好 TypeScript")).toBeGreaterThan(0)
+    expect(at("用户此前确认偏好 TypeScript")).toBeLessThan(at("<资料>"))
+  })
+
+  it("客户端水位过期时服务端按 id 自行对齐，已进摘要的历史不再入 prompt", async () => {
+    // 压缩是并发的，客户端要到下一次存档响应才拿到新指针，
+    // 这期间它会把已被摘要覆盖的消息重新发上来。
+    await seedBookmark()
+    const id = crypto.randomUUID()
+    await env.DB.prepare(
+      "INSERT INTO kb_conversations (id, title, context_summary, summary_covers_through_id) VALUES (?, ?, ?, ?)",
+    )
+      .bind(id, "旧会话", "早期摘要", "h6")
+      .run()
+
+    let prompt: Array<{ role: string; content: string }> = []
+    outbound.on(DEEPSEEK, async (req) => {
+      const body = (await req.json()) as {
+        response_format?: unknown
+        messages: Array<{ role: string; content: string }>
+      }
+      if (body.response_format) {
+        return new Response(
+          JSON.stringify({
+            choices: [{ message: { content: JSON.stringify({ summary: "x" }) } }],
+            usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+          }),
+        )
+      }
+      prompt = body.messages
+      return deepseekStream("答案")
+    })
+
+    await readEvents(
+      await chat({
+        messages: [
+          ...longHistory(),
+          { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
+        ],
+        conversationId: id,
+      }),
+    )
+
+    const joined = prompt.map((m) => m.content).join("\n")
+    expect(joined).not.toContain("第 0 轮我想了解 react")
+    expect(joined).toContain("第 7 轮的回答")
+  })
+
+  it("历史不长时不压缩：只有一次上游调用", async () => {
+    await seedBookmark()
+    const before = outbound.calls.filter((u) => u.startsWith(DEEPSEEK)).length
+    outbound.on(DEEPSEEK, () => deepseekStream("答案"))
+
+    await readEvents(
+      await chat({
+        messages: [{ id: "q", role: "user", content: "有哪些和 react 相关的收藏？" }],
+        conversationId: crypto.randomUUID(),
+      }),
+    )
+
+    const calls = outbound.calls.filter((u) => u.startsWith(DEEPSEEK)).length
+    expect(calls - before).toBe(1)
+  })
+
+  it("消息不带 id 时不压缩：没有能落库的水位", async () => {
+    await seedBookmark()
+    const id = crypto.randomUUID()
+    const models = summarizeAndStream("不该产生")
+
+    await readEvents(
+      await chat({
+        messages: [
+          ...longHistory().map(({ role, content }) => ({ role, content })),
+          { role: "user", content: "有哪些和 react 相关的收藏？" },
+        ],
+        conversationId: id,
+      }),
+    )
+
+    expect(models).toEqual([])
+  })
+
+  it("不带 conversationId 也能正常对话，只是不读写摘要", async () => {
+    await seedBookmark()
+    const models = summarizeAndStream("不该产生")
+
+    const events = await readEvents(
+      await chat({
+        messages: [
+          ...longHistory(),
+          { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
+        ],
+      }),
+    )
+    expect(events.some((e) => e.type === "delta")).toBe(true)
+    expect(models).toEqual([])
+  })
+
+  it("上游报告的缓存命中落进 ai_usage_logs 的通用列", async () => {
+    await seedBookmark()
+    outbound.on(DEEPSEEK, () => {
+      const payload =
+        `data: ${JSON.stringify({ choices: [{ delta: { content: "答案" } }] })}\n\n` +
+        `data: ${JSON.stringify({
+          choices: [{ delta: {} }],
+          usage: {
+            prompt_tokens: 1000,
+            completion_tokens: 20,
+            total_tokens: 1020,
+            prompt_cache_hit_tokens: 896,
+            prompt_cache_miss_tokens: 104,
+          },
+        })}\n\n` +
+        "data: [DONE]\n\n"
+      return new Response(payload, {
+        headers: { "content-type": "text/event-stream" },
+      })
+    })
+
+    await readEvents(
+      await chat({ messages: [{ role: "user", content: "react" }] }),
+    )
+
+    const row = await env.DB.prepare(
+      "SELECT cache_read_tokens, cache_write_tokens, prompt_tokens FROM ai_usage_logs WHERE kind = 'kb_chat'",
+    ).first<{
+      cache_read_tokens: number
+      cache_write_tokens: number
+      prompt_tokens: number
+    }>()
+    expect(row?.cache_read_tokens).toBe(896)
+    // DeepSeek 是隐式缓存，没有写入费用
+    expect(row?.cache_write_tokens).toBe(0)
+    expect(row?.prompt_tokens).toBe(1000)
+  })
+
+  it("压缩单独记一条 kb_compress，不混进 kb_chat", async () => {
+    await seedBookmark()
+    summarizeAndStream("摘要")
+
+    await readEvents(
+      await chat({
+        messages: [
+          ...longHistory(),
+          { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
+        ],
+        conversationId: crypto.randomUUID(),
+      }),
+    )
+
+    const chatRow = await env.DB.prepare(
+      "SELECT total_tokens FROM ai_usage_logs WHERE kind = 'kb_chat'",
+    ).first<{ total_tokens: number }>()
+    const compressRow = await env.DB.prepare(
+      "SELECT total_tokens, status, model FROM ai_usage_logs WHERE kind = 'kb_compress'",
+    ).first<{ total_tokens: number; status: string; model: string }>()
+
+    expect(chatRow?.total_tokens).toBe(120)
+    expect(compressRow?.total_tokens).toBe(530)
+    expect(compressRow?.status).toBe("ok")
+  })
+
+  it("压缩固定用最便宜的模型，不跟随本轮选的对话模型", async () => {
+    // 归纳是简单任务，而 pro 的输入价是 flash 的 8 倍、输出价 16 倍
+    await seedBookmark()
+    const models = summarizeAndStream("摘要")
+
+    await readEvents(
+      await chat({
+        messages: [
+          ...longHistory(),
+          { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
+        ],
+        model: "deepseek-v4-pro",
+        conversationId: crypto.randomUUID(),
+      }),
+    )
+
+    expect(models).toEqual([DEFAULT_DEEPSEEK_MODEL])
   })
 })
 

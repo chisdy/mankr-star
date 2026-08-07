@@ -3,6 +3,10 @@
  * Aligned with TECHNICAL_DESIGN §7 and PRD.md
  */
 
+import type { BookmarkPaginationMode } from "@mankr/shared"
+
+export type { BookmarkPaginationMode }
+
 export interface User {
   id: string
   username: string
@@ -17,6 +21,8 @@ export interface User {
   hot_within_days?: number
   stale_after_days?: number
   public_browsing_enabled?: boolean
+  bookmark_pagination_mode?: BookmarkPaginationMode
+  bookmark_page_size?: number
   created_at?: string
   last_login_at?: string | null
 }
@@ -26,6 +32,15 @@ export interface InstanceStatus {
   public_browsing_enabled: boolean
   /** 当前请求是否带有有效 Session（软探测，不 401） */
   authenticated: boolean
+  /** 实例级收藏分页偏好；公开访客与登录用户读取同一值 */
+  bookmark_pagination_mode: BookmarkPaginationMode
+  bookmark_page_size: number
+}
+
+/** 收藏分页设置；写入时用 Partial 允许只改其中一项，读到的总是完整值 */
+export interface BookmarkPaginationSettings {
+  bookmark_pagination_mode: BookmarkPaginationMode
+  bookmark_page_size: number
 }
 
 export interface Folder {

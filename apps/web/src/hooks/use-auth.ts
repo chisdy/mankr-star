@@ -1,6 +1,10 @@
 import * as React from "react"
 import { useQuery, type QueryClient } from "@tanstack/react-query"
 import { useLocation, useNavigate } from "react-router"
+import {
+  DEFAULT_BOOKMARK_PAGE_SIZE,
+  DEFAULT_BOOKMARK_PAGINATION_MODE,
+} from "@mankr/shared"
 
 import { api, ApiError } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
@@ -61,6 +65,20 @@ export function useAuth() {
   }
 }
 
+/**
+ * 实例级收藏分页偏好，来自公开状态接口，登录用户与访客一致。
+ * `isResolved` 为 false 时表示还没拿到实例值，调用方应先别发列表请求，
+ * 否则会先用默认 pageSize 拉一次再用真实值重拉。
+ */
+export function useBookmarkPaginationSettings() {
+  const { status, statusQuery } = useAuth()
+  return {
+    mode: status?.bookmark_pagination_mode ?? DEFAULT_BOOKMARK_PAGINATION_MODE,
+    pageSize: status?.bookmark_page_size ?? DEFAULT_BOOKMARK_PAGE_SIZE,
+    isResolved: Boolean(status) || statusQuery.isError,
+  }
+}
+
 /** 登录成功后同步 status，避免短暂再打 /api/me 前门禁抖动 */
 export function patchAuthStatus(
   queryClient: QueryClient,
@@ -72,6 +90,10 @@ export function patchAuthStatus(
       initialized: prev?.initialized ?? true,
       public_browsing_enabled: prev?.public_browsing_enabled ?? false,
       authenticated: prev?.authenticated ?? false,
+      bookmark_pagination_mode:
+        prev?.bookmark_pagination_mode ?? DEFAULT_BOOKMARK_PAGINATION_MODE,
+      bookmark_page_size:
+        prev?.bookmark_page_size ?? DEFAULT_BOOKMARK_PAGE_SIZE,
       ...patch,
     }),
   )

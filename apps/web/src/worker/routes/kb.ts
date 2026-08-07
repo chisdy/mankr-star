@@ -1,7 +1,9 @@
 import {
+  DEFAULT_DEEPSEEK_MODEL,
   findKbChatModel,
   KB_CHAT_QUERY_MAX_CHARS,
   kbChatRequestSchema,
+  type KbChatMessage,
   type KbChatModelId,
   type KbChatStreamEvent,
 } from "@mankr/shared"
@@ -10,11 +12,19 @@ import type { AppEnv } from "../env"
 import { getAnySearchKey } from "../lib/anysearch"
 import { getDeepSeekKey } from "../lib/ai-service"
 import { recordAiUsage } from "../lib/ai-usage"
+import { callDeepSeekJson } from "../lib/deepseek"
 import {
   createKbAgentContext,
   prefetchKbContext,
   runKbAgent,
 } from "../lib/kb-agent"
+import {
+  compressKbContext,
+  loadKbContext,
+  planKbContext,
+  saveKbContext,
+  type ChatJsonFn,
+} from "../lib/kb-context"
 import { truncate } from "../lib/kb-search"
 import { rateLimit } from "../lib/rate-limit"
 import { getClientIp } from "../lib/utils"
@@ -50,7 +60,12 @@ kbRoutes.post("/kb/chat", async (c) => {
     )
   }
 
-  const { messages, webSearch, model: requestedModel } = parsed.data
+  const {
+    messages,
+    webSearch,
+    model: requestedModel,
+    conversationId,
+  } = parsed.data
   const question = [...messages].reverse().find((m) => m.role === "user")
     ?.content
   if (!question?.trim()) {
@@ -118,6 +133,36 @@ kbRoutes.post("/kb/chat", async (c) => {
     ])
   }
 
+  const contextState = await loadKbContext(db, conversationId)
+  const plan = planKbContext({
+    messages,
+    state: contextState,
+    canPersist: Boolean(conversationId),
+  })
+
+  /**
+   * 压缩与生成并发跑，不进流。
+   *
+   * 摘要服务的是**下一轮**的 prompt，本轮无论如何都用不上它，
+   * 所以没有任何理由让首字节等一次完整的模型往返。
+   * 注意两点：
+   * - waitUntil 必须在 handler 返回前登记，流关闭后再登记会抛；
+   * - 不能传 c.req.raw.signal，否则用户一点「停止」就把已经花了钱的
+   *   压缩掐死在半路，下一轮还得重压一遍。
+   */
+  if (conversationId && plan.toCompress.length > 0 && plan.coversThroughId) {
+    c.executionCtx.waitUntil(
+      compressAndSave({
+        db,
+        conversationId,
+        apiKey: deepseek.key,
+        previousSummary: contextState.summary,
+        dropped: plan.toCompress,
+        coversThroughId: plan.coversThroughId,
+      }),
+    )
+  }
+
   const context = createKbAgentContext(prefetch)
   const encoder = new TextEncoder()
 
@@ -148,7 +193,8 @@ kbRoutes.post("/kb/chat", async (c) => {
         {
           db,
           query,
-          messages,
+          messages: plan.messages,
+          contextSummary: contextState.summary,
           apiKey: deepseek.key,
           model: resolved.model,
           supportsTools: resolved.supportsTools,
@@ -213,6 +259,56 @@ kbRoutes.post("/kb/chat", async (c) => {
 
   return new Response(stream, { headers: SSE_HEADERS })
 })
+
+/**
+ * 后台压缩一次并落库。整个过程不抛：它跑在 waitUntil 里，
+ * 没有任何调用方能处理异常，失败只意味着水位原地不动、下次超阈值再压。
+ */
+async function compressAndSave(input: {
+  db: AppEnv["Variables"]["db"]
+  conversationId: string
+  apiKey: string
+  previousSummary: string
+  dropped: KbChatMessage[]
+  coversThroughId: string
+}): Promise<void> {
+  const startedAt = Date.now()
+
+  /**
+   * 压缩固定用最便宜的模型，不跟随用户为本轮选的对话模型：
+   * 归纳是简单任务，而 pro 的输入价是 flash 的 8 倍、输出价 16 倍
+   * （见 DEEPSEEK_PRICE_USD_PER_1M），也更慢。
+   *
+   * 这个闭包就是 kb-context 认的全部厂商接口，接入其他厂商时换掉它即可。
+   */
+  const chatJson: ChatJsonFn = ({ messages, maxTokens }) =>
+    callDeepSeekJson({
+      apiKey: input.apiKey,
+      model: DEFAULT_DEEPSEEK_MODEL,
+      messages,
+      maxTokens,
+    })
+
+  const result = await compressKbContext({
+    previousSummary: input.previousSummary,
+    dropped: input.dropped,
+    coversThroughId: input.coversThroughId,
+    chatJson,
+  })
+
+  if (result.next) {
+    await saveKbContext(input.db, input.conversationId, result.next)
+  }
+
+  await recordAiUsage(input.db, {
+    kind: "kb_compress",
+    model: DEFAULT_DEEPSEEK_MODEL,
+    status: result.errorCode ? "error" : "ok",
+    usage: result.usage,
+    errorCode: result.errorCode,
+    latencyMs: Date.now() - startedAt,
+  })
+}
 
 /**
  * 请求级模型覆盖：面板按轮次选模型，缺省时回落到用户设置里的模型。

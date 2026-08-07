@@ -53,6 +53,12 @@ export function RegisterPage() {
         authenticated: true,
         initialized: true,
         public_browsing_enabled: Boolean(user.public_browsing_enabled),
+        ...(user.bookmark_pagination_mode
+          ? { bookmark_pagination_mode: user.bookmark_pagination_mode }
+          : {}),
+        ...(user.bookmark_page_size
+          ? { bookmark_page_size: user.bookmark_page_size }
+          : {}),
       })
       navigate("/")
     },

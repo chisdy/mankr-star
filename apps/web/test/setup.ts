@@ -13,6 +13,7 @@ const TABLES = [
   "folders",
   "sessions",
   "users",
+  "settings",
 ] as const
 
 beforeAll(async () => {

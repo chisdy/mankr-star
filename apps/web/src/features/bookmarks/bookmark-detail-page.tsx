@@ -1,19 +1,12 @@
-import { useParams, useNavigate } from "react-router"
-import { BookmarkDetailDrawer } from "./bookmark-detail-drawer"
+import { Navigate, useParams } from "react-router"
 
+import { bookmarkDetailHref } from "./bookmark-detail-params"
+
+/**
+ * 详情现在是叠在列表上的弹窗，`/bookmarks/:id` 只保留为旧链接的入口。
+ */
 export function BookmarkDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
 
-  return (
-    <BookmarkDetailDrawer
-      bookmarkId={id || null}
-      open={true}
-      onOpenChange={(open) => {
-        if (!open) {
-          navigate("/")
-        }
-      }}
-    />
-  )
+  return <Navigate to={id ? bookmarkDetailHref(id) : "/"} replace />
 }

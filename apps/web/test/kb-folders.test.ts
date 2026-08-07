@@ -163,7 +163,7 @@ describe("收藏库分类进入对话上下文", () => {
     await readEvents(await chat({ messages: [{ role: "user", content: "react" }] }))
 
     const last = prompts.at(-1) ?? ""
-    expect(last).toContain("## 收藏库分类")
+    expect(last).toContain("<收藏库分类>")
     expect(last).toContain("读书清单：1 条")
     // 子分类以「父 / 子」呈现，模型才能看出嵌套关系
     expect(last).toContain("读书清单 / 睡前读物：0 条")
@@ -226,7 +226,7 @@ describe("收藏库分类进入对话上下文", () => {
 
     expect(events.some((e) => e.type === "empty")).toBe(false)
     expect(events.some((e) => e.type === "delta")).toBe(true)
-    expect(prompts.at(-1) ?? "").toContain("## 收藏库分类")
+    expect(prompts.at(-1) ?? "").toContain("<收藏库分类>")
   })
 
   it("与分类无关又检索无命中时仍然不消耗生成额度", async () => {

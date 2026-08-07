@@ -74,7 +74,8 @@
       "classify": "AI 分类",
       "slug_translate": "Slug 翻译",
       "connection_test": "连接测试",
-      "kb_chat": "收藏库对话"
+      "kb_chat": "收藏库对话",
+      "kb_compress": "对话上下文压缩"
     }
   }
 }

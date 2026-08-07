@@ -136,6 +136,84 @@ describe("会话存档 CRUD", () => {
     expect(detail.body.messages[1]!.content).toBe("第二次回答")
   })
 
+  it("GET 带回摘要水位，客户端据此裁剪下一轮请求", async () => {
+    const id = crypto.randomUUID()
+    await client.put(`/api/kb/conversations/${id}`, {
+      messages: [userMessage("问题"), assistantMessage("回答")],
+    })
+
+    const fresh = await client.json<KbConversationDetail>(
+      `/api/kb/conversations/${id}`,
+    )
+    // 还没压缩过：没有水位，等价于「整份历史都要回传」
+    expect(fresh.body.summary_covers_through_id).toBeNull()
+
+    await env.DB.prepare(
+      "UPDATE kb_conversations SET context_summary = ?, summary_covers_through_id = ? WHERE id = ?",
+    )
+      .bind("早期摘要", "m6", id)
+      .run()
+
+    const compressed = await client.json<KbConversationDetail>(
+      `/api/kb/conversations/${id}`,
+    )
+    expect(compressed.body.summary_covers_through_id).toBe("m6")
+  })
+
+  it("存档响应回传当前水位，省掉客户端单独查一次", async () => {
+    // 压缩跑在后台、流里通告不了，这条响应是客户端拿到水位的唯一通道
+    const id = crypto.randomUUID()
+    await client.put(`/api/kb/conversations/${id}`, {
+      messages: [userMessage("问题"), assistantMessage("回答")],
+    })
+    await env.DB.prepare(
+      "UPDATE kb_conversations SET context_summary = ?, summary_covers_through_id = ? WHERE id = ?",
+    )
+      .bind("早期摘要", "m6", id)
+      .run()
+
+    const saved = await client.json<KbConversationSummary>(
+      `/api/kb/conversations/${id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          messages: [userMessage("问题"), assistantMessage("回答")],
+        }),
+      },
+    )
+    expect(saved.body.summary_covers_through_id).toBe("m6")
+  })
+
+  it("存档回写不会清掉摘要与水位", async () => {
+    const id = crypto.randomUUID()
+    await client.put(`/api/kb/conversations/${id}`, {
+      messages: [userMessage("问题"), assistantMessage("回答")],
+    })
+    await env.DB.prepare(
+      "UPDATE kb_conversations SET context_summary = ?, summary_covers_through_id = ? WHERE id = ?",
+    )
+      .bind("早期摘要", "m6", id)
+      .run()
+
+    // 每轮收尾都会整体回写一次存档；若它顺手 set 了摘要列，
+    // 水位会被清空，下一轮就把已经压过的旧消息再压一遍。
+    await client.put(`/api/kb/conversations/${id}`, {
+      messages: [
+        userMessage("问题"),
+        assistantMessage("回答"),
+        userMessage("追问"),
+      ],
+    })
+
+    const row = await env.DB.prepare(
+      "SELECT context_summary, summary_covers_through_id FROM kb_conversations WHERE id = ?",
+    )
+      .bind(id)
+      .first<{ context_summary: string; summary_covers_through_id: string }>()
+    expect(row?.context_summary).toBe("早期摘要")
+    expect(row?.summary_covers_through_id).toBe("m6")
+  })
+
   it("列表按最近更新排序并带消息数", async () => {
     const older = crypto.randomUUID()
     const newer = crypto.randomUUID()

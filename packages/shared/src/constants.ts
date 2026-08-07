@@ -107,7 +107,6 @@ export const ANYSEARCH_MAX_RESULTS = 5
 /** 知识库对话检索与上下文上限 */
 export const KB_CHAT_TOP_K = 8
 export const KB_CHAT_SNIPPET_MAX_CHARS = 600
-export const KB_CHAT_HISTORY_MAX_MESSAGES = 10
 export const KB_CHAT_QUERY_MAX_CHARS = 500
 /** 随每轮 prompt 常驻的分类目录条数上限，文件夹很多时按收藏数截断 */
 export const KB_CHAT_FOLDER_DIGEST_LIMIT = 40
@@ -118,6 +117,32 @@ export const KB_CHAT_MATCHED_CATEGORY_LIMIT = 3
 export const KB_CHAT_MESSAGE_MAX_CHARS = 4000
 /** 请求体允许携带的历史消息条数上限 */
 export const KB_CHAT_REQUEST_MAX_MESSAGES = 40
+
+/**
+ * 上下文压缩（滚动摘要）阈值。
+ *
+ * 触发时机刻意设得「低频」：压缩会重写 prompt 的稳定前缀，
+ * 而各家的前缀缓存只在前缀逐字节相同时命中，所以每轮都压缩反而更贵
+ * —— 既付了摘要调用的钱，又把后续所有轮次的缓存命中打掉。
+ * 只有历史确实撑到阈值才压一次，压完的摘要在下一次压缩前保持不变。
+ */
+export const KB_CONTEXT_COMPRESS_TOKEN_THRESHOLD = 6000
+/** 压缩时保留原文的最近消息条数（约 3 轮问答），更早的进摘要 */
+export const KB_CONTEXT_RECENT_MESSAGES = 6
+/**
+ * 单轮 prompt 里历史部分的容量上限，与上面的成本阈值是两件事：
+ * 6000 是「该花钱压一次了」，这个是「再多就撑不住了」。
+ *
+ * 压缩与生成并发进行，摘要要下一轮才可用，所以触发压缩的那一轮仍然
+ * 原样发送全部历史 —— 只有超过这个上限时才从头砍，避免请求体上限
+ * （40 条 × 4000 字 ≈ 40k token）叠上检索资料后顶穿 agent 的
+ * KB_AGENT_MAX_TOTAL_TOKENS 预算。
+ */
+export const KB_CONTEXT_MAX_PROMPT_TOKENS = 20_000
+/** 摘要文本长度上限，防止摘要自己变成新的上下文负担 */
+export const KB_CONTEXT_SUMMARY_MAX_CHARS = 2000
+/** 摘要生成调用的输出上限 */
+export const KB_CONTEXT_SUMMARY_MAX_TOKENS = 512
 
 /** 保留的会话数上限，超出时淘汰最久未更新的（单用户个人库，无需无限增长） */
 export const KB_CHAT_MAX_CONVERSATIONS = 50
@@ -169,6 +194,11 @@ export const AI_USAGE_KINDS = [
   "slug_translate",
   "connection_test",
   "kb_chat",
+  /**
+   * 滚动摘要压缩。单独一类而不是并进 kb_chat：压缩与生成并发进行、
+   * 各自独立成败，混在一条记录里就看不出摘要本身花了多少。
+   */
+  "kb_compress",
 ] as const
 export type AiUsageKind = (typeof AI_USAGE_KINDS)[number]
 

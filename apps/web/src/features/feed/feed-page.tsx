@@ -14,13 +14,12 @@ import { Skeleton } from "@workspace/ui/components/skeleton"
 import { api } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 import type { EventType, UpdateEvent } from "@/lib/types"
-import { BookmarkDetailDrawer } from "@/features/bookmarks/bookmark-detail-drawer"
+import { useBookmarkDetail } from "@/hooks/use-bookmark-detail"
 import { useRedirectGuestOnUnauthorized } from "@/hooks/use-auth"
 
 export function FeedPage() {
   const { t, i18n } = useTranslation("feed")
-  const [selectedBookmarkId, setSelectedBookmarkId] = React.useState<string | null>(null)
-  const [drawerOpen, setDrawerOpen] = React.useState(false)
+  const { openDetail } = useBookmarkDetail()
 
   const { data: events = [], isLoading, isError, error } = useQuery({
     queryKey: queryKeys.feed.all,
@@ -111,10 +110,7 @@ export function FeedPage() {
                   return (
                     <div
                       key={evt.id}
-                      onClick={() => {
-                        setSelectedBookmarkId(evt.bookmark_id)
-                        setDrawerOpen(true)
-                      }}
+                      onClick={() => openDetail(evt.bookmark_id)}
                       className="group flex flex-col gap-1.5 rounded-lg border border-border/60 bg-card p-3.5 text-card-foreground shadow-2xs hover:border-border transition-all cursor-pointer"
                     >
                       <div className="flex items-center justify-between gap-2">
@@ -150,13 +146,6 @@ export function FeedPage() {
           ))}
         </div>
       )}
-
-      {/* Detail Drawer */}
-      <BookmarkDetailDrawer
-        bookmarkId={selectedBookmarkId}
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-      />
     </div>
   )
 }

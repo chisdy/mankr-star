@@ -257,6 +257,42 @@ describe("api client 业务映射", () => {
     expect(filtered.items).toHaveLength(0)
   })
 
+  it("分页切片返回当前页条目，total 保持过滤后的全量", async () => {
+    await api.createBookmark({ url: "facebook/react" })
+    await api.createBookmark({ url: "https://react.dev/learn" })
+
+    const page1 = await api.getBookmarks({ page: 1, limit: 1 })
+    expect(page1.total).toBe(2)
+    expect(page1.items).toHaveLength(1)
+    expect(page1.limit).toBe(1)
+
+    const page2 = await api.getBookmarks({ page: 2, limit: 1 })
+    expect(page2.total).toBe(2)
+    expect(page2.items).toHaveLength(1)
+    expect(page2.items[0]!.id).not.toBe(page1.items[0]!.id)
+
+    const beyond = await api.getBookmarks({ page: 3, limit: 1 })
+    expect(beyond.items).toHaveLength(0)
+    expect(beyond.total).toBe(2)
+  })
+
+  it("updateBookmarkPagination 保存实例分页偏好并在 status / me 回显", async () => {
+    const saved = await api.updateBookmarkPagination({
+      bookmark_pagination_mode: "manual",
+      bookmark_page_size: 12,
+    })
+    expect(saved.bookmark_pagination_mode).toBe("manual")
+    expect(saved.bookmark_page_size).toBe(12)
+
+    const status = await api.getInstanceStatus()
+    expect(status.bookmark_pagination_mode).toBe("manual")
+    expect(status.bookmark_page_size).toBe(12)
+
+    const me = await api.getMe()
+    expect(me.bookmark_pagination_mode).toBe("manual")
+    expect(me.bookmark_page_size).toBe(12)
+  })
+
   it("updateBookmark 把 tags/track_updates 映射为 tagNames/trackUpdates", async () => {
     const created = await api.createBookmark({ url: "facebook/react" })
 

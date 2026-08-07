@@ -27,6 +27,7 @@ import {
 import { cn } from "@workspace/ui/lib/utils"
 import { api } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
+import { BOOKMARK_PAGE_PARAM } from "./bookmark-pagination"
 import { FacetSelect } from "./owner-select"
 
 const PANEL_FILTER_KEYS = [
@@ -212,6 +213,8 @@ export function FilterPanelBody({
     (mutate: (next: URLSearchParams) => void) => {
       const next = new URLSearchParams(searchParams)
       mutate(next)
+      // 任何筛选/排序变化都会换掉结果集，页码必须回到第一页
+      next.delete(BOOKMARK_PAGE_PARAM)
       setSearchParams(next)
     },
     [searchParams, setSearchParams]
@@ -554,9 +557,9 @@ export function FilterPanelBody({
         <div className="shrink-0 border-t border-border/50 p-3">
           <Button
             type="button"
-            variant="ghost"
+            variant="default"
             size="sm"
-            className="h-8 w-full gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            className="h-8 w-full gap-1.5 text-xs"
             onClick={clearPanelFilters}
           >
             <ArrowCounterClockwiseIcon className="size-3.5" weight="bold" />

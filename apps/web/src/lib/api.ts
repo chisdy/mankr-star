@@ -1,11 +1,14 @@
-import type {
-  KbConversationDetail,
-  KbConversationSummary,
-  KbStoredMessage,
+import {
+  DEFAULT_BOOKMARK_PAGE_SIZE,
+  DEFAULT_BOOKMARK_PAGINATION_MODE,
+  type KbConversationDetail,
+  type KbConversationSummary,
+  type KbStoredMessage,
 } from "@mankr/shared"
 import type {
   AnySearchSettings,
   Bookmark,
+  BookmarkPaginationSettings,
   BookmarkOwner,
   BookmarkSite,
   BookmarksQueryParams,
@@ -341,6 +344,9 @@ function getInitialMockData(): MockDataStore {
       anysearch_configured: false,
       anysearch_last4: null,
       github_pat_configured: false,
+      public_browsing_enabled: false,
+      bookmark_pagination_mode: DEFAULT_BOOKMARK_PAGINATION_MODE,
+      bookmark_page_size: DEFAULT_BOOKMARK_PAGE_SIZE,
     },
     folders: defaultFolders,
     bookmarks: defaultBookmarks,
@@ -392,10 +398,16 @@ export const api = {
       return await request<InstanceStatus>("/api/auth/status")
     } catch (err) {
       if (shouldFallbackToMock(err)) {
+        const store = mockStore()
         return {
-          initialized: !!mockStore().user,
-          public_browsing_enabled: false,
-          authenticated: !!mockStore().user,
+          initialized: !!store.user,
+          public_browsing_enabled: Boolean(store.user?.public_browsing_enabled),
+          authenticated: !!store.user,
+          bookmark_pagination_mode:
+            store.user?.bookmark_pagination_mode ??
+            DEFAULT_BOOKMARK_PAGINATION_MODE,
+          bookmark_page_size:
+            store.user?.bookmark_page_size ?? DEFAULT_BOOKMARK_PAGE_SIZE,
         }
       }
       throw err
@@ -431,6 +443,9 @@ export const api = {
           email: data.email,
           deepseek_configured: false,
           anysearch_configured: false,
+          public_browsing_enabled: false,
+          bookmark_pagination_mode: DEFAULT_BOOKMARK_PAGINATION_MODE,
+          bookmark_page_size: DEFAULT_BOOKMARK_PAGE_SIZE,
         }
         saveMockStore()
         return store.user
@@ -572,11 +587,15 @@ export const api = {
             (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           )
         }
+        // total 取过滤后的全量条数，再按 page/limit 切片，与 Worker 保持一致
+        const total = items.length
+        const limit = params?.limit || DEFAULT_BOOKMARK_PAGE_SIZE
+        const page = params?.page || 1
         return {
-          items,
-          total: items.length,
-          page: params?.page || 1,
-          limit: params?.limit || 20,
+          items: items.slice((page - 1) * limit, page * limit),
+          total,
+          page,
+          limit,
         }
       }
       throw err
@@ -1422,6 +1441,44 @@ export const api = {
           saveMockStore()
         }
         return { public_browsing_enabled: data.enabled }
+      }
+      throw err
+    }
+  },
+
+  async updateBookmarkPagination(
+    data: Partial<BookmarkPaginationSettings>,
+  ): Promise<BookmarkPaginationSettings> {
+    try {
+      // 请求体走 camelCase、响应走 snake_case，与 tracking 等既有设置接口一致
+      return await request<BookmarkPaginationSettings>(
+        "/api/settings/bookmark-pagination",
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            paginationMode: data.bookmark_pagination_mode,
+            pageSize: data.bookmark_page_size,
+          }),
+        },
+      )
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        const next: BookmarkPaginationSettings = {
+          bookmark_pagination_mode:
+            data.bookmark_pagination_mode ??
+            store.user?.bookmark_pagination_mode ??
+            DEFAULT_BOOKMARK_PAGINATION_MODE,
+          bookmark_page_size:
+            data.bookmark_page_size ??
+            store.user?.bookmark_page_size ??
+            DEFAULT_BOOKMARK_PAGE_SIZE,
+        }
+        if (store.user) {
+          Object.assign(store.user, next)
+          saveMockStore()
+        }
+        return next
       }
       throw err
     }

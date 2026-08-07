@@ -99,7 +99,7 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
               </Badge>
             )}
             {!isGithub && siteLabel ? (
-              <span className="text-[10px] text-muted-foreground truncate">
+              <span className="truncate text-xs text-muted-foreground">
                 {isTwitter && bookmark.owner
                   ? `@${bookmark.owner}`
                   : siteLabel}
@@ -140,13 +140,13 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
             <Badge
               key={tag}
               variant="secondary"
-              className="text-[10px] h-4 px-1.5 font-normal bg-muted/60 hover:bg-muted text-muted-foreground"
+              className="h-5 px-1.5 text-xs font-normal bg-muted/60 text-muted-foreground hover:bg-muted"
             >
               #{tag}
             </Badge>
           ))}
           {hiddenTagsCount > 0 && (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               +{hiddenTagsCount}
             </span>
           )}

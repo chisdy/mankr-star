@@ -1,33 +1,23 @@
 import { aiUsageLogs, type Db } from "@mankr/db"
 import type { AiUsageKind, AiUsageStatus } from "@mankr/shared"
+import { emptyLlmUsage, parseLlmUsage, type LlmTokenUsage } from "./llm-provider"
 import { nowIso } from "./utils"
 
-export type DeepSeekTokenUsage = {
-  prompt_tokens: number
-  completion_tokens: number
-  total_tokens: number
-}
+/**
+ * DeepSeek 链路沿用的别名。用量模型本身已是提供方无关的（见 llm-provider.ts），
+ * 保留旧名只为免去一次性改掉所有 DeepSeek call site。
+ */
+export type DeepSeekTokenUsage = LlmTokenUsage
 
 export function parseDeepSeekUsage(raw: unknown): DeepSeekTokenUsage {
-  if (!raw || typeof raw !== "object") {
-    return { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
-  }
-  const u = raw as Record<string, unknown>
-  const prompt = Number(u.prompt_tokens) || 0
-  const completion = Number(u.completion_tokens) || 0
-  const total = Number(u.total_tokens) || prompt + completion
-  return {
-    prompt_tokens: prompt,
-    completion_tokens: completion,
-    total_tokens: total,
-  }
+  return parseLlmUsage(raw, "deepseek")
 }
 
 export type RecordAiUsageInput = {
   kind: AiUsageKind
   model: string
   status: AiUsageStatus
-  usage?: DeepSeekTokenUsage | null
+  usage?: LlmTokenUsage | null
   bookmarkId?: string | null
   errorCode?: string | null
   latencyMs?: number | null
@@ -39,11 +29,7 @@ export async function recordAiUsage(
   input: RecordAiUsageInput,
 ): Promise<void> {
   try {
-    const usage = input.usage ?? {
-      prompt_tokens: 0,
-      completion_tokens: 0,
-      total_tokens: 0,
-    }
+    const usage = input.usage ?? emptyLlmUsage()
     await db.insert(aiUsageLogs).values({
       id: crypto.randomUUID(),
       kind: input.kind,
@@ -52,6 +38,8 @@ export async function recordAiUsage(
       promptTokens: usage.prompt_tokens,
       completionTokens: usage.completion_tokens,
       totalTokens: usage.total_tokens,
+      cacheReadTokens: usage.cache_read_tokens,
+      cacheWriteTokens: usage.cache_write_tokens,
       bookmarkId: input.bookmarkId ?? null,
       errorCode: input.errorCode ?? null,
       latencyMs: input.latencyMs ?? null,
@@ -64,7 +52,7 @@ export async function recordAiUsage(
 
 /** 携带 usage 的 DeepSeek 调用错误，便于 catch 后落库 */
 export class DeepSeekCallError extends Error {
-  usage: DeepSeekTokenUsage
+  usage: LlmTokenUsage
   model: string
   latencyMs: number
   errorCode: string
@@ -72,7 +60,7 @@ export class DeepSeekCallError extends Error {
   constructor(
     message: string,
     opts: {
-      usage?: DeepSeekTokenUsage
+      usage?: LlmTokenUsage
       model: string
       latencyMs: number
       errorCode?: string
@@ -80,11 +68,7 @@ export class DeepSeekCallError extends Error {
   ) {
     super(message)
     this.name = "DeepSeekCallError"
-    this.usage = opts.usage ?? {
-      prompt_tokens: 0,
-      completion_tokens: 0,
-      total_tokens: 0,
-    }
+    this.usage = opts.usage ?? emptyLlmUsage()
     this.model = opts.model
     this.latencyMs = opts.latencyMs
     this.errorCode = opts.errorCode ?? "CALL_FAILED"

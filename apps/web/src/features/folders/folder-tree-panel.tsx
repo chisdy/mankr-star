@@ -43,6 +43,7 @@ import { queryKeys } from "@/lib/query-keys"
 import type { Folder as FolderType } from "@/lib/types"
 import { useAuth } from "@/hooks/use-auth"
 import { useResizablePanel } from "@/hooks/use-resizable-panel"
+import { BOOKMARK_PAGE_PARAM } from "@/features/bookmarks/bookmark-pagination"
 import { FolderDeleteDialog } from "./folder-delete-dialog"
 import { FolderFormDialog } from "./folder-form-dialog"
 
@@ -346,6 +347,7 @@ export function FolderTreePanel({
     const next = new URLSearchParams(searchParams)
     if (id) next.set("folder_id", id)
     else next.delete("folder_id")
+    next.delete(BOOKMARK_PAGE_PARAM)
     const qs = next.toString()
     navigate(qs ? `/?${qs}` : "/")
     onNavigate?.()

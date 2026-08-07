@@ -19,6 +19,7 @@ import { StreamingResponse } from "@workspace/ui/components/agents/streaming-res
 import { TodoList } from "@workspace/ui/components/agents/todo-list"
 import { KbAnswerText, toCitationItems } from "./kb-citations"
 import type { KbMessage } from "./use-kb-chat"
+import { useBookmarkDetail } from "@/hooks/use-bookmark-detail"
 
 /**
  * 服务端只发 stage 与数量，措辞在这里本地化；未知 stage 回落到服务端 label。
@@ -84,9 +85,15 @@ function KbAssistantTurn({
   onRetry: () => void
 }) {
   const { t } = useTranslation("kb")
+  const { openDetail } = useBookmarkDetail()
+  const externalLabel = t("sources.openOriginal")
   const citations = React.useMemo(
-    () => toCitationItems(message.sources),
-    [message.sources]
+    () =>
+      toCitationItems(message.sources, {
+        onOpenBookmark: openDetail,
+        externalLabel,
+      }),
+    [message.sources, openDetail, externalLabel]
   )
   // 同一 transcript 里多条回答各有来源，prefix 必须带 message id 才不会撞 DOM id
   const idPrefix = `kb-src-${message.id}`

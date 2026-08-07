@@ -13,6 +13,7 @@
     "patSaved": "已保存 GitHub PAT",
     "patSaveFailed": "PAT 保存失败",
     "trackingSaved": "已更新跟踪阈值并重算仓库近况",
+    "bookmarkPaginationSaved": "已保存收藏列表分页方式",
     "publicBrowsingEnabled": "已开启公开浏览",
     "publicBrowsingDisabled": "已关闭公开浏览",
     "publicBrowsingSaveFailed": "公开浏览设置保存失败",
@@ -84,21 +85,34 @@
     "staleAfterDays": "疑似停更（超过多少天无推送）",
     "save": "保存阈值"
   },
+  "bookmarkList": {
+    "section": "6. 收藏列表",
+    "description": "实例级设置：决定收藏页如何加载更多内容，登录用户与公开访客看到的是同一套配置。",
+    "modeLabel": "分页方式",
+    "modeAuto": "滚动到底自动加载",
+    "modeManual": "点击「加载下一页」追加",
+    "modePagination": "传统分页器",
+    "modeHint": "两种追加方式会启用虚拟滚动，长列表下只渲染视口附近的卡片。",
+    "pageSizeLabel": "每页数量",
+    "pageSizeHint": "1–100 之间的整数",
+    "pageSizeInvalid": "每页数量需为 1–100 之间的整数",
+    "save": "保存分页设置"
+  },
   "visibility": {
-    "section": "6. 可见性",
+    "section": "7. 可见性",
     "description": "控制未登录访客能否只读查看本实例的收藏与动态。",
     "publicBrowsing": "公开浏览",
     "publicBrowsingDescription": "开启后，任何人可通过本实例链接只读查看收藏与动态；关闭后必须登录才能访问。添加收藏、新建文件夹等操作仍需登录。私人笔记始终不对访客可见。"
   },
   "export": {
-    "section": "7. 数据备份与导出",
+    "section": "8. 数据备份与导出",
     "description": "导出全部收藏、分类与标签数据为 JSON 格式。不含站点账号与密码。",
     "title": "导出全库 JSON",
     "detail": "包含私有笔记、AI 摘要、标签与时间戳；不含站点账号与密码",
     "button": "导出数据"
   },
   "appearance": {
-    "section": "8. 外观与语言",
+    "section": "9. 外观与语言",
     "description": "主题与界面语言",
     "themeDescription": "自适应浅色 / 深色界面主题",
     "system": "跟随系统",

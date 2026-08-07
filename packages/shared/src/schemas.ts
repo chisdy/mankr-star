@@ -1,5 +1,10 @@
 import { z } from "zod"
 import {
+  BOOKMARK_PAGINATION_MODES,
+  DEFAULT_BOOKMARK_PAGE_SIZE,
+  DEFAULT_BOOKMARK_PAGINATION_MODE,
+} from "./settings"
+import {
   AI_STATUSES,
   AI_SUMMARY_MAX_CHARS,
   BOOKMARK_SORT_OPTIONS,
@@ -273,6 +278,8 @@ export const meResponseSchema = z.object({
   hot_within_days: z.number().int(),
   stale_after_days: z.number().int(),
   public_browsing_enabled: z.boolean(),
+  bookmark_pagination_mode: z.enum(BOOKMARK_PAGINATION_MODES),
+  bookmark_page_size: z.number().int(),
   created_at: z.string(),
 })
 export type MeResponse = z.infer<typeof meResponseSchema>
@@ -288,6 +295,11 @@ export const instanceStatusSchema = z.object({
   initialized: z.boolean(),
   public_browsing_enabled: z.boolean(),
   authenticated: z.boolean(),
+  /** 实例级收藏分页偏好，公开访客与登录用户一致 */
+  bookmark_pagination_mode: z
+    .enum(BOOKMARK_PAGINATION_MODES)
+    .default(DEFAULT_BOOKMARK_PAGINATION_MODE),
+  bookmark_page_size: z.number().int().default(DEFAULT_BOOKMARK_PAGE_SIZE),
 })
 export type InstanceStatus = z.infer<typeof instanceStatusSchema>
 
@@ -308,6 +320,17 @@ export const insightsQuerySchema = z.object({
 export type InsightsQuery = z.infer<typeof insightsQuerySchema>
 
 export const kbChatMessageSchema = z.object({
+  /**
+   * 客户端侧的消息 id（与会话存档里的 kb_messages.id 同源）。
+   *
+   * 滚动摘要的水位是「覆盖到哪条消息为止」这个指针，而不是条数：
+   * 客户端会丢掉空内容的回合（中止／无命中），也会在超过请求上限时
+   * 截掉最旧的几条，条数因此不是两端共享的坐标系 —— 差一条，
+   * 后续每轮都会把已进摘要的消息再发一遍并重压一次。
+   *
+   * 可选：第三方调用方不带 id 也能正常对话，只是不会产生摘要。
+   */
+  id: z.string().min(1).optional(),
   role: z.enum(["user", "assistant"]),
   content: z.string().min(1).max(KB_CHAT_MESSAGE_MAX_CHARS),
 })
@@ -321,6 +344,11 @@ export const kbChatRequestSchema = z.object({
   webSearch: z.boolean().optional().default(false),
   /** 按轮次生效的模型覆盖；缺省时回落到用户设置里的 deepseek_model */
   model: z.enum(KB_CHAT_MODEL_IDS).optional(),
+  /**
+   * 当前会话 id。带上它服务端才能读写滚动摘要；缺省时按无摘要处理，
+   * 对话照常进行，只是长会话会退化成硬截断。
+   */
+  conversationId: z.string().uuid().optional(),
 })
 export type KbChatRequest = z.infer<typeof kbChatRequestSchema>
 
@@ -434,6 +462,11 @@ export type KbChatActivityItem = z.infer<typeof kbChatActivityItemSchema>
  * - 多轮检索新增的来源走 sources_append 增量追加，绝不重复发 meta
  * - empty 表示检索无命中、未调用生成模型，由前端渲染本地化文案
  * - done 收尾；error 表示上游生成失败
+ *
+ * 这里刻意没有「摘要水位」事件：压缩与生成并发跑，流关闭时它可能还没写完，
+ * 硬要在流里通告就得等它，等于把省下来的延迟又还回去。水位随每轮收尾的
+ * 存档响应回传（见 KbConversationSummary.summary_covers_through_id），
+ * 而且它只是省上传流量的优化 —— 服务端按 id 对齐，客户端水位过期不影响正确性。
  */
 export type KbChatStreamEvent =
   | { type: "meta"; sources: KbChatSource[]; warnings?: KbChatWarning[] }
@@ -499,6 +532,14 @@ export type KbConversationSummary = {
   created_at: string
   updated_at: string
   message_count: number
+  /**
+   * 滚动摘要覆盖到的最后一条消息 id，未压缩过则为 null。
+   * 前端据此在下一轮请求里跳过这段前缀，只回传摘要没覆盖到的尾部。
+   *
+   * 这是省上传流量的优化，不是正确性的一环：服务端也会按同一个 id
+   * 自行对齐，客户端拿着过期指针只是多传几条会被服务端丢掉的消息。
+   */
+  summary_covers_through_id: string | null
 }
 
 export type KbConversationDetail = Omit<

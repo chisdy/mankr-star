@@ -103,7 +103,8 @@
     "web": "Web",
     "count_one": "{{count}} source",
     "count_other": "{{count}} sources",
-    "citationAria": "View source {{index}}"
+    "citationAria": "View source {{index}}",
+    "openOriginal": "Open the original page in a new tab"
   },
   "gate": {
     "deepseek": "Library chat requires a DeepSeek API Key.",

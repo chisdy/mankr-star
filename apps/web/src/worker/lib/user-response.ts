@@ -1,0 +1,32 @@
+import { DEFAULT_DEEPSEEK_MODEL, type SettingsValueMap } from "@mankr/shared"
+
+type UserRow = {
+  id: string
+  username: string
+  email: string | null
+  createdAt: string
+}
+
+/**
+ * 登录、注册与 /me 共用的用户序列化。
+ * 只输出配置状态与后四位，密文永不出现在响应里。
+ */
+export function serializeUser(user: UserRow, s: SettingsValueMap) {
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    deepseek_configured: Boolean(s.ai.deepseekApiKeyEncrypted),
+    deepseek_last4: s.ai.deepseekKeyLast4,
+    deepseek_model: s.ai.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
+    anysearch_configured: Boolean(s.search.anysearchApiKeyEncrypted),
+    anysearch_last4: s.search.anysearchKeyLast4,
+    github_pat_configured: Boolean(s.github.patEncrypted),
+    hot_within_days: s.tracking.hotWithinDays,
+    stale_after_days: s.tracking.staleAfterDays,
+    public_browsing_enabled: s.browsing.publicBrowsingEnabled,
+    bookmark_pagination_mode: s.bookmarks.paginationMode,
+    bookmark_page_size: s.bookmarks.pageSize,
+    created_at: user.createdAt,
+  }
+}

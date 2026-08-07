@@ -1,4 +1,9 @@
 import { z } from "zod"
+import {
+  BOOKMARK_PAGINATION_MODES,
+  DEFAULT_BOOKMARK_PAGE_SIZE,
+  DEFAULT_BOOKMARK_PAGINATION_MODE,
+} from "@mankr/shared"
 
 export const UserSchema = z.object({
   id: z.string(),
@@ -13,6 +18,11 @@ export const UserSchema = z.object({
   github_pat_last4: z.string().nullable().optional(),
   hot_within_days: z.number().optional(),
   stale_after_days: z.number().optional(),
+  public_browsing_enabled: z.boolean().optional(),
+  bookmark_pagination_mode: z
+    .enum(BOOKMARK_PAGINATION_MODES)
+    .default(DEFAULT_BOOKMARK_PAGINATION_MODE),
+  bookmark_page_size: z.number().int().default(DEFAULT_BOOKMARK_PAGE_SIZE),
   created_at: z.string().optional(),
   last_login_at: z.string().nullable().optional(),
 })

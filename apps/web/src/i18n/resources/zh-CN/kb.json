@@ -97,7 +97,8 @@
     "bookmarks": "收藏",
     "web": "网页",
     "count_other": "{{count}} 条来源",
-    "citationAria": "查看第 {{index}} 条来源"
+    "citationAria": "查看第 {{index}} 条来源",
+    "openOriginal": "在新标签页打开原始网页"
   },
   "gate": {
     "deepseek": "收藏库对话需要先配置 DeepSeek API Key。",

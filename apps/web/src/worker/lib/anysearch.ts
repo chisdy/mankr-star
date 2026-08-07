@@ -1,4 +1,4 @@
-import { users, type Db } from "@mankr/db"
+import type { Db } from "@mankr/db"
 import {
   ANYSEARCH_API_BASE,
   ANYSEARCH_CLIENT_HEADER,
@@ -6,6 +6,7 @@ import {
 } from "@mankr/shared"
 import type { Env } from "../env"
 import { decryptSecret } from "./crypto"
+import { readSetting } from "./settings-store"
 
 const SEARCH_TIMEOUT_MS = 15_000
 
@@ -29,11 +30,11 @@ export async function getAnySearchKey(
   db: Db,
   env: Env,
 ): Promise<string | null> {
-  const user = await db.select().from(users).get()
-  if (!user?.anysearchApiKeyEncrypted) return null
+  const search = await readSetting(db, "search")
+  if (!search.anysearchApiKeyEncrypted) return null
   const encKey = env.AI_KEY_ENCRYPTION_KEY || env.PAT_ENCRYPTION_KEY
   try {
-    return await decryptSecret(user.anysearchApiKeyEncrypted, encKey)
+    return await decryptSecret(search.anysearchApiKeyEncrypted, encKey)
   } catch {
     return null
   }

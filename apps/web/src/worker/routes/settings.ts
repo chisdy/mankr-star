@@ -13,9 +13,8 @@ import {
 } from "@mankr/db"
 import {
   DEFAULT_DEEPSEEK_MODEL,
-  DEFAULT_HOT_WITHIN_DAYS,
-  DEFAULT_STALE_AFTER_DAYS,
   anysearchSettingsSchema,
+  bookmarkPaginationSettingsSchema,
   changePasswordSchema,
   deepseekSettingsSchema,
   githubPatSettingsSchema,
@@ -34,6 +33,7 @@ import { recordAiUsage } from "../lib/ai-usage"
 import { testDeepSeekConnection } from "../lib/deepseek"
 import { hashPassword, verifyPassword } from "../lib/password"
 import { rateLimit } from "../lib/rate-limit"
+import { readSetting, writeSetting } from "../lib/settings-store"
 import { getClientIp, nowIso } from "../lib/utils"
 import { requireAuth } from "../middleware/auth"
 
@@ -47,22 +47,15 @@ settingsRoutes.patch("/settings/deepseek", (c) => upsertDeepseek(c))
 
 settingsRoutes.delete("/settings/deepseek", async (c) => {
   const db = c.get("db")
-  const user = await db.select().from(users).get()
-  if (!user) return c.json({ error: "用户不存在", code: "NOT_FOUND" }, 404)
-
-  await db
-    .update(users)
-    .set({
-      deepseekApiKeyEncrypted: null,
-      deepseekKeyLast4: null,
-      updatedAt: nowIso(),
-    })
-    .where(eq(users.id, user.id))
+  const ai = await writeSetting(db, "ai", {
+    deepseekApiKeyEncrypted: null,
+    deepseekKeyLast4: null,
+  })
 
   return c.json({
     deepseek_configured: false,
     deepseek_last4: null,
-    deepseek_model: user.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
+    deepseek_model: ai.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
   })
 })
 
@@ -100,13 +93,14 @@ async function upsertDeepseek(c: Context<AppEnv>) {
   }
 
   const db = c.get("db")
-  const user = await db.select().from(users).get()
-  if (!user) return c.json({ error: "用户不存在", code: "NOT_FOUND" }, 404)
-
   const encKey = c.env.AI_KEY_ENCRYPTION_KEY || c.env.PAT_ENCRYPTION_KEY
-  const patch: Partial<typeof users.$inferInsert> = {
-    updatedAt: nowIso(),
-  }
+
+  // 只传 model 时不带 key 字段，避免把已保存的密钥合并掉
+  const patch: {
+    deepseekApiKeyEncrypted?: string | null
+    deepseekKeyLast4?: string | null
+    deepseekModel?: string
+  } = {}
 
   if (parsed.data.clearKey) {
     patch.deepseekApiKeyEncrypted = null
@@ -123,13 +117,12 @@ async function upsertDeepseek(c: Context<AppEnv>) {
     patch.deepseekModel = parsed.data.model
   }
 
-  await db.update(users).set(patch).where(eq(users.id, user.id))
-  const updated = await db.select().from(users).get()
+  const ai = await writeSetting(db, "ai", patch)
 
   return c.json({
-    deepseek_configured: Boolean(updated?.deepseekApiKeyEncrypted),
-    deepseek_last4: updated?.deepseekKeyLast4 ?? null,
-    deepseek_model: updated?.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
+    deepseek_configured: Boolean(ai.deepseekApiKeyEncrypted),
+    deepseek_last4: ai.deepseekKeyLast4,
+    deepseek_model: ai.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
   })
 }
 
@@ -141,8 +134,8 @@ settingsRoutes.post("/settings/deepseek/test", async (c) => {
   }
 
   const db = c.get("db")
-  const user = await db.select().from(users).get()
-  if (!user?.deepseekApiKeyEncrypted) {
+  const ai = await readSetting(db, "ai")
+  if (!ai.deepseekApiKeyEncrypted) {
     return c.json(
       {
         ok: false,
@@ -156,14 +149,14 @@ settingsRoutes.post("/settings/deepseek/test", async (c) => {
   const encKey = c.env.AI_KEY_ENCRYPTION_KEY || c.env.PAT_ENCRYPTION_KEY
   let apiKey: string
   try {
-    apiKey = await decryptSecret(user.deepseekApiKeyEncrypted, encKey)
+    apiKey = await decryptSecret(ai.deepseekApiKeyEncrypted, encKey)
   } catch {
     return c.json({ ok: false, error: "解密 Key 失败" }, 500)
   }
 
   const result = await testDeepSeekConnection(
     apiKey,
-    user.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
+    ai.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
   )
   await recordAiUsage(db, {
     kind: "connection_test",
@@ -190,17 +183,10 @@ settingsRoutes.delete("/settings/anysearch", async (c) => {
   }
 
   const db = c.get("db")
-  const user = await db.select().from(users).get()
-  if (!user) return c.json({ error: "用户不存在", code: "NOT_FOUND" }, 404)
-
-  await db
-    .update(users)
-    .set({
-      anysearchApiKeyEncrypted: null,
-      anysearchKeyLast4: null,
-      updatedAt: nowIso(),
-    })
-    .where(eq(users.id, user.id))
+  await writeSetting(db, "search", {
+    anysearchApiKeyEncrypted: null,
+    anysearchKeyLast4: null,
+  })
 
   return c.json({ anysearch_configured: false, anysearch_last4: null })
 })
@@ -239,11 +225,12 @@ async function upsertAnysearch(c: Context<AppEnv>) {
   }
 
   const db = c.get("db")
-  const user = await db.select().from(users).get()
-  if (!user) return c.json({ error: "用户不存在", code: "NOT_FOUND" }, 404)
-
   const encKey = c.env.AI_KEY_ENCRYPTION_KEY || c.env.PAT_ENCRYPTION_KEY
-  const patch: Partial<typeof users.$inferInsert> = { updatedAt: nowIso() }
+
+  const patch: {
+    anysearchApiKeyEncrypted?: string | null
+    anysearchKeyLast4?: string | null
+  } = {}
 
   if (parsed.data.clearKey) {
     patch.anysearchApiKeyEncrypted = null
@@ -256,12 +243,11 @@ async function upsertAnysearch(c: Context<AppEnv>) {
     patch.anysearchKeyLast4 = last4(parsed.data.apiKey)
   }
 
-  await db.update(users).set(patch).where(eq(users.id, user.id))
-  const updated = await db.select().from(users).get()
+  const search = await writeSetting(db, "search", patch)
 
   return c.json({
-    anysearch_configured: Boolean(updated?.anysearchApiKeyEncrypted),
-    anysearch_last4: updated?.anysearchKeyLast4 ?? null,
+    anysearch_configured: Boolean(search.anysearchApiKeyEncrypted),
+    anysearch_last4: search.anysearchKeyLast4,
   })
 }
 
@@ -316,15 +302,10 @@ settingsRoutes.put("/settings/tracking", async (c) => {
   }
 
   const db = c.get("db")
-  const user = await db.select().from(users).get()
-  if (!user) return c.json({ error: "用户不存在", code: "NOT_FOUND" }, 404)
+  const current = await readSetting(db, "tracking")
 
-  const hotWithinDays =
-    parsed.data.hotWithinDays ?? user.hotWithinDays ?? DEFAULT_HOT_WITHIN_DAYS
-  const staleAfterDays =
-    parsed.data.staleAfterDays ??
-    user.staleAfterDays ??
-    DEFAULT_STALE_AFTER_DAYS
+  const hotWithinDays = parsed.data.hotWithinDays ?? current.hotWithinDays
+  const staleAfterDays = parsed.data.staleAfterDays ?? current.staleAfterDays
 
   if (hotWithinDays >= staleAfterDays) {
     return c.json(
@@ -336,14 +317,7 @@ settingsRoutes.put("/settings/tracking", async (c) => {
     )
   }
 
-  await db
-    .update(users)
-    .set({
-      hotWithinDays,
-      staleAfterDays,
-      updatedAt: nowIso(),
-    })
-    .where(eq(users.id, user.id))
+  await writeSetting(db, "tracking", { hotWithinDays, staleAfterDays })
 
   // 本地重算 hot/active/stale（不调 GitHub）
   const rows = await db
@@ -393,12 +367,7 @@ settingsRoutes.put("/settings/tracking", async (c) => {
 
 settingsRoutes.delete("/settings/github-pat", async (c) => {
   const db = c.get("db")
-  const user = await db.select().from(users).get()
-  if (!user) return c.json({ error: "用户不存在", code: "NOT_FOUND" }, 404)
-  await db
-    .update(users)
-    .set({ githubPatEncrypted: null, updatedAt: nowIso() })
-    .where(eq(users.id, user.id))
+  await writeSetting(db, "github", { patEncrypted: null })
   return c.json({ github_pat_configured: false })
 })
 
@@ -423,14 +392,9 @@ async function upsertGithubPat(c: Context<AppEnv>) {
   }
 
   const db = c.get("db")
-  const user = await db.select().from(users).get()
-  if (!user) return c.json({ error: "用户不存在", code: "NOT_FOUND" }, 404)
 
   if (parsed.data.clear) {
-    await db
-      .update(users)
-      .set({ githubPatEncrypted: null, updatedAt: nowIso() })
-      .where(eq(users.id, user.id))
+    await writeSetting(db, "github", { patEncrypted: null })
     return c.json({ github_pat_configured: false })
   }
 
@@ -442,10 +406,7 @@ async function upsertGithubPat(c: Context<AppEnv>) {
     parsed.data.pat,
     c.env.PAT_ENCRYPTION_KEY,
   )
-  await db
-    .update(users)
-    .set({ githubPatEncrypted: encrypted, updatedAt: nowIso() })
-    .where(eq(users.id, user.id))
+  await writeSetting(db, "github", { patEncrypted: encrypted })
 
   return c.json({ github_pat_configured: true })
 }
@@ -508,21 +469,47 @@ settingsRoutes.put("/settings/public-browsing", async (c) => {
   }
 
   const db = c.get("db")
-  const user = await db.select().from(users).get()
-  if (!user) return c.json({ error: "用户不存在", code: "NOT_FOUND" }, 404)
-
-  await db
-    .update(users)
-    .set({
-      publicBrowsingEnabled: parsed.data.enabled,
-      updatedAt: nowIso(),
-    })
-    .where(eq(users.id, user.id))
+  await writeSetting(db, "browsing", {
+    publicBrowsingEnabled: parsed.data.enabled,
+  })
 
   return c.json({ public_browsing_enabled: parsed.data.enabled })
 })
 
-/** 清空业务数据，保留 users 行 */
+/** 实例级收藏分页方式与每页数量；登录用户与公开访客共用同一值 */
+settingsRoutes.put("/settings/bookmark-pagination", async (c) => {
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: "无效的 JSON", code: "BAD_REQUEST" }, 400)
+  }
+
+  const parsed = bookmarkPaginationSettingsSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: parsed.error.flatten(),
+      },
+      400,
+    )
+  }
+
+  const db = c.get("db")
+  const next = await writeSetting(db, "bookmarks", {
+    paginationMode: parsed.data.paginationMode,
+    pageSize: parsed.data.pageSize,
+  })
+
+  return c.json({
+    bookmark_pagination_mode: next.paginationMode,
+    bookmark_page_size: next.pageSize,
+  })
+})
+
+/** 清空业务数据，保留 users 行与实例设置 */
 settingsRoutes.post("/settings/clear-data", async (c) => {
   const db = c.get("db")
   const userId = c.get("userId")
@@ -546,3 +533,4 @@ settingsRoutes.post("/settings/clear-data", async (c) => {
 
   return c.json({ ok: true })
 })
+

@@ -13,6 +13,7 @@
     "patSaved": "GitHub PAT saved",
     "patSaveFailed": "Failed to save PAT",
     "trackingSaved": "Tracking thresholds updated and health recalculated",
+    "bookmarkPaginationSaved": "Bookmark pagination settings saved",
     "publicBrowsingEnabled": "Public browsing enabled",
     "publicBrowsingDisabled": "Public browsing disabled",
     "publicBrowsingSaveFailed": "Failed to save public browsing setting",
@@ -84,21 +85,34 @@
     "staleAfterDays": "Stale (no push for days)",
     "save": "Save thresholds"
   },
+  "bookmarkList": {
+    "section": "6. Bookmark list",
+    "description": "Instance-level setting: how the bookmarks page loads more items. Signed-in users and public visitors share the same configuration.",
+    "modeLabel": "Pagination mode",
+    "modeAuto": "Auto-load on scroll",
+    "modeManual": "Append via \"Load next page\"",
+    "modePagination": "Classic paginator",
+    "modeHint": "Both append modes enable virtual scrolling, so long lists only render cards near the viewport.",
+    "pageSizeLabel": "Items per page",
+    "pageSizeHint": "An integer between 1 and 100",
+    "pageSizeInvalid": "Items per page must be an integer between 1 and 100",
+    "save": "Save pagination settings"
+  },
   "visibility": {
-    "section": "6. Visibility",
+    "section": "7. Visibility",
     "description": "Control whether signed-out visitors can read-only browse bookmarks and feed.",
     "publicBrowsing": "Public browsing",
     "publicBrowsingDescription": "When enabled, anyone with the link can read bookmarks and feed; when disabled, sign-in is required. Adding bookmarks and creating folders still require sign-in. Private notes stay hidden from guests."
   },
   "export": {
-    "section": "7. Backup & export",
+    "section": "8. Backup & export",
     "description": "Export all bookmarks, folders, and tags as JSON. Site accounts and passwords are excluded.",
     "title": "Export full library JSON",
     "detail": "Includes private notes, AI summaries, tags, and timestamps — not site accounts or passwords",
     "button": "Export data"
   },
   "appearance": {
-    "section": "8. Appearance",
+    "section": "9. Appearance",
     "description": "Theme and interface language",
     "themeDescription": "Light / dark theme",
     "system": "System",

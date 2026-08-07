@@ -1,7 +1,5 @@
-import { bookmarkTags, bookmarks, folders, tags, users } from "@mankr/db"
+import { bookmarkTags, bookmarks, folders, tags } from "@mankr/db"
 import {
-  DEFAULT_HOT_WITHIN_DAYS,
-  DEFAULT_STALE_AFTER_DAYS,
   SOURCE_CAPABILITIES,
   SOURCE_TYPES,
   canonicalizeUrl,
@@ -43,6 +41,7 @@ import { fetchTwitterMetadata } from "../lib/twitter"
 import { UrlFetchError } from "../lib/url-ssrf"
 import { decryptSecret, encryptSecret } from "../lib/crypto"
 import { rateLimit } from "../lib/rate-limit"
+import { readSetting } from "../lib/settings-store"
 import { getClientIp, nowIso } from "../lib/utils"
 import { authByMethod } from "../middleware/auth"
 
@@ -319,14 +318,17 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     .from(bookmarks)
     .where(where)
 
+  // 末位固定按 id 排序：同值行在 offset 分页与轮询之间保持稳定顺序，
+  // 否则翻页时会出现重复项或漏项
   const orderByClauses =
     sort === "pushed_at"
       ? [
           // NULL 沉底：有 pushed_at 的在前
           sql`(${bookmarks.pushedAt} IS NULL)`,
           orderFn(sortCol),
+          asc(bookmarks.id),
         ]
-      : [orderFn(sortCol)]
+      : [orderFn(sortCol), asc(bookmarks.id)]
 
   const rows = await db
     .select()
@@ -816,9 +818,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
     return c.json({ error: "拉取 GitHub 元数据失败", code: "GITHUB_ERROR" }, 502)
   }
 
-  const user = await db.select().from(users).get()
-  const hotWithinDays = user?.hotWithinDays ?? DEFAULT_HOT_WITHIN_DAYS
-  const staleAfterDays = user?.staleAfterDays ?? DEFAULT_STALE_AFTER_DAYS
+  const { hotWithinDays, staleAfterDays } = await readSetting(db, "tracking")
   const syncStatus = meta.disabled ? ("forbidden" as const) : ("ok" as const)
   const healthStatus = computeHealthStatus({
     syncStatus,

@@ -14,13 +14,18 @@ import {
   type KbChatWarning,
 } from "@mankr/shared"
 import { searchWeb } from "./anysearch"
-import type { DeepSeekTokenUsage } from "./ai-usage"
 import {
   callDeepSeekJson,
   streamDeepSeekChat,
   type DeepSeekChatMessage,
   type DeepSeekToolCall,
 } from "./deepseek"
+import {
+  addLlmUsage,
+  emptyLlmUsage,
+  hasLlmUsage,
+  type LlmTokenUsage,
+} from "./llm-provider"
 import {
   EMPTY_FOLDER_DIGEST,
   formatFolderDigest,
@@ -42,7 +47,10 @@ export type KbAgentInput = {
   db: Db
   /** 已按 KB_CHAT_QUERY_MAX_CHARS 截断的本轮提问 */
   query: string
+  /** 送进模型的历史尾部；已滑出近窗的旧轮次由 contextSummary 代表 */
   messages: KbChatMessage[]
+  /** 滚动摘要文本，没有压缩过时为空串 */
+  contextSummary?: string
   apiKey: string
   model: string
   /** 该模型是否支持 function calling；不支持时只走快路径 */
@@ -57,7 +65,7 @@ export type KbAgentInput = {
 export type KbAgentResult = {
   status: "ok" | "error"
   errorCode: string | null
-  usage: DeepSeekTokenUsage | undefined
+  usage: LlmTokenUsage | undefined
   /** 实际生成回答用的模型 */
   model: string
 }
@@ -155,11 +163,7 @@ export async function* runKbAgent(
 ): AsyncGenerator<KbChatStreamEvent, KbAgentResult> {
   const startedAt = input.startedAt ?? Date.now()
   const deadline = startedAt + KB_AGENT_TIME_BUDGET_MS
-  const usage: DeepSeekTokenUsage = {
-    prompt_tokens: 0,
-    completion_tokens: 0,
-    total_tokens: 0,
-  }
+  const usage = emptyLlmUsage()
   // 时间与 token 预算是硬约束（Workers 超时表现为流被掐断），
   // 判定只在这里写一次，循环内复用同一个闭包
   const exhausted = () =>
@@ -179,11 +183,10 @@ export async function* runKbAgent(
       usage,
       messages: buildMessages({
         messages: input.messages,
+        contextSummary: input.contextSummary ?? "",
         folderDigest: prefetch.folderDigest,
         bookmarkContext: context.bookmarkContext,
         webContext: context.webContext,
-        hasBookmarks: prefetch.hits.length > 0,
-        hasWeb: prefetch.web.length > 0,
       }),
     })
   }
@@ -241,7 +244,7 @@ function mayNeedTools(query: string): boolean {
  */
 async function isComplex(
   input: KbAgentInput,
-  usage: DeepSeekTokenUsage,
+  usage: LlmTokenUsage,
 ): Promise<boolean> {
   try {
     const { content, usage: routeUsage } = await callDeepSeekJson({
@@ -262,7 +265,7 @@ async function isComplex(
         { role: "user", content: input.query },
       ],
     })
-    addUsage(usage, routeUsage)
+    addLlmUsage(usage, routeUsage)
     const parsed = JSON.parse(content) as { mode?: unknown }
     return parsed.mode === "complex"
   } catch (err) {
@@ -276,7 +279,7 @@ async function* runLoop(
   input: KbAgentInput,
   prefetch: KbPrefetch,
   context: KbAgentContext,
-  usage: DeepSeekTokenUsage,
+  usage: LlmTokenUsage,
   exhausted: () => boolean,
 ): AsyncGenerator<KbChatStreamEvent, KbAgentResult> {
   const toolkit = createKbToolkit({
@@ -291,7 +294,7 @@ async function* runLoop(
 
   const conversation: DeepSeekChatMessage[] = buildLoopMessages({
     messages: input.messages,
-    hasWeb: Boolean(input.anysearchKey),
+    contextSummary: input.contextSummary ?? "",
     folderDigest: prefetch.folderDigest,
     bookmarkContext: context.bookmarkContext,
     webContext: context.webContext,
@@ -319,7 +322,7 @@ async function* runLoop(
       })) {
         if (chunk.type === "delta") text += chunk.text
         else if (chunk.type === "tool_call") calls = chunk.calls
-        else addUsage(usage, chunk.usage)
+        else addLlmUsage(usage, chunk.usage)
       }
     } catch (err) {
       // 循环内的上游失败不判死，交给后面的直出收尾
@@ -335,7 +338,7 @@ async function* runLoop(
         return {
           status: "ok",
           errorCode: null,
-          usage: hasUsage(usage) ? usage : undefined,
+          usage: hasLlmUsage(usage) ? usage : undefined,
           model: input.model,
         }
       }
@@ -387,13 +390,12 @@ async function* runLoop(
     usage,
     messages: buildMessages({
       messages: input.messages,
+      contextSummary: input.contextSummary ?? "",
       folderDigest: prefetch.folderDigest,
       bookmarkContext: [context.bookmarkContext, ...gathered]
         .filter(Boolean)
         .join("\n\n"),
       webContext: context.webContext,
-      hasBookmarks: prefetch.hits.length > 0 || gathered.length > 0,
-      hasWeb: prefetch.web.length > 0,
     }),
   })
   yield* settlePlan(plan, planCursor)
@@ -413,7 +415,7 @@ function* settlePlan(
 /** 让模型先给 3-5 条待办；失败时返回空计划，循环照常跑 */
 async function makePlan(
   input: KbAgentInput,
-  usage: DeepSeekTokenUsage,
+  usage: LlmTokenUsage,
 ): Promise<KbChatPlanItem[]> {
   try {
     const { content, usage: planUsage } = await callDeepSeekJson({
@@ -432,7 +434,7 @@ async function makePlan(
         { role: "user", content: input.query },
       ],
     })
-    addUsage(usage, planUsage)
+    addLlmUsage(usage, planUsage)
     const parsed = JSON.parse(content) as { steps?: unknown }
     if (!Array.isArray(parsed.steps)) return []
     return parsed.steps
@@ -452,7 +454,7 @@ async function makePlan(
 /** 最终生成：流式产出 delta，聚合 usage */
 async function* generate(opts: {
   input: KbAgentInput
-  usage: DeepSeekTokenUsage
+  usage: LlmTokenUsage
   messages: DeepSeekChatMessage[]
 }): AsyncGenerator<KbChatStreamEvent, KbAgentResult> {
   const { input, usage } = opts
@@ -464,12 +466,12 @@ async function* generate(opts: {
       signal: input.signal,
     })) {
       if (chunk.type === "delta") yield { type: "delta", text: chunk.text }
-      else if (chunk.type === "usage") addUsage(usage, chunk.usage)
+      else if (chunk.type === "usage") addLlmUsage(usage, chunk.usage)
     }
     return {
       status: "ok",
       errorCode: null,
-      usage: hasUsage(usage) ? usage : undefined,
+      usage: hasLlmUsage(usage) ? usage : undefined,
       model: input.model,
     }
   } catch (err) {
@@ -479,7 +481,7 @@ async function* generate(opts: {
         err && typeof err === "object" && "errorCode" in err
           ? String((err as { errorCode?: unknown }).errorCode)
           : "STREAM_FAILED",
-      usage: hasUsage(usage) ? usage : undefined,
+      usage: hasLlmUsage(usage) ? usage : undefined,
       model: input.model,
     }
   }
@@ -512,12 +514,3 @@ function toolActivity(
   }
 }
 
-function addUsage(target: DeepSeekTokenUsage, next: DeepSeekTokenUsage): void {
-  target.prompt_tokens += next.prompt_tokens
-  target.completion_tokens += next.completion_tokens
-  target.total_tokens += next.total_tokens
-}
-
-function hasUsage(usage: DeepSeekTokenUsage): boolean {
-  return usage.total_tokens > 0 || usage.prompt_tokens > 0
-}

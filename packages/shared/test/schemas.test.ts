@@ -293,6 +293,25 @@ describe("kbChatRequestSchema", () => {
         .success,
     ).toBe(false)
   })
+
+  it("conversationId 可选且必须是 uuid，缺省时按无摘要处理", () => {
+    const messages = [{ role: "user" as const, content: "有哪些收藏？" }]
+
+    const omitted = kbChatRequestSchema.safeParse({ messages })
+    expect(omitted.success && omitted.data.conversationId).toBeUndefined()
+
+    expect(
+      kbChatRequestSchema.safeParse({
+        messages,
+        conversationId: crypto.randomUUID(),
+      }).success,
+    ).toBe(true)
+
+    // 前端的会话 id 一律 crypto.randomUUID()，非 uuid 说明链路串了
+    expect(
+      kbChatRequestSchema.safeParse({ messages, conversationId: "abc" }).success,
+    ).toBe(false)
+  })
 })
 
 describe("aiOutputSchema", () => {

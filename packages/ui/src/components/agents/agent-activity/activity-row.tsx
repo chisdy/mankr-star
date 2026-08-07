@@ -86,18 +86,18 @@ function SearchResultRow({ result }: { result: AgentSearchResult }) {
       >
         {result.icon ?? <Globe2 className="size-3" strokeWidth={2} />}
       </span>
-      <span className="min-w-0 truncate font-medium text-foreground/90">
+      <span className="min-w-0 flex-1 truncate font-medium text-foreground/90">
         {result.title}
       </span>
       {result.domain ? (
-        <span className="min-w-0 truncate text-muted-foreground/55">
+        <span className="max-w-[40%] shrink-0 truncate text-muted-foreground/55">
           {result.domain}
         </span>
       ) : null}
     </>
   )
   const className = cn(
-    "flex min-h-7 items-center gap-2 rounded-md px-1.5 py-1 text-left outline-none transition-colors",
+    "flex min-h-7 min-w-0 items-center gap-2 rounded-md px-1.5 py-1 text-left outline-none transition-colors",
     href && "focus-visible:ring-2 focus-visible:ring-ring"
   )
 

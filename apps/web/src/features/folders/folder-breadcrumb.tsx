@@ -7,6 +7,7 @@ import { CaretRightIcon, HouseIcon } from "@phosphor-icons/react"
 import { api } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 import type { Folder } from "@/lib/types"
+import { BOOKMARK_PAGE_PARAM } from "@/features/bookmarks/bookmark-pagination"
 import { cn } from "@workspace/ui/lib/utils"
 
 function breadcrumbFolders(
@@ -42,6 +43,7 @@ export function FolderBreadcrumb({ className }: { className?: string }) {
     const next = new URLSearchParams(searchParams)
     if (id) next.set("folder_id", id)
     else next.delete("folder_id")
+    next.delete(BOOKMARK_PAGE_PARAM)
     const qs = next.toString()
     navigate(qs ? `/?${qs}` : "/")
   }

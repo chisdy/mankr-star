@@ -136,6 +136,14 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
   const persistedRef = React.useRef<string>("")
   /** 每次切换当前会话都自增，用于丢弃已经过期的加载结果 */
   const loadTokenRef = React.useRef(0)
+  /**
+   * 滚动摘要覆盖到的最后一条消息 id，只用来省下一轮请求的上传量
+   * （服务端会拿同一个 id 自行对齐，这里过期不影响正确性）。
+   *
+   * 用 ref 而不是 state：它只在发请求时读，不参与渲染，
+   * 而且必须在同一轮里立刻生效（state 要等下次渲染才更新）。
+   */
+  const coversRef = React.useRef<string | null>(null)
 
   // 设置页清除 Key 后强制回落到关闭，避免带 webSearch:true 打到 400
   const webSearch = wantsWebSearch && anysearchConfigured
@@ -163,7 +171,9 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
       persistedRef.current = signature(id, next)
       void api
         .saveKbConversation(id, [...next])
-        .then(() => {
+        .then((saved) => {
+          // 存档响应顺带回传摘要水位：压缩在后台跑，流里没法通告
+          coversRef.current = saved.summary_covers_through_id
           void queryClient.invalidateQueries({
             queryKey: queryKeys.kb.conversations,
           })
@@ -188,7 +198,8 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     async (
       history: KbMessage[],
       useWeb: boolean,
-      useModel: KbChatModelId
+      useModel: KbChatModelId,
+      convId: string
     ) => {
       const assistantId = crypto.randomUUID()
       setMessages([
@@ -206,11 +217,16 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
         )
       }
 
-      const payload = buildKbChatPayload(history)
+      const payload = buildKbChatPayload(history, coversRef.current)
 
       try {
         await streamKbChat(
-          { messages: payload, webSearch: useWeb, model: useModel },
+          {
+            messages: payload,
+            webSearch: useWeb,
+            model: useModel,
+            conversationId: convId,
+          },
           {
             onMeta: (sources, warnings) => {
               patch((m) => ({ ...m, sources, warnings }))
@@ -280,18 +296,25 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     [],
   )
 
-  /** 首轮提问才需要开会话；id 由客户端生成，首次 PUT 即建库 */
+  /**
+   * 首轮提问才需要开会话；id 由客户端生成，首次 PUT 即建库。
+   * 必须同步返回 id：setConversationId 要等下次渲染才生效，
+   * 而紧随其后的 run 就要把 id 发给服务端去读写滚动摘要，
+   * 读 state 会让首轮永远发不出 conversationId。
+   */
   const ensureConversation = React.useCallback(
-    (history: KbMessage[]) => {
+    (history: KbMessage[]): string => {
       const id = conversationId ?? crypto.randomUUID()
       if (!conversationId) {
         // 提问即接管当前会话，作废仍在路上的恢复／切换请求
         loadTokenRef.current += 1
+        coversRef.current = null
         setConversationId(id)
         writeStored(CONVERSATION_KEY, id)
       }
       // 提问先落库：生成期间刷新页面也还能看到问题并重试
       persist(id, history)
+      return id
     },
     [conversationId, persist]
   )
@@ -304,8 +327,8 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
         ...messages.filter((m) => m.state !== "error"),
         { id: crypto.randomUUID(), role: "user", content },
       ]
-      ensureConversation(history)
-      void run(history, webSearch, model)
+      const id = ensureConversation(history)
+      void run(history, webSearch, model, id)
     },
     [ensureConversation, messages, model, run, status, webSearch],
   )
@@ -315,8 +338,8 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     const lastUser = [...messages].reverse().find((m) => m.role === "user")
     if (!lastUser) return
     const upToUser = messages.slice(0, messages.indexOf(lastUser) + 1)
-    ensureConversation(upToUser)
-    void run(upToUser, webSearch, model)
+    const id = ensureConversation(upToUser)
+    void run(upToUser, webSearch, model, id)
   }, [ensureConversation, messages, model, run, status, webSearch])
 
   const stop = React.useCallback(() => {
@@ -329,6 +352,7 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     abortRef.current = null
     loadTokenRef.current += 1
     persistedRef.current = ""
+    coversRef.current = null
     setConversationId(null)
     writeStored(CONVERSATION_KEY, null)
     setMessages([])
@@ -346,6 +370,8 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     setConversationId(id)
     writeStored(CONVERSATION_KEY, id)
     setMessages(detail.messages)
+    // 摘要水位的权威值在服务端，切会话时一律以库里的为准
+    coversRef.current = detail.summary_covers_through_id
     // 刚从库里读出来的内容不需要再写回去
     persistedRef.current = signature(id, detail.messages)
     setStatus("idle")

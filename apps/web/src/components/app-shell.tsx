@@ -14,6 +14,7 @@ import { Sheet, SheetContent, SheetTitle } from "@workspace/ui/components/sheet"
 import { AppSidebar } from "@/components/app-sidebar"
 import { AddBookmarkDialog } from "@/features/bookmarks/add-bookmark-dialog"
 import { BookmarkFilterPanel } from "@/features/bookmarks/bookmark-filter-panel"
+import { BookmarkDetailDialog } from "@/features/bookmarks/detail/bookmark-detail-dialog"
 import { KbChatBody } from "@/features/kb/kb-chat-body"
 import { KbChatPanel } from "@/features/kb/kb-chat-panel"
 import { KbChatProvider } from "@/features/kb/kb-chat-context"
@@ -25,6 +26,8 @@ import { LoginDialog } from "@/features/auth/login-dialog"
 import { LoginDialogProvider } from "@/hooks/login-dialog-context"
 import { useRefreshFoldersOnAiComplete } from "@/hooks/use-refresh-folders-on-ai-complete"
 import { useRequireAuthAction } from "@/hooks/use-auth"
+import { BOOKMARK_PAGE_PARAM } from "@/features/bookmarks/bookmark-pagination"
+import { APP_SCROLL_ROOT_ID } from "@/lib/scroll-root"
 
 const FOLDER_TREE_HIDDEN_PATHS = new Set(["/feed", "/insights", "/settings"])
 
@@ -70,6 +73,8 @@ function AppShellContent() {
     } else {
       newParams.delete("q")
     }
+    // 换了搜索词就换了结果集，旧页码不再有意义
+    newParams.delete(BOOKMARK_PAGE_PARAM)
     setSearchParams(newParams)
     if (window.location.pathname !== "/") {
       navigate("/?" + newParams.toString())
@@ -142,7 +147,10 @@ function AppShellContent() {
             <FolderTreePanel className="hidden md:flex" resizable />
           ) : null}
 
-          <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-6">
+          <main
+            id={APP_SCROLL_ROOT_ID}
+            className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-6"
+          >
             <Outlet />
           </main>
 
@@ -167,6 +175,9 @@ function AppShellContent() {
       </Sheet>
 
       <AddBookmarkDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
+
+      {/* 由 ?bookmark 驱动，任何子路由都能原地弹出收藏详情 */}
+      <BookmarkDetailDialog />
     </div>
   )
 }

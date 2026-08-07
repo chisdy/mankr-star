@@ -1,6 +1,5 @@
 import * as React from "react"
-import { useSearchParams, useNavigate } from "react-router"
-import { useQuery } from "@tanstack/react-query"
+import { useSearchParams } from "react-router"
 import { useTranslation } from "react-i18next"
 import {
   FunnelIcon,
@@ -23,44 +22,44 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip"
-import { api } from "@/lib/api"
-import { queryKeys } from "@/lib/query-keys"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useFilterPanelOpen } from "@/hooks/use-filter-panel-open"
 import {
+  useBookmarkPaginationSettings,
   useRedirectGuestOnUnauthorized,
   useRequireAuthAction,
 } from "@/hooks/use-auth"
-import { BookmarkRow, BookmarkRowSkeleton } from "./bookmark-row"
-import { BookmarkCard, BookmarkCardSkeleton } from "./bookmark-card"
-import { BookmarkDetailDrawer } from "./bookmark-detail-drawer"
+import { useBookmarkDetail } from "@/hooks/use-bookmark-detail"
+import { getAppScrollRoot } from "@/lib/scroll-root"
+import { BookmarkRowSkeleton } from "./bookmark-row"
+import { BookmarkCardSkeleton } from "./bookmark-card"
 import { AddBookmarkDialog } from "./add-bookmark-dialog"
 import {
   FilterPanelBody,
   countPanelFilters,
 } from "./filter-panel-body"
+import {
+  BOOKMARK_PAGE_PARAM,
+  clampPage,
+  parsePageParam,
+} from "./bookmark-pagination"
+import {
+  BOOKMARK_MASONRY_BREAKPOINTS,
+  BookmarkResults,
+} from "./bookmark-results"
+import { useBookmarkPages } from "./use-bookmark-pages"
 import Masonry from "react-masonry-css"
 import "./bookmark-masonry.css"
-
-const BOOKMARK_MASONRY_BREAKPOINTS = {
-  default: 3,
-  1023: 2,
-  767: 1,
-}
 
 export function BookmarksPage() {
   const { t } = useTranslation(["bookmarks", "common"])
   const [searchParams, setSearchParams] = useSearchParams()
-  const navigate = useNavigate()
   const isMobile = useIsMobile()
   const requireAuth = useRequireAuthAction()
+  const { openDetail } = useBookmarkDetail()
   const { open: filterPanelOpen, setOpen: setFilterPanelOpen } =
     useFilterPanelOpen()
 
-  const [selectedBookmarkId, setSelectedBookmarkId] = React.useState<
-    string | null
-  >(null)
-  const [drawerOpen, setDrawerOpen] = React.useState(false)
   const [addDialogOpen, setAddDialogOpen] = React.useState(false)
   const [filterSheetOpen, setFilterSheetOpen] = React.useState(false)
 
@@ -166,17 +165,78 @@ export function BookmarksPage() {
     ],
   )
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: queryKeys.bookmarks.list(queryParams),
-    queryFn: () => api.getBookmarks(queryParams),
-    refetchInterval: (query) => {
-      const items = query.state.data?.items
-      if (!items?.length) return false
-      return items.some((b) => b.ai_status === "pending") ? 2000 : false
-    },
+  const {
+    mode: paginationMode,
+    pageSize,
+    isResolved: paginationResolved,
+  } = useBookmarkPaginationSettings()
+
+  const requestedPage = parsePageParam(searchParams.get(BOOKMARK_PAGE_PARAM))
+
+  const {
+    items,
+    total,
+    isLoading,
+    isError,
+    error,
+    page,
+    pageCount,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useBookmarkPages({
+    mode: paginationMode,
+    pageSize,
+    page: requestedPage,
+    params: queryParams,
+    enabled: paginationResolved,
   })
 
   useRedirectGuestOnUnauthorized(isError ? (error as Error) : null)
+
+  const goToPage = React.useCallback(
+    (nextPage: number) => {
+      const next = new URLSearchParams(searchParams)
+      if (nextPage <= 1) next.delete(BOOKMARK_PAGE_PARAM)
+      else next.set(BOOKMARK_PAGE_PARAM, String(nextPage))
+      setSearchParams(next)
+      getAppScrollRoot()?.scrollTo({ top: 0 })
+    },
+    [searchParams, setSearchParams],
+  )
+
+  // 页码越界（改了 pageSize、删了收藏）时替换为最后有效页，不留历史记录
+  React.useEffect(() => {
+    if (paginationMode !== "pagination" || isLoading || isError) return
+    const valid = clampPage(requestedPage, pageSize, total)
+    if (valid === requestedPage) return
+    const next = new URLSearchParams(searchParams)
+    if (valid <= 1) next.delete(BOOKMARK_PAGE_PARAM)
+    else next.set(BOOKMARK_PAGE_PARAM, String(valid))
+    setSearchParams(next, { replace: true })
+  }, [
+    paginationMode,
+    isLoading,
+    isError,
+    requestedPage,
+    total,
+    pageSize,
+    searchParams,
+    setSearchParams,
+  ])
+
+  // 非传统模式下 URL 里的遗留页码没有意义，直接清掉
+  React.useEffect(() => {
+    if (paginationMode === "pagination") return
+    if (!searchParams.has(BOOKMARK_PAGE_PARAM)) return
+    const next = new URLSearchParams(searchParams)
+    next.delete(BOOKMARK_PAGE_PARAM)
+    setSearchParams(next, { replace: true })
+  }, [paginationMode, searchParams, setSearchParams])
+
+  // 首屏加载失败才整页报错；追加失败保留已加载内容
+  const showListError = isError && items.length === 0
+  const loadMoreError = isError && items.length > 0
 
   const panelFilterCount = countPanelFilters(searchParams)
   const filterUiOpen = isMobile ? filterSheetOpen : filterPanelOpen
@@ -190,20 +250,18 @@ export function BookmarksPage() {
     setSearchParams(new URLSearchParams())
   }
 
-  const handleRowClick = (bookmarkId: string) => {
-    if (isMobile) {
-      navigate(`/bookmarks/${bookmarkId}`)
-    } else {
-      setSelectedBookmarkId(bookmarkId)
-      setDrawerOpen(true)
-    }
-  }
-
   return (
     <div className="mx-auto min-w-0 w-full max-w-6xl space-y-4 pb-12">
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-          {data ? <span>{t("list.total", { total: data.total })}</span> : null}
+          {!isLoading && !showListError ? (
+            <span>{t("list.total", { total })}</span>
+          ) : null}
+          {paginationMode === "pagination" && pageCount > 1 ? (
+            <span className="whitespace-nowrap">
+              {t("pagination.pageStatus", { page, pageCount })}
+            </span>
+          ) : null}
           {panelFilterCount > 0 ? (
             <span className="truncate">
               {t("list.filterActiveCount", { count: panelFilterCount })}
@@ -317,11 +375,11 @@ export function BookmarksPage() {
             <BookmarkRowSkeleton />
           </div>
         )
-      ) : isError ? (
+      ) : showListError ? (
         <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 text-center text-xs text-destructive">
           {t("list.loadError")}
         </div>
-      ) : !data || data.items.length === 0 ? (
+      ) : items.length === 0 ? (
         <div className="my-6 flex flex-col items-center justify-center space-y-3 rounded-xl border border-dashed border-border/80 bg-card p-12 text-center">
           <div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <StarIcon className="size-6" />
@@ -356,37 +414,21 @@ export function BookmarksPage() {
             </Button>
           )}
         </div>
-      ) : viewMode === "grid" ? (
-        <Masonry
-          breakpointCols={BOOKMARK_MASONRY_BREAKPOINTS}
-          className="bookmark-masonry"
-          columnClassName="bookmark-masonry_column"
-        >
-          {data.items.map((bookmark) => (
-            <BookmarkCard
-              key={bookmark.id}
-              bookmark={bookmark}
-              onClick={() => handleRowClick(bookmark.id)}
-            />
-          ))}
-        </Masonry>
       ) : (
-        <div className="grid min-w-0 w-full gap-3">
-          {data.items.map((bookmark) => (
-            <BookmarkRow
-              key={bookmark.id}
-              bookmark={bookmark}
-              onClick={() => handleRowClick(bookmark.id)}
-            />
-          ))}
-        </div>
+        <BookmarkResults
+          mode={paginationMode}
+          viewMode={viewMode}
+          items={items}
+          page={page}
+          pageCount={pageCount}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          fetchNextPage={fetchNextPage}
+          loadMoreError={loadMoreError}
+          onPageChange={goToPage}
+          onOpenDetail={openDetail}
+        />
       )}
-
-      <BookmarkDetailDrawer
-        bookmarkId={selectedBookmarkId}
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-      />
 
       <AddBookmarkDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
 

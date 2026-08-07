@@ -6,6 +6,7 @@ import {
   Citation,
   type CitationItem,
 } from "@workspace/ui/components/agents/citations"
+import { bookmarkInternalHref } from "./kb-source-links"
 import { toSafeExternalHref } from "@/lib/safe-url"
 
 /** 正文里的收藏引用 [#n] 与网页引用 [Wn] */
@@ -32,18 +33,52 @@ function hostname(url: string): string | undefined {
 /**
  * KbChatSource → CitationItem。后端虽已过滤外链协议，前端仍兜底一次：
  * CitationList 会把 url 直接渲染成 <a href>，过不了校验的只留标题。
+ *
+ * 命中的收藏额外带上站内详情链接，点击直接在当前页弹出详情，
+ * 不必先跳出去再找回来。
  */
 export function toCitationItems(
-  sources: readonly KbChatSource[] | undefined
+  sources: readonly KbChatSource[] | undefined,
+  options?: {
+    onOpenBookmark?: (bookmarkId: string) => void
+    externalLabel?: string
+  }
 ): CitationItem[] {
   if (!sources?.length) return []
+  const onOpenBookmark = options?.onOpenBookmark
   return sources.map((source) => {
     const href = toSafeExternalHref(source.url)
+    const internalHref = bookmarkInternalHref(source)
+    const bookmarkId = source.type === "bookmark" ? source.id?.trim() : undefined
     return {
       id: sourceKey(source),
       title: source.title,
       domain: href ? hostname(href) : undefined,
       ...(href ? { url: href } : {}),
+      ...(internalHref
+        ? {
+            internalHref,
+            externalLabel: options?.externalLabel,
+            onInternalClick:
+              onOpenBookmark && bookmarkId
+                ? (event: React.MouseEvent<HTMLAnchorElement>) => {
+                    // 新标签/新窗口交还给浏览器，只接管普通左键
+                    if (
+                      event.defaultPrevented ||
+                      event.button !== 0 ||
+                      event.metaKey ||
+                      event.ctrlKey ||
+                      event.shiftKey ||
+                      event.altKey
+                    ) {
+                      return
+                    }
+                    event.preventDefault()
+                    onOpenBookmark(bookmarkId)
+                  }
+                : undefined,
+          }
+        : {}),
     }
   })
 }
