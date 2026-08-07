@@ -10,6 +10,11 @@ import {
   DEFAULT_STALE_AFTER_DAYS,
   HEALTH_STATUSES,
   INSIGHTS_RANGES,
+  KB_CHAT_MAX_STORED_MESSAGES,
+  KB_CHAT_MESSAGE_MAX_CHARS,
+  KB_CHAT_MODEL_IDS,
+  KB_CHAT_REQUEST_MAX_MESSAGES,
+  KB_CHAT_TOP_K,
   MAX_TRACKING_DAYS,
   MIN_TRACKING_DAYS,
   PASSWORD_MIN_LENGTH,
@@ -184,6 +189,12 @@ export const deepseekSettingsSchema = z.object({
 })
 export type DeepseekSettingsInput = z.infer<typeof deepseekSettingsSchema>
 
+export const anysearchSettingsSchema = z.object({
+  apiKey: z.string().min(1).optional(),
+  clearKey: z.boolean().optional(),
+})
+export type AnysearchSettingsInput = z.infer<typeof anysearchSettingsSchema>
+
 export const githubPatSettingsSchema = z.object({
   pat: z.string().min(1).optional(),
   clear: z.boolean().optional(),
@@ -256,6 +267,8 @@ export const meResponseSchema = z.object({
   deepseek_configured: z.boolean(),
   deepseek_last4: z.string().nullable(),
   deepseek_model: z.enum(DEEPSEEK_MODELS).or(z.string()),
+  anysearch_configured: z.boolean(),
+  anysearch_last4: z.string().nullable(),
   github_pat_configured: z.boolean(),
   hot_within_days: z.number().int(),
   stale_after_days: z.number().int(),
@@ -293,5 +306,206 @@ export const insightsQuerySchema = z.object({
   range: z.enum(INSIGHTS_RANGES).default(DEFAULT_INSIGHTS_RANGE),
 })
 export type InsightsQuery = z.infer<typeof insightsQuerySchema>
+
+export const kbChatMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1).max(KB_CHAT_MESSAGE_MAX_CHARS),
+})
+export type KbChatMessage = z.infer<typeof kbChatMessageSchema>
+
+export const kbChatRequestSchema = z.object({
+  messages: z
+    .array(kbChatMessageSchema)
+    .min(1)
+    .max(KB_CHAT_REQUEST_MAX_MESSAGES),
+  webSearch: z.boolean().optional().default(false),
+  /** 按轮次生效的模型覆盖；缺省时回落到用户设置里的 deepseek_model */
+  model: z.enum(KB_CHAT_MODEL_IDS).optional(),
+})
+export type KbChatRequest = z.infer<typeof kbChatRequestSchema>
+
+export const KB_SOURCE_TYPES = ["bookmark", "web"] as const
+export type KbSourceType = (typeof KB_SOURCE_TYPES)[number]
+
+/**
+ * 这些结构既由 worker 产出、又要被会话存档接口回传校验，
+ * 所以用 zod 作为唯一来源、类型从 schema infer，避免 type 与校验两份定义漂移。
+ */
+export const kbChatSourceSchema = z.object({
+  type: z.enum(KB_SOURCE_TYPES),
+  /** 仅 bookmark 来源有值 */
+  id: z.string().optional(),
+  title: z.string(),
+  url: z.string(),
+  snippet: z.string(),
+})
+export type KbChatSource = z.infer<typeof kbChatSourceSchema>
+
+export const KB_CHAT_WARNINGS = ["ANYSEARCH_FAILED"] as const
+export type KbChatWarning = (typeof KB_CHAT_WARNINGS)[number]
+
+/** 与 UI 层 TodoItemStatus 逐字对齐，前端零转换直接喂给 TodoList */
+export const KB_CHAT_PLAN_STATUSES = [
+  "pending",
+  "in-progress",
+  "completed",
+  "cancelled",
+] as const
+export type KbChatPlanStatus = (typeof KB_CHAT_PLAN_STATUSES)[number]
+
+export const kbChatPlanItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status: z.enum(KB_CHAT_PLAN_STATUSES),
+  detail: z.string().optional(),
+})
+export type KbChatPlanItem = z.infer<typeof kbChatPlanItemSchema>
+
+/** 与 UI 层 AgentStepStatus 逐字对齐 */
+export const KB_CHAT_ACTIVITY_STEP_STATUSES = [
+  "pending",
+  "active",
+  "complete",
+] as const
+export type KbChatActivityStepStatus =
+  (typeof KB_CHAT_ACTIVITY_STEP_STATUSES)[number]
+
+/** 检索/生成阶段的语义标识，前端按它取本地化文案 */
+export const KB_CHAT_STAGES = [
+  "search_bookmarks",
+  "search_web",
+  "generate",
+] as const
+export type KbChatStage = (typeof KB_CHAT_STAGES)[number]
+
+/**
+ * AgentActivityItem 的服务端子集：只保留能由 worker 真实产出的四种形态，
+ * 字段类型收窄为 string（服务端没有 ReactNode），仍可直接赋给 UI 类型。
+ *
+ * step 的文案走 stage + count 而不是成品句子：worker 层没有 i18n，
+ * 与 errors 用 code 映射同一套路，措辞交给前端。label 只作兜底。
+ */
+export const kbChatActivityItemSchema = z.discriminatedUnion("type", [
+  z.object({
+    id: z.string(),
+    type: z.literal("step"),
+    label: z.string(),
+    status: z.enum(KB_CHAT_ACTIVITY_STEP_STATUSES).optional(),
+    meta: z.string().optional(),
+    stage: z.enum(KB_CHAT_STAGES).optional(),
+    /** 供前端拼 meta 文案的数量，如命中条数 */
+    count: z.number().optional(),
+  }),
+  z.object({
+    id: z.string(),
+    type: z.literal("search"),
+    query: z.string(),
+    results: z
+      .array(
+        z.object({
+          id: z.string(),
+          title: z.string(),
+          domain: z.string().optional(),
+          url: z.string().optional(),
+        }),
+      )
+      .optional(),
+    moreCount: z.number().optional(),
+  }),
+  z.object({
+    id: z.string(),
+    type: z.literal("tool"),
+    action: z.string(),
+    target: z.string(),
+  }),
+  z.object({
+    id: z.string(),
+    type: z.literal("trace"),
+    kind: z.string(),
+    label: z.string(),
+    detail: z.string().optional(),
+  }),
+])
+export type KbChatActivityItem = z.infer<typeof kbChatActivityItemSchema>
+
+/**
+ * SSE 事件契约（顺序敏感，改动前先读 apps/web/test/kb-chat.test.ts）：
+ * - meta 恒为流的第一个事件，且整轮只发一次
+ * - 多轮检索新增的来源走 sources_append 增量追加，绝不重复发 meta
+ * - empty 表示检索无命中、未调用生成模型，由前端渲染本地化文案
+ * - done 收尾；error 表示上游生成失败
+ */
+export type KbChatStreamEvent =
+  | { type: "meta"; sources: KbChatSource[]; warnings?: KbChatWarning[] }
+  | { type: "sources_append"; sources: KbChatSource[] }
+  | { type: "plan"; items: KbChatPlanItem[] }
+  | { type: "plan_update"; id: string; status: KbChatPlanStatus }
+  | { type: "activity"; item: KbChatActivityItem }
+  | { type: "delta"; text: string }
+  | { type: "empty" }
+  | { type: "done" }
+  | { type: "error"; code: string; message: string }
+
+/** 一轮对话的最终状态，前端与存档共用 */
+export const KB_TURN_STATES = [
+  "pending",
+  "streaming",
+  "done",
+  "empty",
+  "error",
+  "aborted",
+] as const
+export type KbTurnState = (typeof KB_TURN_STATES)[number]
+
+/**
+ * 存档里的单条消息。SSE 产出的过程数据（plan / activity）一并保留，
+ * 重开会话时能完整回放检索过程与任务清单。
+ *
+ * 字段用 camelCase 且请求与响应共用这一个 schema —— 它是前端会话状态的存档，
+ * 不是一份资源表示；若出站改成 snake_case，就要为同一结构维护两套字段名与
+ * 两次映射。会话元数据（created_at 等）仍沿用其他接口的 snake_case。
+ */
+export const kbStoredMessageSchema = z.object({
+  id: z.string().min(1).max(64),
+  role: z.enum(["user", "assistant"]),
+  /** 被中止且未产出内容的回合会是空串 */
+  content: z.string().max(KB_CHAT_MESSAGE_MAX_CHARS),
+  state: z.enum(KB_TURN_STATES).optional(),
+  errorCode: z.string().max(64).optional(),
+  sources: z.array(kbChatSourceSchema).max(KB_CHAT_TOP_K * 4).optional(),
+  warnings: z.array(z.enum(KB_CHAT_WARNINGS)).optional(),
+  plan: z.array(kbChatPlanItemSchema).max(20).optional(),
+  activity: z.array(kbChatActivityItemSchema).max(60).optional(),
+})
+export type KbStoredMessage = z.infer<typeof kbStoredMessageSchema>
+
+/** 整会话全量覆盖。重试会截断尾部消息，增量 append 表达不了这种语义 */
+export const kbConversationUpsertSchema = z.object({
+  messages: z
+    .array(kbStoredMessageSchema)
+    .min(1)
+    .max(KB_CHAT_MAX_STORED_MESSAGES)
+    // 会话内 id 唯一由客户端保证，这里拦一道，免得撞唯一索引冒成 500
+    .refine(
+      (items) => new Set(items.map((m) => m.id)).size === items.length,
+      "消息 id 在同一会话内必须唯一",
+    ),
+})
+export type KbConversationUpsert = z.infer<typeof kbConversationUpsertSchema>
+
+export type KbConversationSummary = {
+  id: string
+  title: string
+  created_at: string
+  updated_at: string
+  message_count: number
+}
+
+export type KbConversationDetail = Omit<
+  KbConversationSummary,
+  "message_count"
+> & {
+  messages: KbStoredMessage[]
+}
 
 export { DEFAULT_DEEPSEEK_MODEL }

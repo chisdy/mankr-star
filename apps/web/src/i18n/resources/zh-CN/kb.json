@@ -1,0 +1,115 @@
+{
+  "title": "收藏库对话",
+  "toggleAria": "打开收藏库对话面板",
+  "resizeAria": "调整收藏库面板宽度",
+  "welcome": {
+    "intro": "基于你已收藏的内容问答。开启「联网」后，还会用网页搜索结果补充回答。",
+    "introWebOnly": "收藏库还是空的，本次将只基于网页搜索结果回答。",
+    "libraryEmpty": "收藏库还是空的。先添加几条收藏，或开启「联网」直接搜索网页。",
+    "tryLabel": "试试这样问",
+    "shuffle": "换一批",
+    "suggest": {
+      "folderSummary": "帮我总结一下「{{name}}」里的收藏",
+      "folderBridge": "「{{name}}」和「{{other}}」的收藏能怎么配合着用？",
+      "tagFind": "我收藏过哪些 {{name}} 相关的资料？",
+      "tagCompare": "对比一下我收藏的 {{name}} 资料，分别适合什么场景",
+      "recent": "最近收藏的内容里有哪些值得先看？"
+    },
+    "examples": [
+      "我收藏过哪些做状态管理的库？",
+      "帮我总结一下 AI / LLM 分类下的收藏",
+      "有没有关于性能优化的资料？"
+    ]
+  },
+  "composer": {
+    "placeholder": "问点什么，Enter 发送，Shift + Enter 换行",
+    "webSearch": "联网",
+    "webSearchEnable": "开启联网搜索",
+    "webSearchDisable": "关闭联网搜索",
+    "webSearchUnconfigured": "尚未配置 AnySearch Key，无法联网搜索。",
+    "modelPlaceholder": "选择模型",
+    "models": {
+      "deepseek-v4-flash": "DeepSeek 快速",
+      "deepseek-v4-pro": "DeepSeek 专业"
+    }
+  },
+  "actions": {
+    "send": "发送",
+    "stop": "停止生成",
+    "retry": "重试",
+    "newChat": "开始新对话",
+    "collapse": "收起面板",
+    "copy": "复制回答",
+    "copied": "已复制",
+    "helpful": "有帮助",
+    "notHelpful": "没帮助",
+    "scrollToLatest": "回到最新"
+  },
+  "a11y": {
+    "userMessage": "我的提问",
+    "assistantMessage": "助手回答"
+  },
+  "history": {
+    "title": "历史对话",
+    "loading": "加载中…",
+    "empty": "还没有历史对话。",
+    "loadFailed": "加载历史失败，请稍后重试。",
+    "messageCount_other": "{{count}} 条消息",
+    "delete": "删除这个对话",
+    "deleteFailed": "删除失败，请稍后重试。",
+    "clearAll": "清空全部",
+    "openFailed": "打开对话失败，可能已被删除。"
+  },
+  "plan": {
+    "title": "执行计划",
+    "empty": "暂无任务",
+    "progress": "已完成 {{done}} / {{total}} 项",
+    "status": {
+      "pending": "待执行",
+      "in-progress": "进行中",
+      "completed": "已完成",
+      "cancelled": "已取消"
+    }
+  },
+  "activity": {
+    "active": "正在思考…",
+    "summary_other": "共 {{count}} 个步骤",
+    "more_other": "还有 {{count}} 条",
+    "stage": {
+      "search_bookmarks": {
+        "label": "检索收藏库",
+        "meta_other": "命中 {{count}} 条"
+      },
+      "search_web": {
+        "label": "联网搜索",
+        "meta_other": "命中 {{count}} 条"
+      },
+      "generate": { "label": "生成回答" }
+    }
+  },
+  "states": {
+    "thinking": "正在检索并思考…",
+    "empty": "收藏库中没有找到相关内容。换个说法试试，或开启「联网」补充网页结果。",
+    "stopped": "已停止生成。",
+    "webUnavailable": "联网搜索暂不可用，本次仅基于收藏作答。"
+  },
+  "sources": {
+    "bookmarks": "收藏",
+    "web": "网页",
+    "count_other": "{{count}} 条来源",
+    "citationAria": "查看第 {{index}} 条来源"
+  },
+  "gate": {
+    "deepseek": "收藏库对话需要先配置 DeepSeek API Key。",
+    "goSettings": "去设置"
+  },
+  "errors": {
+    "DEEPSEEK_NOT_CONFIGURED": "尚未配置 DeepSeek API Key，请先到设置页配置。",
+    "ANYSEARCH_NOT_CONFIGURED": "尚未配置联网搜索 Key，请先到设置页配置。",
+    "ANYSEARCH_FAILED": "联网搜索失败，请稍后重试。",
+    "DEEPSEEK_FAILED": "生成失败，请重试。",
+    "RATE_LIMITED": "请求过于频繁，请稍后再试。",
+    "UNAUTHORIZED": "登录已过期，请重新登录。",
+    "UNKNOWN": "出错了，请重试。"
+  }
+}

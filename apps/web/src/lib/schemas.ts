@@ -7,6 +7,8 @@ export const UserSchema = z.object({
   deepseek_configured: z.boolean().default(false),
   deepseek_last4: z.string().nullable().optional(),
   deepseek_model: z.string().nullable().optional(),
+  anysearch_configured: z.boolean().default(false),
+  anysearch_last4: z.string().nullable().optional(),
   github_pat_configured: z.boolean().default(false),
   github_pat_last4: z.string().nullable().optional(),
   hot_within_days: z.number().optional(),

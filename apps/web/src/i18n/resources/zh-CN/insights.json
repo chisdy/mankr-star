@@ -73,7 +73,8 @@
     "kind": {
       "classify": "AI 分类",
       "slug_translate": "Slug 翻译",
-      "connection_test": "连接测试"
+      "connection_test": "连接测试",
+      "kb_chat": "收藏库对话"
     }
   }
 }

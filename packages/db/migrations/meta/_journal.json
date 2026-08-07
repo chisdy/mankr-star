@@ -64,6 +64,34 @@
       "when": 1786008280804,
       "tag": "0008_heavy_dreaming_celestial",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1786020000000,
+      "tag": "0009_bookmarks_fts",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1786020100000,
+      "tag": "0010_anysearch_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1786020200000,
+      "tag": "0011_bookmarks_fts_write_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1786020300000,
+      "tag": "0012_kb_conversations",
+      "breakpoints": true
     }
   ]
 }

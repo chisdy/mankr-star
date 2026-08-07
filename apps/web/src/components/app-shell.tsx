@@ -1,13 +1,24 @@
 import * as React from "react"
 import { Outlet, useLocation, useNavigate, useSearchParams } from "react-router"
 import { useTranslation } from "react-i18next"
-import { PlusIcon, MagnifyingGlassIcon, ListIcon } from "@phosphor-icons/react"
+import {
+  PlusIcon,
+  MagnifyingGlassIcon,
+  ListIcon,
+  SparkleIcon,
+} from "@phosphor-icons/react"
 
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
+import { Sheet, SheetContent, SheetTitle } from "@workspace/ui/components/sheet"
 import { AppSidebar } from "@/components/app-sidebar"
 import { AddBookmarkDialog } from "@/features/bookmarks/add-bookmark-dialog"
 import { BookmarkFilterPanel } from "@/features/bookmarks/bookmark-filter-panel"
+import { KbChatBody } from "@/features/kb/kb-chat-body"
+import { KbChatPanel } from "@/features/kb/kb-chat-panel"
+import { KbChatProvider } from "@/features/kb/kb-chat-context"
+import { useKbPanelOpen } from "@/hooks/use-kb-panel-open"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { FolderBreadcrumb } from "@/features/folders/folder-breadcrumb"
 import { FolderTreePanel } from "@/features/folders/folder-tree-panel"
 import { LoginDialog } from "@/features/auth/login-dialog"
@@ -20,7 +31,9 @@ const FOLDER_TREE_HIDDEN_PATHS = new Set(["/feed", "/insights", "/settings"])
 export function AppShell() {
   return (
     <LoginDialogProvider>
-      <AppShellContent />
+      <KbChatProvider>
+        <AppShellContent />
+      </KbChatProvider>
       <LoginDialog />
     </LoginDialogProvider>
   )
@@ -35,6 +48,8 @@ function AppShellContent() {
 
   const [addDialogOpen, setAddDialogOpen] = React.useState(false)
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false)
+  const { open: kbOpen, setOpen: setKbOpen } = useKbPanelOpen()
+  const isMobile = useIsMobile()
 
   useRefreshFoldersOnAiComplete()
 
@@ -107,6 +122,18 @@ function AppShellContent() {
               <PlusIcon className="size-4" />
               <span className="hidden sm:inline">{t("addButton")}</span>
             </Button>
+
+            <Button
+              variant={kbOpen ? "secondary" : "ghost"}
+              size="icon-sm"
+              onClick={() => requireAuth(() => setKbOpen(!kbOpen))}
+              aria-pressed={kbOpen}
+              aria-label={t("kb:toggleAria")}
+              title={t("kb:toggleAria")}
+              className="shrink-0 text-muted-foreground aria-pressed:text-foreground"
+            >
+              <SparkleIcon className="size-4.5" weight="duotone" />
+            </Button>
           </div>
         </header>
 
@@ -122,8 +149,22 @@ function AppShellContent() {
           {showFolderTree ? (
             <BookmarkFilterPanel className="hidden md:flex" resizable />
           ) : null}
+
+          {!isMobile ? <KbChatPanel resizable /> : null}
         </div>
       </div>
+
+      {/* 移动端改用全宽 Sheet；关闭仅收起面板，不清空会话 */}
+      <Sheet open={isMobile && kbOpen} onOpenChange={(next) => setKbOpen(next)}>
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          className="w-full gap-0 p-0 sm:max-w-none"
+        >
+          <SheetTitle className="sr-only">{t("kb:title")}</SheetTitle>
+          <KbChatBody onCollapse={() => setKbOpen(false)} />
+        </SheetContent>
+      </Sheet>
 
       <AddBookmarkDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
     </div>

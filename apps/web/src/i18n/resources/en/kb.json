@@ -1,0 +1,121 @@
+{
+  "title": "Library chat",
+  "toggleAria": "Open library chat panel",
+  "resizeAria": "Resize library chat panel",
+  "welcome": {
+    "intro": "Ask questions about what you have saved. Turn on \"Web\" to supplement answers with web search results.",
+    "introWebOnly": "Your library is empty, so answers will come from web search only.",
+    "libraryEmpty": "Your library is empty. Add a few bookmarks, or turn on \"Web\" to search the web directly.",
+    "tryLabel": "Try asking",
+    "shuffle": "Show other ideas",
+    "suggest": {
+      "folderSummary": "Summarize what I saved under \"{{name}}\"",
+      "folderBridge": "How do my \"{{name}}\" and \"{{other}}\" bookmarks work together?",
+      "tagFind": "Which {{name}} resources have I saved?",
+      "tagCompare": "Compare my {{name}} bookmarks and say when to use each",
+      "recent": "What's worth reading first among my recent saves?"
+    },
+    "examples": [
+      "Which state management libraries have I saved?",
+      "Summarize what's in my AI / LLM folder",
+      "Do I have anything about performance optimization?"
+    ]
+  },
+  "composer": {
+    "placeholder": "Ask anything. Enter to send, Shift + Enter for a new line",
+    "webSearch": "Web",
+    "webSearchEnable": "Turn on web search",
+    "webSearchDisable": "Turn off web search",
+    "webSearchUnconfigured": "No AnySearch Key configured, web search unavailable.",
+    "modelPlaceholder": "Choose model",
+    "models": {
+      "deepseek-v4-flash": "DeepSeek Flash",
+      "deepseek-v4-pro": "DeepSeek Pro"
+    }
+  },
+  "actions": {
+    "send": "Send",
+    "stop": "Stop generating",
+    "retry": "Retry",
+    "newChat": "Start a new chat",
+    "collapse": "Collapse panel",
+    "copy": "Copy response",
+    "copied": "Copied",
+    "helpful": "Helpful",
+    "notHelpful": "Not helpful",
+    "scrollToLatest": "Jump to latest"
+  },
+  "a11y": {
+    "userMessage": "Your message",
+    "assistantMessage": "Assistant response"
+  },
+  "history": {
+    "title": "Chat history",
+    "loading": "Loading…",
+    "empty": "No past conversations yet.",
+    "loadFailed": "Could not load history. Please try again.",
+    "messageCount_one": "{{count}} message",
+    "messageCount_other": "{{count}} messages",
+    "delete": "Delete this conversation",
+    "deleteFailed": "Delete failed. Please try again.",
+    "clearAll": "Clear all",
+    "openFailed": "Could not open that conversation; it may have been deleted."
+  },
+  "plan": {
+    "title": "Plan",
+    "empty": "No tasks yet",
+    "progress": "{{done}} of {{total}} tasks completed",
+    "status": {
+      "pending": "Pending",
+      "in-progress": "In progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "activity": {
+    "active": "Thinking…",
+    "summary_one": "{{count}} step",
+    "summary_other": "{{count}} steps",
+    "more_one": "+{{count}} more",
+    "more_other": "+{{count}} more",
+    "stage": {
+      "search_bookmarks": {
+        "label": "Searching your library",
+        "meta_one": "{{count}} match",
+        "meta_other": "{{count}} matches"
+      },
+      "search_web": {
+        "label": "Searching the web",
+        "meta_one": "{{count}} result",
+        "meta_other": "{{count}} results"
+      },
+      "generate": { "label": "Generating answer" }
+    }
+  },
+  "states": {
+    "thinking": "Searching and thinking…",
+    "empty": "Nothing relevant found in your library. Try rephrasing, or turn on \"Web\" for web results.",
+    "stopped": "Generation stopped.",
+    "webUnavailable": "Web search is unavailable; answered from your library only."
+  },
+  "sources": {
+    "bookmarks": "Bookmarks",
+    "web": "Web",
+    "count_one": "{{count}} source",
+    "count_other": "{{count}} sources",
+    "citationAria": "View source {{index}}"
+  },
+  "gate": {
+    "deepseek": "Library chat requires a DeepSeek API Key.",
+    "goSettings": "Go to settings"
+  },
+  "errors": {
+    "DEEPSEEK_NOT_CONFIGURED": "No DeepSeek API Key configured. Set one up in settings.",
+    "ANYSEARCH_NOT_CONFIGURED": "No web search Key configured. Set one up in settings.",
+    "ANYSEARCH_FAILED": "Web search failed. Please try again later.",
+    "DEEPSEEK_FAILED": "Generation failed. Please retry.",
+    "RATE_LIMITED": "Too many requests. Please try again later.",
+    "UNAUTHORIZED": "Your session expired. Please sign in again.",
+    "UNKNOWN": "Something went wrong. Please retry."
+  }
+}

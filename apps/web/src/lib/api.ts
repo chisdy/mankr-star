@@ -1,4 +1,10 @@
 import type {
+  KbConversationDetail,
+  KbConversationSummary,
+  KbStoredMessage,
+} from "@mankr/shared"
+import type {
+  AnySearchSettings,
   Bookmark,
   BookmarkOwner,
   BookmarkSite,
@@ -332,6 +338,8 @@ function getInitialMockData(): MockDataStore {
       deepseek_configured: false,
       deepseek_last4: null,
       deepseek_model: "deepseek-v4-flash",
+      anysearch_configured: false,
+      anysearch_last4: null,
       github_pat_configured: false,
     },
     folders: defaultFolders,
@@ -422,6 +430,7 @@ export const api = {
           username: data.username || data.email.split("@")[0]!,
           email: data.email,
           deepseek_configured: false,
+          anysearch_configured: false,
         }
         saveMockStore()
         return store.user
@@ -1238,6 +1247,72 @@ export const api = {
     }
   },
 
+  async updateAnySearchSettings(data: {
+    api_key: string
+  }): Promise<AnySearchSettings> {
+    try {
+      const res = await request<{
+        anysearch_configured: boolean
+        anysearch_last4: string | null
+      }>("/api/settings/anysearch", {
+        method: "PUT",
+        body: JSON.stringify({ apiKey: data.api_key }),
+      })
+      return { configured: res.anysearch_configured, last4: res.anysearch_last4 }
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        if (store.user) {
+          store.user.anysearch_configured = true
+          store.user.anysearch_last4 = data.api_key.slice(-4)
+          saveMockStore()
+        }
+        return { configured: true, last4: data.api_key.slice(-4) }
+      }
+      throw err
+    }
+  },
+
+  async clearAnySearchKey(): Promise<void> {
+    try {
+      await request("/api/settings/anysearch", { method: "DELETE" })
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        if (store.user) {
+          store.user.anysearch_configured = false
+          store.user.anysearch_last4 = null
+          saveMockStore()
+        }
+        return
+      }
+      throw err
+    }
+  },
+
+  async testAnySearchConnection(): Promise<{
+    success: boolean
+    message: string
+  }> {
+    try {
+      const res = await request<{ ok: boolean; error?: string }>(
+        "/api/settings/anysearch/test",
+        { method: "POST" }
+      )
+      return {
+        success: res.ok,
+        message: res.ok
+          ? "AnySearch 连接正常。"
+          : res.error || "AnySearch 测试失败",
+      }
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        return { success: false, message: "后端未就绪，无法测试 AnySearch 连接。" }
+      }
+      throw err
+    }
+  },
+
   async updateGithubPat(data: {
     pat?: string
   }): Promise<{ configured: boolean; last4?: string }> {
@@ -1350,6 +1425,42 @@ export const api = {
       }
       throw err
     }
+  },
+
+  // 收藏库对话存档 ------------------------------------------------------
+  // 不做 mock 回退：后端不可用时历史本就无处可取，
+  // 再引一套 localStorage 存档会变成两个互相打架的真相源。
+  async getKbConversations(): Promise<KbConversationSummary[]> {
+    const res = await request<{ items: KbConversationSummary[] }>(
+      "/api/kb/conversations",
+    )
+    return res.items
+  },
+
+  async getKbConversation(id: string): Promise<KbConversationDetail> {
+    return await request<KbConversationDetail>(
+      `/api/kb/conversations/${encodeURIComponent(id)}`,
+    )
+  },
+
+  async saveKbConversation(
+    id: string,
+    messages: KbStoredMessage[],
+  ): Promise<KbConversationSummary> {
+    return await request<KbConversationSummary>(
+      `/api/kb/conversations/${encodeURIComponent(id)}`,
+      { method: "PUT", body: JSON.stringify({ messages }) },
+    )
+  },
+
+  async deleteKbConversation(id: string): Promise<void> {
+    await request(`/api/kb/conversations/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    })
+  },
+
+  async clearKbConversations(): Promise<void> {
+    await request("/api/kb/conversations", { method: "DELETE" })
   },
 
   async getExportData(): Promise<ExportData> {

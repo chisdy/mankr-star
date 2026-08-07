@@ -9,6 +9,8 @@ import { feedRoutes } from "./routes/feed"
 import { healthRoutes } from "./routes/health"
 import { importRoutes } from "./routes/import"
 import { insightsRoutes } from "./routes/insights"
+import { kbRoutes } from "./routes/kb"
+import { kbConversationRoutes } from "./routes/kb-conversations"
 import { meRoutes } from "./routes/me"
 import { settingsRoutes } from "./routes/settings"
 import { tagRoutes } from "./routes/tags"
@@ -25,6 +27,8 @@ app.route("/api", folderRoutes)
 app.route("/api", tagRoutes)
 app.route("/api", feedRoutes)
 app.route("/api", insightsRoutes)
+app.route("/api", kbRoutes)
+app.route("/api", kbConversationRoutes)
 app.route("/api", settingsRoutes)
 app.route("/api", importRoutes)
 app.route("/api", exportRoutes)

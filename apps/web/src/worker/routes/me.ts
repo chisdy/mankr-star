@@ -24,6 +24,8 @@ meRoutes.get("/me", requireAuth, async (c) => {
     deepseek_configured: Boolean(user.deepseekApiKeyEncrypted),
     deepseek_last4: user.deepseekKeyLast4,
     deepseek_model: user.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
+    anysearch_configured: Boolean(user.anysearchApiKeyEncrypted),
+    anysearch_last4: user.anysearchKeyLast4,
     github_pat_configured: Boolean(user.githubPatEncrypted),
     hot_within_days: user.hotWithinDays ?? DEFAULT_HOT_WITHIN_DAYS,
     stale_after_days: user.staleAfterDays ?? DEFAULT_STALE_AFTER_DAYS,

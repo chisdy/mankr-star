@@ -7,6 +7,9 @@
     "deepseekCleared": "已清除 DeepSeek API Key",
     "deepseekTestSuccess": "DeepSeek API 测试成功！",
     "deepseekTestFailed": "DeepSeek API 测试失败",
+    "anysearchSaved": "已保存 AnySearch API Key",
+    "anysearchCleared": "已清除 AnySearch API Key",
+    "anysearchTestSuccess": "AnySearch 连接测试成功！",
     "patSaved": "已保存 GitHub PAT",
     "patSaveFailed": "PAT 保存失败",
     "trackingSaved": "已更新跟踪阈值并重算仓库近况",
@@ -50,8 +53,23 @@
     "clear": "清除 Key",
     "clearConfirm": "确定要清除 DeepSeek API Key 吗？"
   },
+  "anysearch": {
+    "section": "3. 联网搜索 (AnySearch)",
+    "configuredBadge": "已配置 (****{{last4}})",
+    "unconfiguredBadge": "未配置",
+    "description": "可选。配置后可在收藏库对话中开启「联网」，用网页搜索结果补充收藏库内容。密钥采用 AES-GCM 加密存储，仅在服务端使用。",
+    "keyPlaceholder": "粘贴 AnySearch API Key",
+    "savedKeyPlaceholder": "已保存密钥 (****{{last4}})，若不修改请留空",
+    "keyRequired": "请输入 AnySearch API Key",
+    "hint": "免费 Key 可在控制台创建：",
+    "consoleLink": "AnySearch 控制台",
+    "save": "保存 Key",
+    "test": "测试连接",
+    "clear": "清除 Key",
+    "clearConfirm": "确定要清除 AnySearch API Key 吗？清除后收藏库对话将无法联网。"
+  },
   "github": {
-    "section": "3. GitHub PAT",
+    "section": "4. GitHub PAT",
     "configuredBadge": "已配置 (****{{last4}})",
     "unconfiguredBadge": "未配置",
     "description": "可选。配置 PAT 可提高 GitHub REST API 请求限额（提升星数与更新同步速度）。",
@@ -60,27 +78,27 @@
     "save": "保存 PAT"
   },
   "tracking": {
-    "section": "4. 更新跟踪",
+    "section": "5. 更新跟踪",
     "description": "系统每 6 小时同步一次 GitHub 近况。可调整「近期活跃」与「疑似停更」判定天数；保存后会按已有推送时间本地重算，不额外请求 GitHub。单条收藏可在详情中关闭跟踪。",
     "hotWithinDays": "近期活跃（天内有推送）",
     "staleAfterDays": "疑似停更（超过多少天无推送）",
     "save": "保存阈值"
   },
   "visibility": {
-    "section": "5. 可见性",
+    "section": "6. 可见性",
     "description": "控制未登录访客能否只读查看本实例的收藏与动态。",
     "publicBrowsing": "公开浏览",
     "publicBrowsingDescription": "开启后，任何人可通过本实例链接只读查看收藏与动态；关闭后必须登录才能访问。添加收藏、新建文件夹等操作仍需登录。私人笔记始终不对访客可见。"
   },
   "export": {
-    "section": "6. 数据备份与导出",
+    "section": "7. 数据备份与导出",
     "description": "导出全部收藏、分类与标签数据为 JSON 格式。不含站点账号与密码。",
     "title": "导出全库 JSON",
     "detail": "包含私有笔记、AI 摘要、标签与时间戳；不含站点账号与密码",
     "button": "导出数据"
   },
   "appearance": {
-    "section": "7. 外观与语言",
+    "section": "8. 外观与语言",
     "description": "主题与界面语言",
     "themeDescription": "自适应浅色 / 深色界面主题",
     "system": "跟随系统",

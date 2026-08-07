@@ -5,11 +5,22 @@
  */
 import { createExecutionContext, env, waitOnExecutionContext } from "cloudflare:test"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  KB_CHAT_MESSAGE_MAX_CHARS,
+  KB_CHAT_REQUEST_MAX_MESSAGES,
+  kbChatRequestSchema,
+  type KbChatActivityItem,
+  type KbChatSource,
+  type KbStoredMessage,
+} from "@mankr/shared"
 import { ApiError, api } from "../src/lib/api"
+import { buildKbChatPayload, streamKbChat } from "../src/lib/kb-chat"
 import { app } from "../src/worker/app"
 import { OWNER, githubRepoPayload } from "./helpers"
 
 const GITHUB_REPOS = "https://api.github.com/repos/"
+const ANYSEARCH = "https://api.anysearch.com/v1/search"
+const DEEPSEEK = "https://api.deepseek.com/chat/completions"
 
 let clientIp = 0
 
@@ -66,6 +77,27 @@ function installBrowserFetch() {
     if (url.startsWith(`${GITHUB_REPOS}facebook/react`)) {
       return new Response(JSON.stringify(githubRepoPayload("facebook/react")), {
         headers: { "content-type": "application/json" },
+      })
+    }
+    if (url.startsWith(ANYSEARCH)) {
+      return new Response(
+        JSON.stringify({
+          code: 0,
+          data: {
+            results: [
+              { title: "React", url: "https://react.dev", snippet: "docs" },
+            ],
+          },
+        }),
+        { headers: { "content-type": "application/json" } },
+      )
+    }
+    if (url.startsWith(DEEPSEEK)) {
+      const body =
+        `data: ${JSON.stringify({ choices: [{ delta: { content: "答案" } }] })}\n\n` +
+        "data: [DONE]\n\n"
+      return new Response(body, {
+        headers: { "content-type": "text/event-stream" },
       })
     }
     throw new Error(`未 mock 的出站请求: ${url}`)
@@ -337,5 +369,236 @@ describe("api client 业务映射", () => {
     expect(data.version).toBe(2)
     expect(data.bookmarks).toHaveLength(1)
     expect(Array.isArray(data.folders)).toBe(true)
+  })
+
+  it("AnySearch Key 保存 / 测试 / 清除全链路在 /me 同步", async () => {
+    expect((await api.getMe()).anysearch_configured).toBe(false)
+
+    const saved = await api.updateAnySearchSettings({
+      api_key: "as-client-test-4321",
+    })
+    expect(saved.configured).toBe(true)
+    expect(saved.last4).toBe("4321")
+
+    const me = await api.getMe()
+    expect(me.anysearch_configured).toBe(true)
+    expect(me.anysearch_last4).toBe("4321")
+
+    expect((await api.testAnySearchConnection()).success).toBe(true)
+
+    await api.clearAnySearchKey()
+    expect((await api.getMe()).anysearch_configured).toBe(false)
+  })
+})
+
+describe("streamKbChat 契约", () => {
+  beforeEach(async () => {
+    await registerViaClient()
+    await api.updateDeepSeekSettings({ api_key: "sk-kb-client-test-0001" })
+    await api.createBookmark({ url: "facebook/react" })
+  })
+
+  it("命中收藏后回调 meta 与 delta", async () => {
+    const sources: KbChatSource[] = []
+    let text = ""
+
+    await streamKbChat(
+      { messages: [{ role: "user", content: "react" }], webSearch: false },
+      {
+        onMeta: (s) => sources.push(...s),
+        onDelta: (d) => {
+          text += d
+        },
+      },
+    )
+
+    expect(sources.some((s) => s.type === "bookmark")).toBe(true)
+    expect(text).toBe("答案")
+  })
+
+  it("联网未配置时抛 ANYSEARCH_NOT_CONFIGURED", async () => {
+    const error = await streamKbChat(
+      { messages: [{ role: "user", content: "react" }], webSearch: true },
+      {},
+    )
+      .then(() => null)
+      .catch((e: unknown) => e)
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect((error as ApiError).code).toBe("ANYSEARCH_NOT_CONFIGURED")
+  })
+
+  it("检索无命中时回调 onEmpty 而非 onDelta", async () => {
+    let empty = false
+    let delta = false
+    await streamKbChat(
+      {
+        messages: [{ role: "user", content: "量子退火超导材料" }],
+        webSearch: false,
+      },
+      {
+        onEmpty: () => {
+          empty = true
+        },
+        onDelta: () => {
+          delta = true
+        },
+      },
+    )
+    expect(empty).toBe(true)
+    expect(delta).toBe(false)
+  })
+
+  it("快路径的检索阶段回调 onActivity，并带上 stage 与命中数", async () => {
+    const activity: KbChatActivityItem[] = []
+    await streamKbChat(
+      { messages: [{ role: "user", content: "react" }], webSearch: false },
+      { onActivity: (item) => activity.push(item) },
+    )
+
+    const bookmarks = activity.find((i) => i.id === "prefetch-bookmarks")
+    expect(bookmarks?.type).toBe("step")
+    if (bookmarks?.type !== "step") throw new Error("expected step")
+    expect(bookmarks.stage).toBe("search_bookmarks")
+    expect(bookmarks.count).toBeGreaterThan(0)
+    // 未开联网时不该凭空报一条联网检索
+    expect(activity.some((i) => i.id === "prefetch-web")).toBe(false)
+  })
+
+  it("请求级模型透传到后端", async () => {
+    const models: string[] = []
+    const inner = globalThis.fetch
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : String(input)
+      if (url.startsWith(DEEPSEEK) && typeof init?.body === "string") {
+        const body = JSON.parse(init.body) as { model?: string }
+        if (body.model) models.push(body.model)
+      }
+      return inner(input, init)
+    })
+
+    await streamKbChat(
+      {
+        messages: [{ role: "user", content: "react" }],
+        webSearch: false,
+        model: "deepseek-v4-pro",
+      },
+      {},
+    )
+
+    expect(models).toContain("deepseek-v4-pro")
+  })
+
+  it("空命中回合不会卡死后续提问", async () => {
+    const history = [
+      { role: "user" as const, content: "量子退火超导材料" },
+      // 空命中回合，助手侧没有正文
+      { role: "assistant" as const, content: "" },
+      { role: "user" as const, content: "react" },
+    ]
+
+    let text = ""
+    await streamKbChat(
+      { messages: buildKbChatPayload(history), webSearch: false },
+      {
+        onDelta: (d) => {
+          text += d
+        },
+      },
+    )
+
+    expect(text).toBe("答案")
+  })
+})
+
+describe("会话存档 api client", () => {
+  beforeEach(async () => {
+    await registerViaClient()
+  })
+
+  it("存档、列出、读回、删除走通同一套字段名", async () => {
+    const id = crypto.randomUUID()
+    const messages: KbStoredMessage[] = [
+      { id: "m1", role: "user", content: "我收藏过哪些状态管理库？" },
+      {
+        id: "m2",
+        role: "assistant",
+        content: "zustand 与 jotai。",
+        state: "done",
+        sources: [
+          {
+            type: "bookmark",
+            id: "bm-1",
+            title: "zustand",
+            url: "https://github.com/pmndrs/zustand",
+            snippet: "轻量状态管理",
+          },
+        ],
+        activity: [
+          {
+            id: "a1",
+            type: "step",
+            label: "检索收藏库",
+            status: "complete",
+            stage: "search_bookmarks",
+            count: 1,
+          },
+        ],
+      },
+    ]
+
+    const saved = await api.saveKbConversation(id, messages)
+    expect(saved.title).toBe("我收藏过哪些状态管理库？")
+    expect(saved.message_count).toBe(2)
+
+    const list = await api.getKbConversations()
+    expect(list.map((c) => c.id)).toContain(id)
+
+    const detail = await api.getKbConversation(id)
+    expect(detail.messages).toEqual(messages)
+
+    await api.deleteKbConversation(id)
+    await expect(api.getKbConversation(id)).rejects.toThrow(ApiError)
+  })
+
+  it("clearKbConversations 清掉全部存档", async () => {
+    await api.saveKbConversation(crypto.randomUUID(), [
+      { id: "m1", role: "user", content: "一" },
+    ])
+    await api.clearKbConversations()
+    expect(await api.getKbConversations()).toEqual([])
+  })
+})
+
+describe("buildKbChatPayload", () => {
+  it("剔除空内容、截断超长正文并限制条数", () => {
+    const history = [
+      { role: "user" as const, content: "  第一问  " },
+      { role: "assistant" as const, content: "   " },
+      { role: "user" as const, content: "x".repeat(KB_CHAT_MESSAGE_MAX_CHARS + 200) },
+    ]
+
+    const payload = buildKbChatPayload(history)
+
+    expect(payload).toHaveLength(2)
+    expect(payload[0]).toEqual({ role: "user", content: "第一问" })
+    expect(payload[1]?.content).toHaveLength(KB_CHAT_MESSAGE_MAX_CHARS)
+    expect(kbChatRequestSchema.safeParse({ messages: payload }).success).toBe(
+      true,
+    )
+  })
+
+  it("超出请求上限时只保留最近的消息", () => {
+    const history = Array.from(
+      { length: KB_CHAT_REQUEST_MAX_MESSAGES + 5 },
+      (_, i) => ({ role: "user" as const, content: `第 ${i} 问` }),
+    )
+
+    const payload = buildKbChatPayload(history)
+
+    expect(payload).toHaveLength(KB_CHAT_REQUEST_MAX_MESSAGES)
+    expect(payload.at(-1)?.content).toBe(
+      `第 ${KB_CHAT_REQUEST_MAX_MESSAGES + 4} 问`,
+    )
   })
 })

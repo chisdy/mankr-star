@@ -6,6 +6,8 @@ const TABLES = [
   "update_events",
   "ai_jobs",
   "ai_usage_logs",
+  "kb_messages",
+  "kb_conversations",
   "bookmarks",
   "tags",
   "folders",

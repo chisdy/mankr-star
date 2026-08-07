@@ -3,14 +3,20 @@ import {
   aiOutputSchema,
   createBookmarkSchema,
   createFolderSchema,
+  anysearchSettingsSchema,
   deepseekSettingsSchema,
   deleteFolderSchema,
+  kbChatRequestSchema,
   listBookmarksQuerySchema,
   loginSchema,
   registerSchema,
   updateBookmarkSchema,
 } from "../src/schemas"
-import { DEFAULT_DEEPSEEK_MODEL, PASSWORD_MIN_LENGTH } from "../src/constants"
+import {
+  DEFAULT_DEEPSEEK_MODEL,
+  KB_CHAT_MODEL_IDS,
+  PASSWORD_MIN_LENGTH,
+} from "../src/constants"
 
 describe("registerSchema", () => {
   it("email 必填，username 可选", () => {
@@ -234,6 +240,58 @@ describe("deepseekSettingsSchema", () => {
   it("支持 apiKey 与 clearKey", () => {
     expect(deepseekSettingsSchema.safeParse({ apiKey: "sk-test" }).success).toBe(true)
     expect(deepseekSettingsSchema.safeParse({ clearKey: true }).success).toBe(true)
+  })
+})
+
+describe("anysearchSettingsSchema", () => {
+  it("支持 apiKey 与 clearKey", () => {
+    expect(anysearchSettingsSchema.safeParse({ apiKey: "as-test" }).success).toBe(
+      true,
+    )
+    expect(anysearchSettingsSchema.safeParse({ clearKey: true }).success).toBe(
+      true,
+    )
+  })
+
+  it("拒绝空 apiKey", () => {
+    expect(anysearchSettingsSchema.safeParse({ apiKey: "" }).success).toBe(false)
+  })
+})
+
+describe("kbChatRequestSchema", () => {
+  it("webSearch 默认 false", () => {
+    const res = kbChatRequestSchema.safeParse({
+      messages: [{ role: "user", content: "有哪些状态管理库？" }],
+    })
+    expect(res.success).toBe(true)
+    expect(res.success && res.data.webSearch).toBe(false)
+  })
+
+  it("拒绝空消息列表与非法角色", () => {
+    expect(kbChatRequestSchema.safeParse({ messages: [] }).success).toBe(false)
+    expect(
+      kbChatRequestSchema.safeParse({
+        messages: [{ role: "system", content: "hi" }],
+      }).success,
+    ).toBe(false)
+  })
+
+  it("model 只接受 KB_CHAT_MODELS 内的取值，缺省为 undefined", () => {
+    const messages = [{ role: "user" as const, content: "有哪些收藏？" }]
+
+    const omitted = kbChatRequestSchema.safeParse({ messages })
+    expect(omitted.success && omitted.data.model).toBeUndefined()
+
+    for (const model of KB_CHAT_MODEL_IDS) {
+      expect(kbChatRequestSchema.safeParse({ messages, model }).success).toBe(
+        true,
+      )
+    }
+
+    expect(
+      kbChatRequestSchema.safeParse({ messages, model: "deepseek-v3-retired" })
+        .success,
+    ).toBe(false)
   })
 })
 

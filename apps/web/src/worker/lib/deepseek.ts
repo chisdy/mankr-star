@@ -681,6 +681,261 @@ export async function testDeepSeekConnection(
   }
 }
 
+export type DeepSeekToolCall = {
+  id: string
+  type: "function"
+  function: { name: string; arguments: string }
+}
+
+/**
+ * 服务端内部消息类型。tool role 与 tool_calls 只在 agent 循环内部流转，
+ * 请求体那侧的 kbChatMessageSchema 仍只接受 user / assistant。
+ */
+export type DeepSeekChatMessage =
+  | { role: "system" | "user"; content: string }
+  | { role: "assistant"; content: string; tool_calls?: DeepSeekToolCall[] }
+  | { role: "tool"; content: string; tool_call_id: string }
+
+export type DeepSeekTool = {
+  type: "function"
+  function: {
+    name: string
+    description: string
+    parameters: Record<string, unknown>
+  }
+}
+
+export type DeepSeekStreamChunk =
+  | { type: "delta"; text: string }
+  | { type: "tool_call"; calls: DeepSeekToolCall[] }
+  | { type: "usage"; usage: DeepSeekTokenUsage }
+
+type ToolCallDelta = {
+  index?: number
+  id?: string
+  type?: string
+  function?: { name?: string; arguments?: string }
+}
+
+/**
+ * 流式 chat completion。逐块产出增量文本，末尾产出 usage（若上游返回）。
+ * 传了 tools 时，delta.tool_calls 的分片会按 index 累积，
+ * 在流结束前一次性产出完整的 tool_call chunk。
+ * 非 2xx 或网络错误抛 DeepSeekCallError，便于调用方落用量日志。
+ */
+export async function* streamDeepSeekChat(opts: {
+  apiKey: string
+  model?: string
+  messages: DeepSeekChatMessage[]
+  temperature?: number
+  maxTokens?: number
+  tools?: DeepSeekTool[]
+  toolChoice?: "auto" | "none"
+  signal?: AbortSignal
+}): AsyncGenerator<DeepSeekStreamChunk> {
+  const model = opts.model || DEFAULT_DEEPSEEK_MODEL
+  const started = Date.now()
+
+  let res: Response
+  try {
+    res = await fetch(`${DEEPSEEK_API_BASE}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${opts.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: opts.messages,
+        temperature: opts.temperature ?? 0.3,
+        ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+        ...(opts.tools?.length
+          ? {
+              tools: opts.tools,
+              tool_choice: opts.toolChoice ?? "auto",
+            }
+          : {}),
+        stream: true,
+        stream_options: { include_usage: true },
+      }),
+      signal: opts.signal,
+    })
+  } catch (e) {
+    throw new DeepSeekCallError(e instanceof Error ? e.message : String(e), {
+      model,
+      latencyMs: Date.now() - started,
+      errorCode: "NETWORK_ERROR",
+    })
+  }
+
+  if (!res.ok || !res.body) {
+    const body = await res.text().catch(() => "")
+    throw new DeepSeekCallError(
+      `DeepSeek API ${res.status}: ${body.slice(0, 200)}`,
+      {
+        model,
+        latencyMs: Date.now() - started,
+        errorCode: res.ok ? "EMPTY_BODY" : `HTTP_${res.status}`,
+      },
+    )
+  }
+
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
+  let buffer = ""
+  // 工具调用按 index 分片下发，累积到流末尾才完整
+  const pendingCalls = new Map<number, DeepSeekToolCall>()
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += value
+
+      let boundary = buffer.indexOf("\n")
+      while (boundary >= 0) {
+        const line = buffer.slice(0, boundary).trim()
+        buffer = buffer.slice(boundary + 1)
+        boundary = buffer.indexOf("\n")
+
+        if (!line.startsWith("data:")) continue
+        const payload = line.slice(5).trim()
+        if (!payload || payload === "[DONE]") continue
+
+        let parsed: {
+          choices?: Array<{
+            delta?: { content?: string; tool_calls?: ToolCallDelta[] }
+          }>
+          usage?: unknown
+        }
+        try {
+          parsed = JSON.parse(payload)
+        } catch {
+          continue
+        }
+
+        const delta = parsed.choices?.[0]?.delta
+        if (delta?.content) yield { type: "delta", text: delta.content }
+        if (delta?.tool_calls) accumulateToolCalls(pendingCalls, delta.tool_calls)
+        if (parsed.usage) {
+          yield { type: "usage", usage: parseDeepSeekUsage(parsed.usage) }
+        }
+      }
+    }
+
+    if (pendingCalls.size > 0) {
+      const calls = [...pendingCalls.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([, call]) => call)
+        .filter((call) => call.function.name)
+      if (calls.length > 0) yield { type: "tool_call", calls }
+    }
+  } finally {
+    await reader.cancel().catch(() => {})
+  }
+}
+
+/**
+ * 非流式 JSON 调用，供意图路由这类低成本判定使用。
+ * 上游异常一律抛 DeepSeekCallError，usage 随错误带出便于记账。
+ */
+export async function callDeepSeekJson(opts: {
+  apiKey: string
+  model?: string
+  messages: DeepSeekChatMessage[]
+  temperature?: number
+  maxTokens?: number
+  signal?: AbortSignal
+}): Promise<{ content: string; usage: DeepSeekTokenUsage }> {
+  const model = opts.model || DEFAULT_DEEPSEEK_MODEL
+  const started = Date.now()
+
+  let res: Response
+  try {
+    res = await fetch(`${DEEPSEEK_API_BASE}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${opts.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: opts.messages,
+        response_format: { type: "json_object" },
+        temperature: opts.temperature ?? 0,
+        ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+      }),
+      signal: opts.signal,
+    })
+  } catch (e) {
+    throw new DeepSeekCallError(e instanceof Error ? e.message : String(e), {
+      model,
+      latencyMs: Date.now() - started,
+      errorCode: "NETWORK_ERROR",
+    })
+  }
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "")
+    throw new DeepSeekCallError(
+      `DeepSeek API ${res.status}: ${body.slice(0, 200)}`,
+      {
+        model,
+        latencyMs: Date.now() - started,
+        errorCode: `HTTP_${res.status}`,
+      },
+    )
+  }
+
+  let data: {
+    choices?: Array<{ message?: { content?: string } }>
+    usage?: unknown
+  }
+  try {
+    data = await res.json()
+  } catch {
+    throw new DeepSeekCallError("DeepSeek 返回非 JSON", {
+      model,
+      latencyMs: Date.now() - started,
+      errorCode: "INVALID_JSON",
+    })
+  }
+
+  const usage = parseDeepSeekUsage(data.usage)
+  const content = data.choices?.[0]?.message?.content
+  if (!content) {
+    throw new DeepSeekCallError("DeepSeek 返回空内容", {
+      usage,
+      model,
+      latencyMs: Date.now() - started,
+      errorCode: "EMPTY_CONTENT",
+    })
+  }
+  return { content, usage }
+}
+
+function accumulateToolCalls(
+  pending: Map<number, DeepSeekToolCall>,
+  deltas: ToolCallDelta[]
+): void {
+  for (const delta of deltas) {
+    const index = delta.index ?? 0
+    const current = pending.get(index) ?? {
+      id: "",
+      type: "function" as const,
+      function: { name: "", arguments: "" },
+    }
+    pending.set(index, {
+      id: delta.id ?? current.id,
+      type: "function",
+      function: {
+        name: delta.function?.name ?? current.function.name,
+        // arguments 是逐字符拼出来的 JSON 串，必须累加
+        arguments: current.function.arguments + (delta.function?.arguments ?? ""),
+      },
+    })
+  }
+}
+
 /** @deprecated */
 export type CategoryTreeNode = {
   name: string

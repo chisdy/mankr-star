@@ -18,6 +18,7 @@ import enBookmarks from "./resources/en/bookmarks.json"
 import enFolders from "./resources/en/folders.json"
 import enFeed from "./resources/en/feed.json"
 import enInsights from "./resources/en/insights.json"
+import enKb from "./resources/en/kb.json"
 import enErrors from "./resources/en/errors.json"
 
 import zhCommon from "./resources/zh-CN/common.json"
@@ -28,6 +29,7 @@ import zhBookmarks from "./resources/zh-CN/bookmarks.json"
 import zhFolders from "./resources/zh-CN/folders.json"
 import zhFeed from "./resources/zh-CN/feed.json"
 import zhInsights from "./resources/zh-CN/insights.json"
+import zhKb from "./resources/zh-CN/kb.json"
 import zhErrors from "./resources/zh-CN/errors.json"
 
 const resources = {
@@ -40,6 +42,7 @@ const resources = {
     folders: enFolders,
     feed: enFeed,
     insights: enInsights,
+    kb: enKb,
     errors: enErrors,
   },
   "zh-CN": {
@@ -51,6 +54,7 @@ const resources = {
     folders: zhFolders,
     feed: zhFeed,
     insights: zhInsights,
+    kb: zhKb,
     errors: zhErrors,
   },
 } as const
@@ -77,6 +81,7 @@ void i18n.use(initReactI18next).init({
     "folders",
     "feed",
     "insights",
+    "kb",
     "errors",
   ],
   interpolation: { escapeValue: false },

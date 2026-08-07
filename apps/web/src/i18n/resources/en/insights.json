@@ -73,7 +73,8 @@
     "kind": {
       "classify": "AI classify",
       "slug_translate": "Slug translate",
-      "connection_test": "Connection test"
+      "connection_test": "Connection test",
+      "kb_chat": "Library chat"
     }
   }
 }

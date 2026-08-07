@@ -60,6 +60,9 @@ export function SettingsPage() {
     }
   }, [user])
 
+  // AnySearch form state
+  const [anysearchKey, setAnysearchKey] = React.useState("")
+
   // GitHub PAT state
   const [githubPat, setGithubPat] = React.useState("")
 
@@ -105,6 +108,42 @@ export function SettingsPage() {
     mutationFn: () => api.testDeepSeekConnection(),
     onSuccess: () => {
       toast.success(t("toasts.deepseekTestSuccess"))
+    },
+    onError: (err: Error) => {
+      toast.error(formatApiError(err, t))
+    },
+  })
+
+  const updateAnySearchMutation = useMutation({
+    mutationFn: () =>
+      api.updateAnySearchSettings({ api_key: anysearchKey.trim() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me })
+      toast.success(t("toasts.anysearchSaved"))
+      setAnysearchKey("")
+    },
+    onError: (err: Error) => {
+      toast.error(formatApiError(err, t))
+    },
+  })
+
+  const clearAnySearchMutation = useMutation({
+    mutationFn: () => api.clearAnySearchKey(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me })
+      toast.success(t("toasts.anysearchCleared"))
+      setAnysearchKey("")
+    },
+    onError: (err: Error) => {
+      toast.error(formatApiError(err, t))
+    },
+  })
+
+  const testAnySearchMutation = useMutation({
+    mutationFn: () => api.testAnySearchConnection(),
+    onSuccess: (res) => {
+      if (res.success) toast.success(t("toasts.anysearchTestSuccess"))
+      else toast.error(res.message)
     },
     onError: (err: Error) => {
       toast.error(formatApiError(err, t))
@@ -438,7 +477,117 @@ export function SettingsPage() {
         </form>
       </section>
 
-      {/* Section 3: GitHub PAT */}
+      {/* Section 3: AnySearch 联网搜索 */}
+      <section className="space-y-4 border-t border-border pt-6">
+        <div>
+          <h2 className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <span>{t("anysearch.section")}</span>
+            {user?.anysearch_configured ? (
+              <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+                <CheckCircleIcon className="size-3 mr-1" />
+                {t("anysearch.configuredBadge", {
+                  last4: user.anysearch_last4 || "Key",
+                })}
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="text-[10px]">
+                {t("anysearch.unconfiguredBadge")}
+              </Badge>
+            )}
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t("anysearch.description")}
+          </p>
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!anysearchKey.trim()) {
+              toast.error(t("anysearch.keyRequired"))
+              return
+            }
+            updateAnySearchMutation.mutate()
+          }}
+          className="space-y-4 bg-card p-4 rounded-xl border border-border/60"
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="anysearchKey" className="text-xs font-medium">
+              AnySearch API Key
+            </Label>
+            <Input
+              id="anysearchKey"
+              type="password"
+              value={anysearchKey}
+              onChange={(e) => setAnysearchKey(e.target.value)}
+              placeholder={
+                user?.anysearch_configured
+                  ? t("anysearch.savedKeyPlaceholder", {
+                      last4: user.anysearch_last4 || "",
+                    })
+                  : t("anysearch.keyPlaceholder")
+              }
+              className="h-9 text-xs md:text-sm font-mono"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {t("anysearch.hint")}{" "}
+              <a
+                href="https://www.anysearch.com/console/api-keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                {t("anysearch.consoleLink")}
+              </a>
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            <Button
+              type="submit"
+              size="sm"
+              disabled={updateAnySearchMutation.isPending}
+              className="text-xs font-medium"
+            >
+              {updateAnySearchMutation.isPending
+                ? t("common:actions.wait")
+                : t("anysearch.save")}
+            </Button>
+
+            {user?.anysearch_configured && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => testAnySearchMutation.mutate()}
+                  disabled={testAnySearchMutation.isPending}
+                  className="text-xs gap-1.5"
+                >
+                  <PlugsConnectedIcon className="size-3.5" />
+                  <span>{t("anysearch.test")}</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (confirm(t("anysearch.clearConfirm"))) {
+                      clearAnySearchMutation.mutate()
+                    }
+                  }}
+                  className="text-xs text-muted-foreground hover:text-destructive"
+                >
+                  {t("anysearch.clear")}
+                </Button>
+              </>
+            )}
+          </div>
+        </form>
+      </section>
+
+      {/* Section 4: GitHub PAT */}
       <section className="space-y-4 border-t border-border pt-6">
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
@@ -496,7 +645,7 @@ export function SettingsPage() {
         </form>
       </section>
 
-      {/* Section 4: Update tracking */}
+      {/* Section 5: Update tracking */}
       <section className="space-y-4 border-t border-border pt-6">
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">
@@ -557,7 +706,7 @@ export function SettingsPage() {
         </form>
       </section>
 
-      {/* Section 5: Visibility */}
+      {/* Section 6: Visibility */}
       <section className="space-y-4 border-t border-border pt-6">
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">
@@ -586,7 +735,7 @@ export function SettingsPage() {
         </div>
       </section>
 
-      {/* Section 6: Data Export */}
+      {/* Section 7: Data Export */}
       <section className="space-y-4 border-t border-border pt-6">
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">
@@ -615,7 +764,7 @@ export function SettingsPage() {
         </div>
       </section>
 
-      {/* Section 7: Appearance / Theme */}
+      {/* Section 8: Appearance / Theme */}
       <section className="space-y-4 border-t border-border pt-6">
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">

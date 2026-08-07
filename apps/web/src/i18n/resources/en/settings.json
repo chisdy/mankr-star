@@ -7,6 +7,9 @@
     "deepseekCleared": "DeepSeek API Key cleared",
     "deepseekTestSuccess": "DeepSeek API test succeeded!",
     "deepseekTestFailed": "DeepSeek API test failed",
+    "anysearchSaved": "AnySearch API Key saved",
+    "anysearchCleared": "AnySearch API Key cleared",
+    "anysearchTestSuccess": "AnySearch connection test succeeded!",
     "patSaved": "GitHub PAT saved",
     "patSaveFailed": "Failed to save PAT",
     "trackingSaved": "Tracking thresholds updated and health recalculated",
@@ -50,8 +53,23 @@
     "clear": "Clear Key",
     "clearConfirm": "Clear the DeepSeek API Key?"
   },
+  "anysearch": {
+    "section": "3. Web search (AnySearch)",
+    "configuredBadge": "Configured (****{{last4}})",
+    "unconfiguredBadge": "Not configured",
+    "description": "Optional. Enables the \"Web\" toggle in library chat so answers can be supplemented with web results. Keys are stored with AES-GCM encryption and used server-side only.",
+    "keyPlaceholder": "Paste AnySearch API Key",
+    "savedKeyPlaceholder": "Saved key (****{{last4}}), leave blank to keep",
+    "keyRequired": "Please enter an AnySearch API Key",
+    "hint": "Create a key in the console:",
+    "consoleLink": "AnySearch console",
+    "save": "Save Key",
+    "test": "Test connection",
+    "clear": "Clear Key",
+    "clearConfirm": "Clear the AnySearch API Key? Library chat will lose web search."
+  },
   "github": {
-    "section": "3. GitHub PAT",
+    "section": "4. GitHub PAT",
     "configuredBadge": "Configured (****{{last4}})",
     "unconfiguredBadge": "Not configured",
     "description": "Optional. A PAT raises GitHub REST API rate limits for stars and sync.",
@@ -60,27 +78,27 @@
     "save": "Save PAT"
   },
   "tracking": {
-    "section": "4. Update tracking",
+    "section": "5. Update tracking",
     "description": "The system syncs GitHub activity every 6 hours. Adjust hot / stale day thresholds; saving recalculates locally from existing push times without extra GitHub calls. Per-bookmark tracking can be disabled in detail view.",
     "hotWithinDays": "Hot (pushed within days)",
     "staleAfterDays": "Stale (no push for days)",
     "save": "Save thresholds"
   },
   "visibility": {
-    "section": "5. Visibility",
+    "section": "6. Visibility",
     "description": "Control whether signed-out visitors can read-only browse bookmarks and feed.",
     "publicBrowsing": "Public browsing",
     "publicBrowsingDescription": "When enabled, anyone with the link can read bookmarks and feed; when disabled, sign-in is required. Adding bookmarks and creating folders still require sign-in. Private notes stay hidden from guests."
   },
   "export": {
-    "section": "6. Backup & export",
+    "section": "7. Backup & export",
     "description": "Export all bookmarks, folders, and tags as JSON. Site accounts and passwords are excluded.",
     "title": "Export full library JSON",
     "detail": "Includes private notes, AI summaries, tags, and timestamps — not site accounts or passwords",
     "button": "Export data"
   },
   "appearance": {
-    "section": "7. Appearance",
+    "section": "8. Appearance",
     "description": "Theme and interface language",
     "themeDescription": "Light / dark theme",
     "system": "System",

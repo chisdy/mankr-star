@@ -30,4 +30,8 @@ export const queryKeys = {
   settings: {
     deepseek: ["settings", "deepseek"] as const,
   },
+  kb: {
+    conversations: ["kb", "conversations"] as const,
+    conversation: (id: string) => ["kb", "conversations", id] as const,
+  },
 }

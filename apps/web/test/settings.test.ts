@@ -10,12 +10,21 @@ import {
 
 const GITHUB = "https://api.github.com/repos/"
 const DEEPSEEK = "https://api.deepseek.com/chat/completions"
+const ANYSEARCH = "https://api.anysearch.com/v1/search"
 const FAKE_KEY = "sk-test-deepseek-key-abcdef1234"
+const ANYSEARCH_KEY = "as-test-anysearch-key-987654"
 
 interface DeepSeekSettingsResponse {
   deepseek_configured: boolean
   deepseek_last4: string | null
   deepseek_model: string
+  code?: string
+  error?: string
+}
+
+interface AnySearchSettingsResponse {
+  anysearch_configured: boolean
+  anysearch_last4: string | null
   code?: string
   error?: string
 }
@@ -138,6 +147,79 @@ describe("POST /api/settings/deepseek/test", () => {
     expect(failed.status).toBe(502)
     expect(failed.body.ok).toBe(false)
     expect(failed.body.error).toContain("401")
+  })
+})
+
+describe("AnySearch 设置", () => {
+  it("保存 Key 后只回显 configured 与 last4，/me 与 login 同步", async () => {
+    const res = await client.fetch("/api/settings/anysearch", {
+      method: "PUT",
+      body: JSON.stringify({ apiKey: ANYSEARCH_KEY }),
+    })
+    const text = await res.text()
+    const body = JSON.parse(text) as AnySearchSettingsResponse
+
+    expect(res.status).toBe(200)
+    expect(body.anysearch_configured).toBe(true)
+    expect(body.anysearch_last4).toBe(ANYSEARCH_KEY.slice(-4))
+    expect(text).not.toContain(ANYSEARCH_KEY)
+
+    const me = await client.fetch("/api/me")
+    const meText = await me.text()
+    expect(JSON.parse(meText).anysearch_configured).toBe(true)
+    expect(meText).not.toContain(ANYSEARCH_KEY)
+
+    const relogin = new TestClient()
+    const login = await relogin.post<{
+      user: { anysearch_configured: boolean; anysearch_last4: string | null }
+    }>("/api/auth/login", {
+      username: OWNER.username,
+      password: OWNER.password,
+    })
+    expect(login.body.user.anysearch_configured).toBe(true)
+    expect(login.body.user.anysearch_last4).toBe(ANYSEARCH_KEY.slice(-4))
+  })
+
+  it("既无 apiKey 也无 clearKey 返回 400；DELETE 后回到未配置", async () => {
+    const empty = await client.put<{ code: string }>(
+      "/api/settings/anysearch",
+      {},
+    )
+    expect(empty.status).toBe(400)
+
+    await client.put("/api/settings/anysearch", { apiKey: ANYSEARCH_KEY })
+    const cleared = await client.delete<AnySearchSettingsResponse>(
+      "/api/settings/anysearch",
+    )
+    expect(cleared.status).toBe(200)
+    expect(cleared.body.anysearch_configured).toBe(false)
+    expect(cleared.body.anysearch_last4).toBeNull()
+  })
+
+  it("测试连接：未配置 400，配置后成功 200，上游失败 502", async () => {
+    const notConfigured = await client.post<{ ok: boolean; code: string }>(
+      "/api/settings/anysearch/test",
+    )
+    expect(notConfigured.status).toBe(400)
+    expect(notConfigured.body.code).toBe("NOT_CONFIGURED")
+
+    await client.put("/api/settings/anysearch", { apiKey: ANYSEARCH_KEY })
+
+    outbound.json(ANYSEARCH, {
+      code: 0,
+      data: { results: [{ title: "t", url: "https://e.com", snippet: "s" }] },
+    })
+    const ok = await client.post<{ ok: boolean }>("/api/settings/anysearch/test")
+    expect(ok.status).toBe(200)
+    expect(ok.body.ok).toBe(true)
+
+    outbound.json(ANYSEARCH, { code: 401, message: "invalid key" }, 401)
+    const failed = await client.post<{ ok: boolean; error: string }>(
+      "/api/settings/anysearch/test",
+    )
+    expect(failed.status).toBe(502)
+    expect(failed.body.ok).toBe(false)
+    expect(failed.body.error).not.toContain(ANYSEARCH_KEY)
   })
 })
 

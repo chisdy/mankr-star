@@ -10,6 +10,8 @@ export interface User {
   deepseek_configured: boolean
   deepseek_last4?: string | null
   deepseek_model?: string | null
+  anysearch_configured?: boolean
+  anysearch_last4?: string | null
   github_pat_configured?: boolean
   github_pat_last4?: string | null
   hot_within_days?: number
@@ -158,6 +160,11 @@ export interface DeepSeekSettings {
   configured: boolean
   last4?: string | null
   model: string
+}
+
+export interface AnySearchSettings {
+  configured: boolean
+  last4?: string | null
 }
 
 export interface ExportData {

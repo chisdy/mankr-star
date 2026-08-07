@@ -132,6 +132,15 @@
     }
 }
 
+/* agents 组件的滚动区靠内容淡出提示边界，不占位显示原生滚动条 */
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* react-colorful — 贴合 preset 圆角与密度 */
 .mankr-hex-color-picker.react-colorful {
   width: 100%;

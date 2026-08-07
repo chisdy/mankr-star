@@ -19,6 +19,8 @@ export const users = sqliteTable(
     deepseekApiKeyEncrypted: text("deepseek_api_key_encrypted"),
     deepseekKeyLast4: text("deepseek_key_last4"),
     deepseekModel: text("deepseek_model").default("deepseek-v4-flash"),
+    anysearchApiKeyEncrypted: text("anysearch_api_key_encrypted"),
+    anysearchKeyLast4: text("anysearch_key_last4"),
     hotWithinDays: integer("hot_within_days").notNull().default(30),
     staleAfterDays: integer("stale_after_days").notNull().default(180),
     publicBrowsingEnabled: integer("public_browsing_enabled", {
@@ -271,6 +273,58 @@ export const aiUsageLogs = sqliteTable(
   ],
 )
 
+/**
+ * 收藏库对话的会话。与 bookmarks 一样不带 user 维度：本产品是单用户库，
+ * users 表恒只有一行（见 getDeepSeekKey / getAnySearchKey 的取法）。
+ */
+export const kbConversations = sqliteTable(
+  "kb_conversations",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [index("kb_conversations_updated_at_idx").on(t.updatedAt)],
+)
+
+/**
+ * 会话内的单条消息。sources / warnings / plan / activity 以 JSON 文本整存：
+ * 它们只用于回放渲染，不参与任何查询或聚合，拆表只会换来多一次 join。
+ * seq 决定回放顺序，不依赖 created_at（同一秒内可能写入多条）。
+ */
+export const kbMessages = sqliteTable(
+  "kb_messages",
+  {
+    /** 客户端生成，只保证会话内唯一：存档要能原样读回前端的消息 id */
+    id: text("id").notNull(),
+    conversationId: text("conversation_id")
+      .notNull()
+      .references(() => kbConversations.id, { onDelete: "cascade" }),
+    seq: integer("seq").notNull(),
+    role: text("role").notNull(),
+    content: text("content").notNull(),
+    /** 仅 assistant 消息有值，对应前端 KbTurnState */
+    state: text("state"),
+    errorCode: text("error_code"),
+    sources: text("sources"),
+    warnings: text("warnings"),
+    plan: text("plan"),
+    activity: text("activity"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [
+    uniqueIndex("kb_messages_uq").on(t.conversationId, t.id),
+    index("kb_messages_conversation_seq_idx").on(t.conversationId, t.seq),
+  ],
+)
+
 export type User = typeof users.$inferSelect
 export type Session = typeof sessions.$inferSelect
 export type Folder = typeof folders.$inferSelect
@@ -279,3 +333,5 @@ export type Tag = typeof tags.$inferSelect
 export type UpdateEvent = typeof updateEvents.$inferSelect
 export type AiUsageLog = typeof aiUsageLogs.$inferSelect
 export type AiJob = typeof aiJobs.$inferSelect
+export type KbConversation = typeof kbConversations.$inferSelect
+export type KbMessageRow = typeof kbMessages.$inferSelect

@@ -98,10 +98,77 @@ export type DeepSeekModel = (typeof DEEPSEEK_MODELS)[number]
 export const DEFAULT_DEEPSEEK_MODEL: DeepSeekModel = "deepseek-v4-flash"
 export const DEEPSEEK_API_BASE = "https://api.deepseek.com"
 
+/** AnySearch 联网搜索（通用 search 接口） */
+export const ANYSEARCH_API_BASE = "https://api.anysearch.com/v1"
+export const ANYSEARCH_CLIENT_HEADER = "mankr-star/1.0"
+/** 单轮联网检索返回的最大结果数 */
+export const ANYSEARCH_MAX_RESULTS = 5
+
+/** 知识库对话检索与上下文上限 */
+export const KB_CHAT_TOP_K = 8
+export const KB_CHAT_SNIPPET_MAX_CHARS = 600
+export const KB_CHAT_HISTORY_MAX_MESSAGES = 10
+export const KB_CHAT_QUERY_MAX_CHARS = 500
+/** 随每轮 prompt 常驻的分类目录条数上限，文件夹很多时按收藏数截断 */
+export const KB_CHAT_FOLDER_DIGEST_LIMIT = 40
+/** 按分类列举收藏时的单次条数上限 */
+export const KB_CHAT_FOLDER_LIST_LIMIT = 20
+/** 一次提问最多认领几个分类，避免宽泛词把半个库拖进上下文 */
+export const KB_CHAT_MATCHED_CATEGORY_LIMIT = 3
+export const KB_CHAT_MESSAGE_MAX_CHARS = 4000
+/** 请求体允许携带的历史消息条数上限 */
+export const KB_CHAT_REQUEST_MAX_MESSAGES = 40
+
+/** 保留的会话数上限，超出时淘汰最久未更新的（单用户个人库，无需无限增长） */
+export const KB_CHAT_MAX_CONVERSATIONS = 50
+/** 单个会话落库的消息条数上限 */
+export const KB_CHAT_MAX_STORED_MESSAGES = 200
+/** 会话标题长度上限，标题由首条提问派生 */
+export const KB_CHAT_TITLE_MAX_CHARS = 40
+
+/**
+ * 混合 agent 的保护阈值。三者任一触顶都会立即降级为「用已有资料直出」，
+ * 其中时间预算是 Cloudflare Workers 上的硬约束：超时表现为流被掐断。
+ */
+export const KB_AGENT_MAX_TOOL_ROUNDS = 4
+export const KB_AGENT_MAX_TOTAL_TOKENS = 60_000
+export const KB_AGENT_TIME_BUDGET_MS = 20_000
+/** 工具未指定 limit 时返回的结果条数（硬上限仍是 KB_CHAT_TOP_K） */
+export const KB_AGENT_TOOL_RESULT_LIMIT = 6
+/** 单条工具回执喂回模型的长度上限，防止上下文被一次调用撑爆 */
+export const KB_AGENT_TOOL_RESULT_MAX_CHARS = 6000
+
+/**
+ * 知识库对话可选模型。provider 两级描述，为后续接入其他厂商预留；
+ * tools 表示该模型是否支持 function calling（决定能否走 agent 循环路径）。
+ */
+export const KB_CHAT_PROVIDERS = ["deepseek"] as const
+export type KbChatProvider = (typeof KB_CHAT_PROVIDERS)[number]
+
+export const KB_CHAT_MODELS = [
+  { provider: "deepseek", model: "deepseek-v4-flash", tools: true },
+  { provider: "deepseek", model: "deepseek-v4-pro", tools: true },
+] as const satisfies ReadonlyArray<
+  // provider 分支各自约束 model 的取值域，新增厂商时在此追加一支。
+  // deepseek 收紧到 DEEPSEEK_MODELS，保证 DEEPSEEK_PRICE_USD_PER_1M 不会漏配定价。
+  { provider: "deepseek"; model: DeepSeekModel; tools: boolean }
+>
+
+export type KbChatModelId = (typeof KB_CHAT_MODELS)[number]["model"]
+
+/** 供 zod 枚举与前端白名单校验使用的模型 id 列表 */
+export const KB_CHAT_MODEL_IDS = KB_CHAT_MODELS.map((entry) => entry.model)
+
+export function findKbChatModel(model: string | undefined | null) {
+  if (!model) return undefined
+  return KB_CHAT_MODELS.find((entry) => entry.model === model)
+}
+
 export const AI_USAGE_KINDS = [
   "classify",
   "slug_translate",
   "connection_test",
+  "kb_chat",
 ] as const
 export type AiUsageKind = (typeof AI_USAGE_KINDS)[number]
 
