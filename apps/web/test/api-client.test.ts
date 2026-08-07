@@ -347,6 +347,51 @@ describe("api client 业务映射", () => {
     expect(tags[0]!.count).toBeGreaterThan(0)
   })
 
+  it("updateTag / deleteTag 同步标签与书签 tags", async () => {
+    const created = await api.createBookmark({ url: "facebook/react" })
+    await api.updateBookmark(created.id, { tags: ["旧名", "保留"] })
+
+    const before = await api.getTags()
+    const target = before.find((t) => t.name === "旧名")
+    expect(target).toBeTruthy()
+
+    const renamed = await api.updateTag(target!.id, { name: "新名" })
+    expect(renamed.name).toBe("新名")
+
+    const bookmarkAfterRename = await api.getBookmark(created.id)
+    expect(bookmarkAfterRename.tags?.sort()).toEqual(["保留", "新名"].sort())
+
+    const afterRename = await api.getTags()
+    const toDelete = afterRename.find((t) => t.name === "新名")
+    expect(toDelete).toBeTruthy()
+
+    await api.deleteTag(toDelete!.id)
+    const afterDelete = await api.getTags()
+    expect(afterDelete.find((t) => t.name === "新名")).toBeUndefined()
+    expect(afterDelete.find((t) => t.name === "保留")).toBeTruthy()
+
+    const bookmarkAfterDelete = await api.getBookmark(created.id)
+    expect(bookmarkAfterDelete.tags).toEqual(["保留"])
+  })
+
+  it("updateTag 在 slug 冲突时返回 DUPLICATE", async () => {
+    const created = await api.createBookmark({ url: "facebook/react" })
+    await api.updateBookmark(created.id, { tags: ["react", "other"] })
+
+    const tags = await api.getTags()
+    const other = tags.find((t) => t.name === "other")
+    expect(other).toBeTruthy()
+
+    const error = await api
+      .updateTag(other!.id, { name: "react!" })
+      .then(() => null)
+      .catch((e: unknown) => e)
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect((error as ApiError).status).toBe(409)
+    expect((error as ApiError).code).toBe("DUPLICATE")
+  })
+
   it("getFeed 返回数组", async () => {
     const feed = await api.getFeed()
     expect(Array.isArray(feed)).toBe(true)

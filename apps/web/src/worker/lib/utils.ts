@@ -1,16 +1,5 @@
 /** 将任意字符串转为 URL-safe slug（标签等可用，允许中文） */
-export function slugify(input: string): string {
-  return (
-    input
-      .trim()
-      .toLowerCase()
-      .replace(/[\s_]+/g, "-")
-      .replace(/[^a-z0-9\u4e00-\u9fff-]/g, "")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 64) || "tag"
-  )
-}
+export { slugify } from "@mankr/shared"
 
 /** 文件夹专用：仅英文 kebab-case，无 ascii 时返回空串 */
 export function asciiSlugify(input: string): string {

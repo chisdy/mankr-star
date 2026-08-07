@@ -11,6 +11,7 @@ import {
   loginSchema,
   registerSchema,
   updateBookmarkSchema,
+  updateTagSchema,
 } from "../src/schemas"
 import {
   DEFAULT_DEEPSEEK_MODEL,
@@ -131,6 +132,22 @@ describe("updateBookmarkSchema", () => {
   it("标签数量上限 20", () => {
     const tagNames = Array.from({ length: 21 }, (_, i) => `t${i}`)
     expect(updateBookmarkSchema.safeParse({ tagNames }).success).toBe(false)
+  })
+})
+
+describe("updateTagSchema", () => {
+  it("接受并 trim 名称", () => {
+    const res = updateTagSchema.safeParse({ name: "  react  " })
+    expect(res.success).toBe(true)
+    if (res.success) expect(res.data.name).toBe("react")
+  })
+
+  it("空串与超长失败", () => {
+    expect(updateTagSchema.safeParse({ name: "" }).success).toBe(false)
+    expect(updateTagSchema.safeParse({ name: "   " }).success).toBe(false)
+    expect(updateTagSchema.safeParse({ name: "x".repeat(65) }).success).toBe(
+      false,
+    )
   })
 })
 

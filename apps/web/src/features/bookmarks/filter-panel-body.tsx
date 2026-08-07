@@ -10,6 +10,7 @@ import {
 
 import { Button } from "@workspace/ui/components/button"
 import { Label } from "@workspace/ui/components/label"
+import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import {
   Select,
   SelectContent,
@@ -303,7 +304,7 @@ export function FilterPanelBody({
         ) : null}
       </div>
 
-      <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3">
+      <ScrollArea className="min-h-0 min-w-0 flex-1" viewportClassName="px-3">
         <div className="w-full min-w-0 space-y-4 pt-1 pb-3">
           <Field label={t("list.sourceLabel")}>
             <Select
@@ -551,7 +552,7 @@ export function FilterPanelBody({
             </div>
           </Field>
         </div>
-      </div>
+      </ScrollArea>
 
       {hasPanelFilters ? (
         <div className="shrink-0 border-t border-border/50 p-3">

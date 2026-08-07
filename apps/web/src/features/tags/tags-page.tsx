@@ -5,12 +5,21 @@ import { useTranslation } from "react-i18next"
 import {
   CaretLeftIcon,
   CaretRightIcon,
+  DotsThreeVerticalIcon,
   HashIcon,
   MagnifyingGlassIcon,
+  PencilSimpleIcon,
+  TrashIcon,
 } from "@phosphor-icons/react"
 
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu"
 import {
   Select,
   SelectContent,
@@ -20,7 +29,9 @@ import {
 } from "@workspace/ui/components/select"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import { cn } from "@workspace/ui/lib/utils"
-import { useRedirectGuestOnUnauthorized } from "@/hooks/use-auth"
+import { TagDeleteDialog } from "@/features/tags/tag-delete-dialog"
+import { TagRenameDialog } from "@/features/tags/tag-rename-dialog"
+import { useAuth, useRedirectGuestOnUnauthorized } from "@/hooks/use-auth"
 import { api } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 import { getAppScrollRoot } from "@/lib/scroll-root"
@@ -141,11 +152,106 @@ function TagsPaginator({
   )
 }
 
+function TagCard({
+  tag,
+  canManage,
+  onEdit,
+  onDelete,
+}: {
+  tag: Tag
+  canManage: boolean
+  onEdit: (tag: Tag) => void
+  onDelete: (tag: Tag) => void
+}) {
+  const { t } = useTranslation("tags")
+  const [menuOpen, setMenuOpen] = React.useState(false)
+  const count = tag.count ?? 0
+
+  return (
+    <div
+      className={cn(
+        "group relative flex min-h-24 flex-col rounded-lg border border-border/60 bg-card transition-colors",
+        "hover:border-border hover:bg-muted/40",
+        menuOpen && "border-border bg-muted/40"
+      )}
+    >
+      <Link
+        to={`/?tag=${encodeURIComponent(tag.name)}`}
+        className={cn(
+          "flex min-h-24 flex-1 flex-col justify-between gap-3 p-4 active:scale-[0.98]",
+          canManage && "pr-10"
+        )}
+      >
+        <span className="flex min-w-0 items-start gap-1.5">
+          <HashIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground group-hover:text-primary" />
+          <span className="line-clamp-2 text-sm font-medium break-all text-foreground group-hover:text-primary">
+            {tag.name}
+          </span>
+        </span>
+        <span className="font-mono text-xs text-muted-foreground tabular-nums">
+          {t("count", { count })}
+        </span>
+      </Link>
+
+      {canManage ? (
+        <div
+          className={cn(
+            "pointer-events-none absolute top-2 right-2 z-10 opacity-0 transition-opacity",
+            "group-hover:pointer-events-auto group-hover:opacity-100",
+            menuOpen && "pointer-events-auto opacity-100"
+          )}
+        >
+          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  className="size-6"
+                  aria-label={t("menu.aria", { tagName: tag.name })}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              }
+            >
+              <DotsThreeVerticalIcon className="size-3.5" weight="bold" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEdit(tag)
+                }}
+              >
+                <PencilSimpleIcon className="mr-2 size-4" />
+                {t("menu.edit")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete(tag)
+                }}
+              >
+                <TrashIcon className="mr-2 size-4" />
+                {t("menu.delete")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function TagsPage() {
   const { t } = useTranslation("tags")
+  const { isAuthenticated: canManage } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [filter, setFilter] = React.useState("")
   const [sort, setSort] = React.useState<TagSort>("count")
+  const [renameTag, setRenameTag] = React.useState<Tag | null>(null)
+  const [deleteTag, setDeleteTag] = React.useState<Tag | null>(null)
 
   const requestedPage = parsePageParam(searchParams.get(PAGE_PARAM))
 
@@ -282,26 +388,15 @@ export function TagsPage() {
             </p>
           ) : null}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-            {pageItems.map((tag) => {
-              const count = tag.count ?? 0
-              return (
-                <Link
-                  key={tag.id}
-                  to={`/?tag=${encodeURIComponent(tag.name)}`}
-                  className="group flex min-h-24 flex-col justify-between gap-3 rounded-lg border border-border/60 bg-card p-4 transition-colors hover:border-border hover:bg-muted/40 active:scale-[0.98]"
-                >
-                  <span className="flex min-w-0 items-start gap-1.5">
-                    <HashIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground group-hover:text-primary" />
-                    <span className="line-clamp-2 text-sm font-medium break-all text-foreground group-hover:text-primary">
-                      {tag.name}
-                    </span>
-                  </span>
-                  <span className="font-mono text-xs text-muted-foreground tabular-nums">
-                    {t("count", { count })}
-                  </span>
-                </Link>
-              )
-            })}
+            {pageItems.map((tag) => (
+              <TagCard
+                key={tag.id}
+                tag={tag}
+                canManage={canManage}
+                onEdit={setRenameTag}
+                onDelete={setDeleteTag}
+              />
+            ))}
           </div>
           <TagsPaginator
             page={page}
@@ -310,6 +405,21 @@ export function TagsPage() {
           />
         </div>
       )}
+
+      <TagRenameDialog
+        open={Boolean(renameTag)}
+        onOpenChange={(open) => {
+          if (!open) setRenameTag(null)
+        }}
+        tag={renameTag}
+      />
+      <TagDeleteDialog
+        open={Boolean(deleteTag)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTag(null)
+        }}
+        tag={deleteTag}
+      />
     </div>
   )
 }

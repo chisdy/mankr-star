@@ -9,6 +9,28 @@
   "emptySearch": "No matching tags",
   "count": "{{count}} bookmarks",
   "error": "Could not load tags. Please try again.",
+  "menu": {
+    "aria": "{{tagName}} menu",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "renameDialog": {
+    "notSelected": "No tag selected",
+    "title": "Edit tag",
+    "nameLabel": "Tag name",
+    "namePlaceholder": "Enter a new name",
+    "successToast": "Tag updated",
+    "errorToast": "Could not update tag. Please try again."
+  },
+  "deleteDialog": {
+    "notSelected": "No tag selected",
+    "title": "Delete tag",
+    "confirm": "Delete tag \"{{tagName}}\"? This cannot be undone.",
+    "confirmWithCount": "Delete tag \"{{tagName}}\"? It will be removed from {{count}} bookmarks. This cannot be undone.",
+    "confirmDelete": "Delete",
+    "successToast": "Tag deleted",
+    "errorToast": "Could not delete tag"
+  },
   "pagination": {
     "navAria": "Tag pagination",
     "prev": "Previous",

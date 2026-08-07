@@ -1,6 +1,7 @@
 import {
   DEFAULT_BOOKMARK_PAGE_SIZE,
   DEFAULT_BOOKMARK_PAGINATION_MODE,
+  slugify,
   type KbConversationDetail,
   type KbConversationSummary,
   type KbStoredMessage,
@@ -1077,6 +1078,78 @@ export const api = {
       }))
     } catch (err) {
       if (shouldFallbackToMock(err)) return mockStore().tags
+      throw err
+    }
+  },
+
+  async updateTag(id: string, data: { name: string }): Promise<Tag> {
+    const name = data.name.trim()
+    try {
+      const res = await request<{
+        id: string
+        name: string
+        usage_count?: number
+      }>(`/api/tags/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name }),
+      })
+      return {
+        id: res.id,
+        name: res.name,
+        count: res.usage_count ?? 0,
+      }
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        const idx = store.tags.findIndex((t) => t.id === id)
+        if (idx === -1) {
+          throw new ApiError("标签不存在", 404, { code: "NOT_FOUND" })
+        }
+        const oldName = store.tags[idx]!.name
+        if (name !== oldName) {
+          const nextSlug = slugify(name)
+          const dup = store.tags.some(
+            (t) =>
+              t.id !== id &&
+              (t.name === name || slugify(t.name) === nextSlug),
+          )
+          if (dup) {
+            throw new ApiError("标签名称或标识已存在", 409, {
+              code: "DUPLICATE",
+            })
+          }
+          store.tags[idx] = { ...store.tags[idx]!, name }
+          store.bookmarks = store.bookmarks.map((b) => ({
+            ...b,
+            tags: (b.tags ?? []).map((t) => (t === oldName ? name : t)),
+          }))
+          saveMockStore()
+        }
+        return store.tags[idx]!
+      }
+      throw err
+    }
+  },
+
+  async deleteTag(id: string): Promise<void> {
+    try {
+      await request(`/api/tags/${id}`, { method: "DELETE" })
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        const tag = store.tags.find((t) => t.id === id)
+        if (!tag) {
+          throw new ApiError("标签不存在", 404, { code: "NOT_FOUND" })
+        }
+        const tagName = tag.name
+        store.tags = store.tags.filter((t) => t.id !== id)
+        store.bookmarks = store.bookmarks.map((b) => ({
+          ...b,
+          tags: (b.tags ?? []).filter((t) => t !== tagName),
+        }))
+        saveMockStore()
+        return
+      }
       throw err
     }
   },

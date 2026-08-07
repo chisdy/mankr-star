@@ -599,6 +599,127 @@ describe("GET /api/tags", () => {
   })
 })
 
+describe("PATCH /api/tags/:id", () => {
+  it("重命名标签并同步到书签响应", async () => {
+    const created = await createBookmark("facebook/react")
+    await client.patch(`/api/bookmarks/${created.body.id}`, {
+      tagNames: ["旧标签"],
+    })
+
+    const list = await client.json<{
+      items: Array<{ id: string; name: string; usage_count: number }>
+    }>("/api/tags")
+    const tag = list.body.items.find((t) => t.name === "旧标签")
+    expect(tag).toBeTruthy()
+
+    const { status, body } = await client.patch<{
+      id: string
+      name: string
+      slug: string
+      usage_count: number
+    }>(`/api/tags/${tag!.id}`, { name: "新标签" })
+
+    expect(status).toBe(200)
+    expect(body.name).toBe("新标签")
+    expect(body.slug).toBe("新标签")
+    expect(body.usage_count).toBe(1)
+
+    const bookmark = await client.json<BookmarkPayload>(
+      `/api/bookmarks/${created.body.id}`,
+    )
+    expect(bookmark.body.tags).toEqual(["新标签"])
+  })
+
+  it("与其它标签 name/slug 冲突时返回 409", async () => {
+    const created = await createBookmark("facebook/react")
+    await client.patch(`/api/bookmarks/${created.body.id}`, {
+      tagNames: ["alpha", "beta"],
+    })
+
+    const list = await client.json<{
+      items: Array<{ id: string; name: string }>
+    }>("/api/tags")
+    const alpha = list.body.items.find((t) => t.name === "alpha")
+    expect(alpha).toBeTruthy()
+
+    const { status, body } = await client.patch<{ code: string }>(
+      `/api/tags/${alpha!.id}`,
+      { name: "beta" },
+    )
+    expect(status).toBe(409)
+    expect(body.code).toBe("DUPLICATE")
+  })
+
+  it("name 不同但 slugify 后相同时返回 409", async () => {
+    const created = await createBookmark("facebook/react")
+    await client.patch(`/api/bookmarks/${created.body.id}`, {
+      tagNames: ["react", "other"],
+    })
+
+    const list = await client.json<{
+      items: Array<{ id: string; name: string }>
+    }>("/api/tags")
+    const other = list.body.items.find((t) => t.name === "other")
+    expect(other).toBeTruthy()
+
+    const { status, body } = await client.patch<{ code: string }>(
+      `/api/tags/${other!.id}`,
+      { name: "react!" },
+    )
+    expect(status).toBe(409)
+    expect(body.code).toBe("DUPLICATE")
+  })
+
+  it("不存在的标签返回 404", async () => {
+    const { status, body } = await client.patch<{ code: string }>(
+      "/api/tags/00000000-0000-0000-0000-0000000000ff",
+      { name: "nowhere" },
+    )
+    expect(status).toBe(404)
+    expect(body.code).toBe("NOT_FOUND")
+  })
+})
+
+describe("DELETE /api/tags/:id", () => {
+  it("删除标签并解除书签关联", async () => {
+    const created = await createBookmark("facebook/react")
+    await client.patch(`/api/bookmarks/${created.body.id}`, {
+      tagNames: ["待删", "保留"],
+    })
+
+    const list = await client.json<{
+      items: Array<{ id: string; name: string }>
+    }>("/api/tags")
+    const doomed = list.body.items.find((t) => t.name === "待删")
+    expect(doomed).toBeTruthy()
+
+    const { status, body } = await client.delete<{ ok: boolean }>(
+      `/api/tags/${doomed!.id}`,
+    )
+    expect(status).toBe(200)
+    expect(body.ok).toBe(true)
+
+    const after = await client.json<{
+      items: Array<{ name: string }>
+    }>("/api/tags")
+    expect(after.body.items.find((t) => t.name === "待删")).toBeUndefined()
+    expect(after.body.items.find((t) => t.name === "保留")).toBeTruthy()
+
+    const bookmark = await client.json<BookmarkPayload>(
+      `/api/bookmarks/${created.body.id}`,
+    )
+    expect(bookmark.body.tags).toEqual(["保留"])
+  })
+
+  it("不存在的标签返回 404", async () => {
+    const { status, body } = await client.delete<{ code: string }>(
+      "/api/tags/00000000-0000-0000-0000-0000000000ff",
+    )
+    expect(status).toBe(404)
+    expect(body.code).toBe("NOT_FOUND")
+  })
+})
+
 describe("GET /api/bookmarks/owners", () => {
   it("返回去重开发者列表，支持 q 过滤", async () => {
     await createBookmark("facebook/react")

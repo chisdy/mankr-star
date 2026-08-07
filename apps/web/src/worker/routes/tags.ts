@@ -1,13 +1,24 @@
-import { bookmarkTags, tags } from "@mankr/db"
-import { asc, count, desc, eq } from "drizzle-orm"
+import { bookmarkTags, tags, type Db } from "@mankr/db"
+import { updateTagSchema } from "@mankr/shared"
+import { and, asc, count, desc, eq, ne, or } from "drizzle-orm"
 import { Hono } from "hono"
 import type { AppEnv } from "../env"
+import { slugify } from "../lib/utils"
 import { authByMethod } from "../middleware/auth"
 
 export const tagRoutes = new Hono<AppEnv>()
 
 tagRoutes.use("/tags", authByMethod())
 tagRoutes.use("/tags/*", authByMethod())
+
+async function usageCountForTag(db: Db, tagId: string): Promise<number> {
+  const row = await db
+    .select({ usage_count: count(bookmarkTags.bookmarkId) })
+    .from(bookmarkTags)
+    .where(eq(bookmarkTags.tagId, tagId))
+    .get()
+  return Number(row?.usage_count ?? 0)
+}
 
 tagRoutes.get("/tags", async (c) => {
   const db = c.get("db")
@@ -36,4 +47,89 @@ tagRoutes.get("/tags", async (c) => {
       created_at: r.created_at,
     })),
   })
+})
+
+tagRoutes.patch("/tags/:id", async (c) => {
+  const db = c.get("db")
+  const id = c.req.param("id")
+
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: "无效的 JSON", code: "BAD_REQUEST" }, 400)
+  }
+
+  const parsed = updateTagSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: parsed.error.flatten(),
+      },
+      400,
+    )
+  }
+
+  const existing = await db.select().from(tags).where(eq(tags.id, id)).get()
+  if (!existing) {
+    return c.json({ error: "标签不存在", code: "NOT_FOUND" }, 404)
+  }
+
+  const nextName = parsed.data.name
+  const nextSlug = slugify(nextName)
+
+  if (nextName === existing.name && nextSlug === existing.slug) {
+    const usage_count = await usageCountForTag(db, id)
+    return c.json({
+      id: existing.id,
+      name: existing.name,
+      slug: existing.slug,
+      usage_count,
+      created_at: existing.createdAt,
+    })
+  }
+
+  const conflict = await db
+    .select({ id: tags.id })
+    .from(tags)
+    .where(
+      and(
+        ne(tags.id, id),
+        or(eq(tags.name, nextName), eq(tags.slug, nextSlug)),
+      ),
+    )
+    .get()
+
+  if (conflict) {
+    return c.json({ error: "标签名称或标识已存在", code: "DUPLICATE" }, 409)
+  }
+
+  await db
+    .update(tags)
+    .set({ name: nextName, slug: nextSlug })
+    .where(eq(tags.id, id))
+
+  const usage_count = await usageCountForTag(db, id)
+  return c.json({
+    id,
+    name: nextName,
+    slug: nextSlug,
+    usage_count,
+    created_at: existing.createdAt,
+  })
+})
+
+tagRoutes.delete("/tags/:id", async (c) => {
+  const db = c.get("db")
+  const id = c.req.param("id")
+
+  const existing = await db.select().from(tags).where(eq(tags.id, id)).get()
+  if (!existing) {
+    return c.json({ error: "标签不存在", code: "NOT_FOUND" }, 404)
+  }
+
+  await db.delete(tags).where(eq(tags.id, id))
+  return c.json({ ok: true })
 })

@@ -145,6 +145,11 @@ export type CreateFolderInput = z.infer<typeof createFolderSchema>
 export const updateFolderSchema = createFolderSchema.partial()
 export type UpdateFolderInput = z.infer<typeof updateFolderSchema>
 
+export const updateTagSchema = z.object({
+  name: z.string().trim().min(1).max(64),
+})
+export type UpdateTagInput = z.infer<typeof updateTagSchema>
+
 export const suggestFolderSlugSchema = z.object({
   name: z.string().min(1).max(64),
   parentId: z.string().uuid().optional().nullable(),

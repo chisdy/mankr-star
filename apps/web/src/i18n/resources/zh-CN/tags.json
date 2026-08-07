@@ -9,6 +9,28 @@
   "emptySearch": "没有匹配的标签",
   "count": "{{count}} 个收藏",
   "error": "无法加载标签，请稍后重试",
+  "menu": {
+    "aria": "{{tagName}} 菜单",
+    "edit": "编辑",
+    "delete": "删除"
+  },
+  "renameDialog": {
+    "notSelected": "未选择标签",
+    "title": "编辑标签",
+    "nameLabel": "标签名称",
+    "namePlaceholder": "输入新名称",
+    "successToast": "已更新标签",
+    "errorToast": "更新失败，请重试"
+  },
+  "deleteDialog": {
+    "notSelected": "未选择标签",
+    "title": "删除标签",
+    "confirm": "确定要删除标签「{{tagName}}」吗？此操作不可撤销。",
+    "confirmWithCount": "确定要删除标签「{{tagName}}」吗？将从 {{count}} 个收藏上移除该标签。此操作不可撤销。",
+    "confirmDelete": "确认删除",
+    "successToast": "已删除标签",
+    "errorToast": "删除失败"
+  },
   "pagination": {
     "navAria": "标签分页导航",
     "prev": "上一页",

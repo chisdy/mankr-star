@@ -10,6 +10,7 @@ import {
 
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
+import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import { Sheet, SheetContent, SheetTitle } from "@workspace/ui/components/sheet"
 import { AppSidebar } from "@/components/app-sidebar"
 import { AddBookmarkDialog } from "@/features/bookmarks/add-bookmark-dialog"
@@ -152,11 +153,14 @@ function AppShellContent() {
             <FolderTreePanel className="hidden md:flex" resizable />
           ) : null}
 
-          <main
-            id={APP_SCROLL_ROOT_ID}
-            className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-6"
-          >
-            <Outlet />
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <ScrollArea
+              className="min-h-0 flex-1"
+              viewportId={APP_SCROLL_ROOT_ID}
+              viewportClassName="p-4 md:p-6"
+            >
+              <Outlet />
+            </ScrollArea>
           </main>
 
           {showFolderTree ? (
