@@ -8,7 +8,6 @@ import {
   FolderIcon,
   FolderOpenIcon,
   FolderPlusIcon,
-  IdentificationCardIcon,
   PencilSimpleIcon,
   PlusIcon,
   TrashIcon,
@@ -283,13 +282,10 @@ export function FolderTreePanel({
   /** 桌面端启用右侧拖拽调宽 */
   resizable?: boolean
 }) {
-  const { t } = useTranslation(["folders", "nav"])
+  const { t } = useTranslation("folders")
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const selectedId = searchParams.get("folder_id") || ""
-  const isCredentialsView =
-    searchParams.get("source_type") === "url" &&
-    searchParams.get("has_account") === "true"
 
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [editingFolder, setEditingFolder] = React.useState<FolderType | null>(
@@ -354,11 +350,6 @@ export function FolderTreePanel({
     next.delete(BOOKMARK_PAGE_PARAM)
     const qs = next.toString()
     navigate(qs ? `/?${qs}` : "/")
-    onNavigate?.()
-  }
-
-  const goToCredentials = () => {
-    navigate("/?source_type=url&has_account=true")
     onNavigate?.()
   }
 
@@ -436,24 +427,6 @@ export function FolderTreePanel({
               </span>
             )}
           </button>
-
-          {canManage ? (
-            <button
-              type="button"
-              onClick={goToCredentials}
-              className={cn(
-                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                isCredentialsView
-                  ? "bg-accent font-medium text-accent-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <IdentificationCardIcon className="size-4 shrink-0" />
-              <span className="min-w-0 flex-1 truncate text-left">
-                {t("nav:credentialsQuickLink")}
-              </span>
-            </button>
-          ) : null}
         </div>
 
         <ScrollArea className="min-h-0 flex-1 px-1 py-1">

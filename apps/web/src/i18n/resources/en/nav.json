@@ -10,6 +10,5 @@
   "userMenuAria": "User menu",
   "fallbackName": "User",
   "searchPlaceholder": "Search name, summary, tags…",
-  "addButton": "Add",
-  "credentialsQuickLink": "Credentials"
+  "addButton": "Add"
 }
