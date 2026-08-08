@@ -25,13 +25,10 @@ export function LoginDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="gap-5 rounded-2xl border-border/80 bg-popover/95 p-6 shadow-xl backdrop-blur-md sm:max-w-[400px] sm:p-7">
-        <LocaleSwitcher
-          variant="compact"
-          className="absolute top-4 left-4"
-        />
+        <LocaleSwitcher variant="compact" className="absolute top-4 left-4" />
         <DialogHeader className="items-center space-y-1.5 pt-1 text-center">
-          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary shadow-2xs ring-4 ring-primary/5">
-            <BrandLogo iconClassName="size-7" />
+          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-2xs">
+            <BrandLogo iconClassName="size-8" />
           </div>
           <DialogTitle className="pt-1 text-lg font-semibold tracking-tight text-foreground">
             {t("login.dialogTitle")}

@@ -23,7 +23,7 @@ import { formatApiError } from "@/lib/api-error"
 import { queryKeys } from "@/lib/query-keys"
 import type { Folder } from "@/lib/types"
 
-const DEFAULT_FOLDER_COLOR = "#3B82F6"
+const DEFAULT_FOLDER_COLOR = "#4A7BB0"
 const SLUG_SUGGEST_DEBOUNCE_MS = 500
 
 export type FolderFormDialogProps = {

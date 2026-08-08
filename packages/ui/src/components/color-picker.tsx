@@ -12,18 +12,18 @@ const HEX_RE = /^#[0-9A-Fa-f]{6}$/
 
 /** UI 包内通用 fallback；业务侧应传入 FOLDER_COLOR_PRESETS */
 const DEFAULT_PRESETS = [
-  "#EF4444",
-  "#F97316",
-  "#F59E0B",
-  "#84CC16",
-  "#10B981",
-  "#06B6D4",
-  "#3B82F6",
-  "#6366F1",
-  "#8B5CF6",
-  "#EC4899",
-  "#64748B",
-  "#0F172A",
+  "#B95252",
+  "#B86B35",
+  "#B87B2E",
+  "#6A8D3F",
+  "#3B8A72",
+  "#338B98",
+  "#4A7BB0",
+  "#5865B3",
+  "#8263B4",
+  "#C25983",
+  "#606E80",
+  "#2D3748",
 ] as const
 
 /** 规范化为合法大写 #RRGGBB；非法则返回 null */
@@ -62,7 +62,7 @@ export function ColorPicker({
   const rootRef = React.useRef<HTMLDivElement>(null)
   const [open, setOpen] = React.useState(false)
 
-  const safeValue = normalizeHex(value) ?? "#3B82F6"
+  const safeValue = normalizeHex(value) ?? "#4A7BB0"
   const [draft, setDraft] = React.useState(safeValue.replace("#", ""))
 
   React.useEffect(() => {

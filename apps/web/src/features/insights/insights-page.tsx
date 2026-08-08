@@ -190,7 +190,7 @@ export function InsightsPage() {
               iconClass="bg-primary/10 text-primary"
               footer={
                 <span className="flex items-center gap-1.5">
-                  <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 font-semibold text-emerald-700 dark:text-emerald-400">
                     +{formatNumber(data.library.added_in_range, locale)}
                   </span>
                   <span>{t("metrics.addedInRange")}</span>
@@ -474,7 +474,7 @@ export function InsightsPage() {
 
                 <div className="border-t border-border/40 pt-3">
                   <p className="mb-2 flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <WarningCircleIcon className="size-3.5 text-amber-500" />
+                    <WarningCircleIcon className="size-3.5 text-muted-foreground/80" />
                     <span>{t("sections.syncIssues")}</span>
                   </p>
                   <div className="grid grid-cols-3 gap-2 text-center font-mono">

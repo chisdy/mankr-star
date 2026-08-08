@@ -119,11 +119,11 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
               <span className="inline-flex items-center gap-1 font-mono text-[11px]">
                 {isTwitter ? (
                   <HeartIcon
-                    className="size-3.5 text-rose-500"
+                    className="size-3.5 text-rose-500/90 dark:text-rose-400"
                     weight="fill"
                   />
                 ) : (
-                  <StarIcon className="size-3.5 text-amber-500" />
+                  <StarIcon className="size-3.5 text-amber-500/90 dark:text-amber-400" />
                 )}
                 {popularity}
               </span>

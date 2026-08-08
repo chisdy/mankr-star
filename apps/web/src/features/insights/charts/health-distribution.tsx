@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next"
 import { formatNumber } from "@/features/insights/format"
 
 const HEALTH_BAR: Record<string, string> = {
-  hot: "bg-amber-500",
-  active: "bg-emerald-500",
+  hot: "bg-amber-500 dark:bg-amber-400",
+  active: "bg-emerald-500 dark:bg-emerald-400",
   stale: "bg-zinc-400 dark:bg-zinc-500",
-  archived: "bg-violet-500",
-  empty: "bg-slate-400",
-  unavailable: "bg-rose-500",
+  archived: "bg-slate-500 dark:bg-slate-400",
+  empty: "bg-slate-400 dark:bg-slate-500",
+  unavailable: "bg-rose-500 dark:bg-rose-400",
   unknown: "bg-muted-foreground",
 }
 

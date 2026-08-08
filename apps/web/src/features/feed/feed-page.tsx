@@ -48,14 +48,14 @@ export function FeedPage() {
   const renderEventIcon = (type: EventType) => {
     switch (type) {
       case "release":
-        return <TagIcon className="size-4 text-emerald-500" />
+        return <TagIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
       case "push":
-        return <GitCommitIcon className="size-4 text-blue-500" />
+        return <GitCommitIcon className="size-4 text-sky-600 dark:text-sky-400" />
       case "stars_delta":
-        return <StarIcon className="size-4 text-amber-500" />
+        return <StarIcon className="size-4 text-amber-500/90 dark:text-amber-400" />
       case "meta_change":
       default:
-        return <InfoIcon className="size-4 text-purple-500" />
+        return <InfoIcon className="size-4 text-violet-500 dark:text-violet-400" />
     }
   }
 

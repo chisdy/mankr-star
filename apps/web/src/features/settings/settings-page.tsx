@@ -354,7 +354,7 @@ export function SettingsPage() {
             <h2 className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
               <span>{t("deepseek.section")}</span>
               {user?.deepseek_configured ? (
-                <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+                <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-500/30 bg-emerald-500/10 dark:text-emerald-400">
                   <CheckCircleIcon className="size-3 mr-1" />
                   {t("deepseek.configuredBadge", {
                     last4: user.deepseek_last4 || "Key",
@@ -484,7 +484,7 @@ export function SettingsPage() {
           <h2 className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
             <span>{t("anysearch.section")}</span>
             {user?.anysearch_configured ? (
-              <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+              <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-500/30 bg-emerald-500/10 dark:text-emerald-400">
                 <CheckCircleIcon className="size-3 mr-1" />
                 {t("anysearch.configuredBadge", {
                   last4: user.anysearch_last4 || "Key",
@@ -594,7 +594,7 @@ export function SettingsPage() {
           <h2 className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
             <span>{t("github.section")}</span>
             {user?.github_pat_configured && (
-              <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+              <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-500/30 bg-emerald-500/10 dark:text-emerald-400">
                 {t("github.configuredBadge", {
                   last4: user.github_pat_last4 || "",
                 })}

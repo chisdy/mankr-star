@@ -11,12 +11,11 @@ export function formatCost(usd: number | null, noneLabel: string): string {
 }
 
 export const CHART_PALETTE = [
-  "hsl(217, 91%, 60%)",
-  "hsl(160, 84%, 39%)",
-  "hsl(38, 92%, 50%)",
-  "hsl(280, 80%, 60%)",
-  "hsl(350, 89%, 60%)",
-  "hsl(190, 90%, 45%)",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
 ] as const
 
 export const LANG_COLORS: Record<string, string> = {

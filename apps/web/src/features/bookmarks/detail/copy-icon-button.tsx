@@ -29,7 +29,7 @@ export function CopyIconButton({
       )}
     >
       {copied ? (
-        <CheckIcon className="size-4 text-emerald-500" weight="bold" />
+        <CheckIcon className="size-4 text-emerald-600 dark:text-emerald-400" weight="bold" />
       ) : (
         <CopyIcon className="size-4" />
       )}

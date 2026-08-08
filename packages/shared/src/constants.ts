@@ -3,49 +3,49 @@ export const PRESET_FOLDERS = [
   {
     name: "前端框架",
     slug: "frontend-framework",
-    color: "#3B82F6",
+    color: "#4A7BB0",
     sortOrder: 10,
     description: "React/Vue/Svelte 等应用框架与元框架（Next/Nuxt 等）",
   },
   {
     name: "UI 组件",
     slug: "ui-components",
-    color: "#8B5CF6",
+    color: "#8263B4",
     sortOrder: 20,
     description: "可复用 UI 组件库、设计系统、样式工具",
   },
   {
     name: "状态管理",
     slug: "state-management",
-    color: "#EC4899",
+    color: "#C25983",
     sortOrder: 30,
     description: "客户端/服务端状态、缓存与数据同步库",
   },
   {
     name: "后端与 API",
     slug: "backend-api",
-    color: "#10B981",
+    color: "#3B8A72",
     sortOrder: 40,
     description: "服务端框架、HTTP/RPC API、BaaS 与后端运行时",
   },
   {
     name: "数据库",
     slug: "database",
-    color: "#F59E0B",
+    color: "#B87B2E",
     sortOrder: 50,
     description: "数据库引擎、ORM、查询构建与存储相关工具",
   },
   {
     name: "DevOps 与部署",
     slug: "devops",
-    color: "#EF4444",
+    color: "#B95252",
     sortOrder: 60,
     description: "CI/CD、容器、基础设施即代码与部署平台",
   },
   {
     name: "AI / LLM",
     slug: "ai-llm",
-    color: "#06B6D4",
+    color: "#338B98",
     sortOrder: 70,
     description:
       "大模型、Agent、向量检索、推理框架、提示词库；细分形态应建或选用子文件夹，勿整仓硬塞本根目录",
@@ -53,28 +53,28 @@ export const PRESET_FOLDERS = [
   {
     name: "工具与 CLI",
     slug: "tools-cli",
-    color: "#6366F1",
+    color: "#5865B3",
     sortOrder: 80,
     description: "开发者工具、CLI、SDK、构建与效率脚本",
   },
   {
     name: "学习与教程",
     slug: "learning",
-    color: "#84CC16",
+    color: "#6A8D3F",
     sortOrder: 90,
     description: "教程、课程、入门指南与系统化学习资料",
   },
   {
     name: "设计资源",
     slug: "design",
-    color: "#F97316",
+    color: "#B86B35",
     sortOrder: 100,
     description: "图标、字体、设计稿与视觉资源",
   },
   {
     name: "其他",
     slug: "other",
-    color: "#64748B",
+    color: "#606E80",
     sortOrder: 110,
     description: "无法归入以上目录时使用；优先考虑新建更贴切的文件夹",
   },
@@ -82,7 +82,7 @@ export const PRESET_FOLDERS = [
 
 /** 文件夹标识色色板（预置色去重 + 深色中性） */
 export const FOLDER_COLOR_PRESETS = [
-  ...new Set([...PRESET_FOLDERS.map((f) => f.color), "#0F172A"]),
+  ...new Set([...PRESET_FOLDERS.map((f) => f.color), "#2D3748"]),
 ] as const
 
 /** @deprecated 使用 PRESET_FOLDERS */

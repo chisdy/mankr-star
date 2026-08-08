@@ -283,7 +283,7 @@ function DesktopRail() {
           <RailTooltip label={t("brand")}>
             <Link
               to="/"
-              className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
+              className="flex size-10 items-center justify-center rounded-lg text-primary transition-opacity hover:opacity-80"
             >
               <BrandLogo iconClassName="size-8" title={t("brand")} />
             </Link>
@@ -337,8 +337,8 @@ function MobileNav({
           <div className="flex items-center justify-between gap-2 pr-8">
             <SheetTitle className="flex items-center gap-2 text-lg font-semibold">
               <BrandLogo
-                className="size-7 rounded bg-primary text-primary-foreground"
-                iconClassName="size-4"
+                className="size-7 text-primary"
+                iconClassName="size-6"
                 title={t("brand")}
               />
               {t("brand")}

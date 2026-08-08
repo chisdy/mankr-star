@@ -196,7 +196,7 @@ function KbAssistantTurn({
         ) : null}
 
         {failedWeb ? (
-          <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
             <WarningIcon className="size-3.5 shrink-0" />
             {t("states.webUnavailable")}
           </p>

@@ -40,9 +40,9 @@ export function BookmarkDetailMeta({ bookmark }: { bookmark: Bookmark }) {
       {(isGithub || isTwitter) && bookmark.stars !== undefined ? (
         <span className="flex items-center gap-1 font-mono text-[11px]">
           {isTwitter ? (
-            <HeartIcon className="size-3.5 text-rose-500" weight="fill" />
+            <HeartIcon className="size-3.5 text-rose-500/90 dark:text-rose-400" weight="fill" />
           ) : (
-            <StarIcon className="size-3.5 text-amber-500" />
+            <StarIcon className="size-3.5 text-amber-500/90 dark:text-amber-400" />
           )}
           {bookmark.stars}
         </span>
