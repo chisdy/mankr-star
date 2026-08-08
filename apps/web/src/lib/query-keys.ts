@@ -25,6 +25,12 @@ export const queryKeys = {
   },
   feed: {
     all: ["feed"] as const,
+    list: (params?: {
+      eventType?: string
+      bookmarkId?: string
+      page?: number
+      pageSize?: number
+    }) => ["feed", "list", params] as const,
   },
   insights: {
     all: ["insights"] as const,

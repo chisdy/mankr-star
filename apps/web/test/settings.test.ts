@@ -427,6 +427,39 @@ describe("PUT /api/settings/tracking", () => {
     expect(me.body.hot_within_days).toBe(14)
     expect(me.body.stale_after_days).toBe(90)
   })
+
+  it("动态订阅开关默认全开，单独关闭后不影响阈值与其他开关", async () => {
+    interface TrackingBody {
+      hot_within_days: number
+      stale_after_days: number
+      event_push: boolean
+      event_release: boolean
+      event_stars_delta: boolean
+      event_meta_change: boolean
+    }
+
+    const before = await client.json<TrackingBody>("/api/me")
+    expect(before.body.event_push).toBe(true)
+    expect(before.body.event_release).toBe(true)
+    expect(before.body.event_stars_delta).toBe(true)
+    expect(before.body.event_meta_change).toBe(true)
+
+    const saved = await client.put<TrackingBody>("/api/settings/tracking", {
+      eventPush: false,
+      eventStarsDelta: false,
+    })
+    expect(saved.status).toBe(200)
+    expect(saved.body.event_push).toBe(false)
+    expect(saved.body.event_stars_delta).toBe(false)
+    expect(saved.body.event_release).toBe(true)
+    expect(saved.body.event_meta_change).toBe(true)
+    expect(saved.body.hot_within_days).toBe(before.body.hot_within_days)
+
+    const me = await client.json<TrackingBody>("/api/me")
+    expect(me.body.event_push).toBe(false)
+    expect(me.body.event_stars_delta).toBe(false)
+    expect(me.body.event_release).toBe(true)
+  })
 })
 
 describe("PUT /api/settings/bookmark-pagination", () => {

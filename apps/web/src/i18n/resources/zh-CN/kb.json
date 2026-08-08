@@ -23,6 +23,7 @@
   },
   "composer": {
     "placeholder": "问点什么，Enter 发送，Shift + Enter 换行",
+    "folderContextHint": "当前上下文：文件夹「{{name}}」（取自收藏页筛选）",
     "webSearch": "联网",
     "webSearchEnable": "开启联网搜索",
     "webSearchDisable": "关闭联网搜索",

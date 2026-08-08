@@ -485,9 +485,11 @@ export function InsightsPage() {
                         ["403", "forbidden"],
                       ] as const
                     ).map(([label, key]) => (
-                      <div
+                      <Link
                         key={key}
-                        className="rounded border border-border/40 bg-muted/40 p-1.5"
+                        to="/?source_type=github&health_status=unavailable"
+                        title={t("sections.syncIssuesHint")}
+                        className="rounded border border-border/40 bg-muted/40 p-1.5 transition-colors hover:border-primary/40 hover:bg-primary/5"
                       >
                         <span className="block text-[10px] text-muted-foreground">
                           {label}
@@ -495,7 +497,7 @@ export function InsightsPage() {
                         <span className="font-bold text-foreground">
                           {data.tracking.sync_issues[key] ?? 0}
                         </span>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -519,16 +521,24 @@ export function InsightsPage() {
                   count: data.library.ai_status.done ?? 0,
                 })}
               </span>
-              <span>
+              <Link
+                to="/?ai_status=pending"
+                title={t("sections.aiPendingHint")}
+                className="rounded px-1 -mx-1 transition-colors hover:bg-muted/60 hover:text-foreground hover:underline underline-offset-2"
+              >
                 {t("sections.aiPending", {
                   count: data.library.ai_status.pending ?? 0,
                 })}
-              </span>
-              <span>
+              </Link>
+              <Link
+                to="/?ai_status=failed"
+                title={t("sections.aiFailedHint")}
+                className="rounded px-1 -mx-1 transition-colors hover:bg-muted/60 hover:text-foreground hover:underline underline-offset-2"
+              >
                 {t("sections.aiFailed", {
                   count: data.library.ai_status.failed ?? 0,
                 })}
-              </span>
+              </Link>
             </div>
           </div>
         </>

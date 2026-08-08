@@ -62,6 +62,12 @@ export const githubSettingsValueSchema = z.object({
 })
 export type GithubSettingsValue = z.infer<typeof githubSettingsValueSchema>
 
+/**
+ * 事件订阅开关。默认全开，损坏时也回到开：漏记一条动态无法补录，
+ * 而多记一条只是噪音。
+ */
+const eventSubscription = z.boolean().catch(true).default(true)
+
 export const trackingSettingsValueSchema = z.object({
   hotWithinDays: z
     .number()
@@ -77,6 +83,10 @@ export const trackingSettingsValueSchema = z.object({
     .max(MAX_TRACKING_DAYS)
     .catch(DEFAULT_STALE_AFTER_DAYS)
     .default(DEFAULT_STALE_AFTER_DAYS),
+  eventPush: eventSubscription,
+  eventRelease: eventSubscription,
+  eventStarsDelta: eventSubscription,
+  eventMetaChange: eventSubscription,
 })
 export type TrackingSettingsValue = z.infer<typeof trackingSettingsValueSchema>
 

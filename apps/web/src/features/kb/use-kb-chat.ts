@@ -6,8 +6,9 @@ import {
   type KbStoredMessage,
   type KbTurnState,
 } from "@mankr/shared"
-import { useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import * as React from "react"
+import { useSearchParams } from "react-router"
 
 import { api, ApiError } from "@/lib/api"
 import { buildKbChatPayload, streamKbChat } from "@/lib/kb-chat"
@@ -121,6 +122,26 @@ function signature(id: string, messages: readonly KbMessage[]): string {
 export function useKbChat(options: { anysearchConfigured: boolean }) {
   const { anysearchConfigured } = options
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const folderId = searchParams.get("folder_id") || undefined
+
+  /**
+   * 收藏页正在筛选的文件夹，作为对话的软上下文提示。
+   * 复用文件夹树同一份查询缓存，通常已经在页面加载时取到，不会额外发请求。
+   */
+  const { data: folders } = useQuery({
+    queryKey: queryKeys.folders.all,
+    queryFn: () => api.getFolders(),
+    enabled: Boolean(folderId),
+    staleTime: 60_000,
+  })
+  const folderName = folderId
+    ? folders?.find((f) => f.id === folderId)?.name
+    : undefined
+  const folderContext = React.useMemo(
+    () => (folderId && folderName ? { folderId, folderName } : undefined),
+    [folderId, folderName],
+  )
 
   const [messages, setMessages] = React.useState<KbMessage[]>([])
   const [status, setStatus] = React.useState<KbChatStatus>("idle")
@@ -199,7 +220,8 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
       history: KbMessage[],
       useWeb: boolean,
       useModel: KbChatModelId,
-      convId: string
+      convId: string,
+      context?: { folderId: string; folderName: string },
     ) => {
       const assistantId = crypto.randomUUID()
       setMessages([
@@ -226,6 +248,7 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
             webSearch: useWeb,
             model: useModel,
             conversationId: convId,
+            context,
           },
           {
             onMeta: (sources, warnings) => {
@@ -328,9 +351,9 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
         { id: crypto.randomUUID(), role: "user", content },
       ]
       const id = ensureConversation(history)
-      void run(history, webSearch, model, id)
+      void run(history, webSearch, model, id, folderContext)
     },
-    [ensureConversation, messages, model, run, status, webSearch],
+    [ensureConversation, folderContext, messages, model, run, status, webSearch],
   )
 
   const retry = React.useCallback(() => {
@@ -339,8 +362,8 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     if (!lastUser) return
     const upToUser = messages.slice(0, messages.indexOf(lastUser) + 1)
     const id = ensureConversation(upToUser)
-    void run(upToUser, webSearch, model, id)
-  }, [ensureConversation, messages, model, run, status, webSearch])
+    void run(upToUser, webSearch, model, id, folderContext)
+  }, [ensureConversation, folderContext, messages, model, run, status, webSearch])
 
   const stop = React.useCallback(() => {
     abortRef.current?.abort()
@@ -399,6 +422,8 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     setWebSearch,
     model,
     setModel,
+    /** 当前生效的软上下文（收藏页筛选的文件夹），供面板展示透明提示 */
+    folderContext,
     send,
     retry,
     stop,

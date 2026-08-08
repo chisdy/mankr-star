@@ -71,7 +71,13 @@
     "emptyDefault": "还没有收藏。粘贴 GitHub、X 或网页链接开始。",
     "total": "共 {{total}} 项收藏",
     "listView": "列表视图",
-    "gridView": "宫格视图"
+    "gridView": "宫格视图",
+    "aiStatusFilterLabel": "AI 状态：{{status}}",
+    "clearAiStatusFilter": "清除 AI 状态筛选",
+    "aiStatusPending": "处理中",
+    "aiStatusDone": "已完成",
+    "aiStatusFallback": "已兜底",
+    "aiStatusFailed": "已失败"
   },
   "pagination": {
     "loadingMore": "正在加载更多…",
@@ -92,7 +98,9 @@
     "noSummary": "暂无描述或 AI 摘要。",
     "copyAccountAria": "复制账号和密码",
     "copyAccountTitle": "复制账号和密码",
-    "copyAccountEmpty": "尚未填写账号或密码"
+    "copyAccountEmpty": "尚未填写账号或密码",
+    "accountBadgeTitle": "已有账号",
+    "accountBadgeTitleWithPassword": "已有账号与密码"
   },
   "open": {
     "aria": "打开链接，已点击 {{count}} 次",
@@ -142,6 +150,7 @@
     "copyUnsupported": "当前环境不支持复制，请通过 HTTPS 访问",
     "copyFailed": "复制失败，请稍后重试",
     "excerptLabel": "来源摘录",
+    "readmeLabel": "README 摘录",
     "trackUpdates": "开启更新跟踪",
     "trackUpdatesDescription": "定期检查 Release 发版与 Commit 推送并在动态展示",
     "archive": "归档",

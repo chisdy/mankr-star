@@ -64,7 +64,23 @@ describe("parseSettingValue", () => {
   it("阈值越界只重置越界的那一项", () => {
     expect(
       parseSettingValue("tracking", { hotWithinDays: 0, staleAfterDays: 200 }),
-    ).toEqual({ hotWithinDays: DEFAULT_HOT_WITHIN_DAYS, staleAfterDays: 200 })
+    ).toMatchObject({
+      hotWithinDays: DEFAULT_HOT_WITHIN_DAYS,
+      staleAfterDays: 200,
+    })
+  })
+
+  // 漏记一条动态无法补录，多记一条只是噪音：坏值一律回到「开」
+  it("动态订阅开关默认全开，损坏的那一项也回到开", () => {
+    expect(parseSettingValue("tracking", {})).toMatchObject({
+      eventPush: true,
+      eventRelease: true,
+      eventStarsDelta: true,
+      eventMetaChange: true,
+    })
+    expect(
+      parseSettingValue("tracking", { eventPush: false, eventRelease: "no" }),
+    ).toMatchObject({ eventPush: false, eventRelease: true })
   })
 
   it("整体不是对象时仍回退该领域默认值", () => {

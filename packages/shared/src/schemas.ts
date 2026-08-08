@@ -95,6 +95,8 @@ export const listBookmarksQuerySchema = z.object({
   site: z.string().optional(),
   sourceType: z.enum(SOURCE_TYPES).optional(),
   healthStatus: z.enum(HEALTH_STATUSES).optional(),
+  /** AI 归类状态筛选；主要供洞察页 pending/failed 计数深链使用 */
+  aiStatus: z.enum(AI_STATUSES).optional(),
   archived: z
     .enum(["true", "false", "1", "0"])
     .optional()
@@ -225,6 +227,10 @@ export const trackingSettingsSchema = z
       .min(MIN_TRACKING_DAYS)
       .max(MAX_TRACKING_DAYS)
       .optional(),
+    eventPush: z.boolean().optional(),
+    eventRelease: z.boolean().optional(),
+    eventStarsDelta: z.boolean().optional(),
+    eventMetaChange: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     const hot = data.hotWithinDays ?? DEFAULT_HOT_WITHIN_DAYS
@@ -240,10 +246,10 @@ export const trackingSettingsSchema = z
 export type TrackingSettingsInput = z.infer<typeof trackingSettingsSchema>
 
 export const importGithubSchema = z.object({
-  page: z.number().int().min(1).default(1).optional(),
-  perPage: z.number().int().min(1).max(100).default(30).optional(),
+  page: z.number().int().min(1).default(1),
+  perPage: z.number().int().min(1).max(100).default(30),
   /** 最多导入页数（基础分页版） */
-  maxPages: z.number().int().min(1).max(20).default(3).optional(),
+  maxPages: z.number().int().min(1).max(20).default(3),
 })
 export type ImportGithubInput = z.infer<typeof importGithubSchema>
 
@@ -282,6 +288,10 @@ export const meResponseSchema = z.object({
   github_pat_configured: z.boolean(),
   hot_within_days: z.number().int(),
   stale_after_days: z.number().int(),
+  event_push: z.boolean(),
+  event_release: z.boolean(),
+  event_stars_delta: z.boolean(),
+  event_meta_change: z.boolean(),
   public_browsing_enabled: z.boolean(),
   bookmark_pagination_mode: z.enum(BOOKMARK_PAGINATION_MODES),
   bookmark_page_size: z.number().int(),
@@ -354,6 +364,16 @@ export const kbChatRequestSchema = z.object({
    * 对话照常进行，只是长会话会退化成硬截断。
    */
   conversationId: z.string().uuid().optional(),
+  /**
+   * 客户端当前所处的软上下文（例如收藏页正在筛选的文件夹）。
+   * 仅用于提示词里的轻量提示，不影响检索逻辑；缺省时按无上下文处理。
+   */
+  context: z
+    .object({
+      folderId: z.string().uuid().optional(),
+      folderName: z.string().max(200).optional(),
+    })
+    .optional(),
 })
 export type KbChatRequest = z.infer<typeof kbChatRequestSchema>
 

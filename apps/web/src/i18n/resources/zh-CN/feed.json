@@ -2,6 +2,11 @@
   "title": "更新动态",
   "description": "追踪已关注仓库的 Release 发版、推送与变更事件",
   "empty": "暂无更新。开启跟踪的仓库出现变更后会显示在这里。",
+  "emptyFiltered": "没有符合条件的更新，换个筛选条件试试。",
+  "filterAll": "全部类型",
+  "loadMore": "加载更多",
+  "filteredByBookmark": "已按单个仓库筛选",
+  "clearFilter": "清除筛选",
   "eventType": {
     "release": "新 Release 发版",
     "push": "代码分支更新",

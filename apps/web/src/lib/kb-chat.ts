@@ -72,6 +72,8 @@ export async function streamKbChat(
     model?: KbChatModelId
     /** 带上才能读写该会话的滚动摘要 */
     conversationId?: string
+    /** 客户端当前所处的软上下文（如收藏页正在筛选的文件夹） */
+    context?: { folderId?: string; folderName?: string }
   },
   handlers: KbChatHandlers,
   signal?: AbortSignal,

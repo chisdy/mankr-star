@@ -59,6 +59,8 @@ export type KbAgentInput = {
   signal?: AbortSignal
   /** 时间预算基准，与路由的 latency 统计共用同一个起点 */
   startedAt?: number
+  /** 客户端当前所处的软上下文（如收藏页正在筛选的文件夹） */
+  context?: { folderId?: string; folderName?: string }
 }
 
 /** 一轮对话的聚合结果，供路由写唯一一条 kb_chat 用量日志 */
@@ -187,6 +189,7 @@ export async function* runKbAgent(
         folderDigest: prefetch.folderDigest,
         bookmarkContext: context.bookmarkContext,
         webContext: context.webContext,
+        folderContext: input.context?.folderName,
       }),
     })
   }
@@ -298,6 +301,7 @@ async function* runLoop(
     folderDigest: prefetch.folderDigest,
     bookmarkContext: context.bookmarkContext,
     webContext: context.webContext,
+    folderContext: input.context?.folderName,
   })
 
   const gathered: string[] = []
@@ -396,6 +400,7 @@ async function* runLoop(
         .filter(Boolean)
         .join("\n\n"),
       webContext: context.webContext,
+      folderContext: input.context?.folderName,
     }),
   })
   yield* settlePlan(plan, planCursor)

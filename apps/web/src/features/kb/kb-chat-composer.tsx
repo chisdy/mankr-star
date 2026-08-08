@@ -27,6 +27,7 @@ export function KbChatComposer({
   onWebSearchChange,
   anysearchConfigured,
   onGoSettings,
+  folderContextName,
 }: {
   value: string
   onValueChange: (value: string) => void
@@ -39,6 +40,8 @@ export function KbChatComposer({
   onWebSearchChange: (next: boolean) => void
   anysearchConfigured: boolean
   onGoSettings: () => void
+  /** 收藏页当前筛选的文件夹名；有值时在输入框上方露出透明提示 */
+  folderContextName?: string
 }) {
   const { t } = useTranslation("kb")
   const [webHint, setWebHint] = React.useState(false)
@@ -65,6 +68,11 @@ export function KbChatComposer({
 
   return (
     <div className="shrink-0 space-y-2 border-t border-border/50 px-3 py-2.5">
+      {folderContextName ? (
+        <p className="truncate text-[11px] text-muted-foreground">
+          {t("composer.folderContextHint", { name: folderContextName })}
+        </p>
+      ) : null}
       {webHint ? (
         <p className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
           {t("composer.webSearchUnconfigured")}

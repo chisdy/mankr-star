@@ -17,6 +17,7 @@
   "INTERNAL_ERROR": "服务器内部错误",
   "TARGET_NOT_FOUND": "目标文件夹不存在",
   "INVALID_TARGET": "无效的目标文件夹",
+  "PAT_REQUIRED": "请先在设置中配置 GitHub PAT",
   "http": {
     "401": "未登录或会话已过期。",
     "403": "没有权限执行该操作。",

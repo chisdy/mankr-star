@@ -202,6 +202,16 @@ describe("listBookmarksQuerySchema", () => {
     expect(res.success).toBe(true)
     if (res.success) expect(res.data.site).toBe("react.dev")
   })
+
+  it("接受 aiStatus，拒绝非法取值", () => {
+    const res = listBookmarksQuerySchema.safeParse({ aiStatus: "failed" })
+    expect(res.success).toBe(true)
+    if (res.success) expect(res.data.aiStatus).toBe("failed")
+
+    expect(
+      listBookmarksQuerySchema.safeParse({ aiStatus: "unknown" }).success,
+    ).toBe(false)
+  })
 })
 
 describe("createFolderSchema", () => {
@@ -327,6 +337,29 @@ describe("kbChatRequestSchema", () => {
     // 前端的会话 id 一律 crypto.randomUUID()，非 uuid 说明链路串了
     expect(
       kbChatRequestSchema.safeParse({ messages, conversationId: "abc" }).success,
+    ).toBe(false)
+  })
+
+  it("context 可选，folderId 必须是 uuid", () => {
+    const messages = [{ role: "user" as const, content: "有哪些收藏？" }]
+
+    const omitted = kbChatRequestSchema.safeParse({ messages })
+    expect(omitted.success && omitted.data.context).toBeUndefined()
+
+    const withContext = kbChatRequestSchema.safeParse({
+      messages,
+      context: { folderId: crypto.randomUUID(), folderName: "读书笔记" },
+    })
+    expect(withContext.success).toBe(true)
+    if (withContext.success) {
+      expect(withContext.data.context?.folderName).toBe("读书笔记")
+    }
+
+    expect(
+      kbChatRequestSchema.safeParse({
+        messages,
+        context: { folderId: "not-a-uuid" },
+      }).success,
     ).toBe(false)
   })
 })

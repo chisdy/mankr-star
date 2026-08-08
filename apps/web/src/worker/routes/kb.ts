@@ -65,6 +65,7 @@ kbRoutes.post("/kb/chat", async (c) => {
     webSearch,
     model: requestedModel,
     conversationId,
+    context: clientContext,
   } = parsed.data
   const question = [...messages].reverse().find((m) => m.role === "user")
     ?.content
@@ -201,6 +202,7 @@ kbRoutes.post("/kb/chat", async (c) => {
           anysearchKey,
           signal: c.req.raw.signal,
           startedAt: started,
+          context: clientContext,
         },
         prefetch,
         context,

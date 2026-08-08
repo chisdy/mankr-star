@@ -156,6 +156,7 @@ export function KbChatBody({
             onWebSearchChange={chat.setWebSearch}
             anysearchConfigured={anysearchConfigured}
             onGoSettings={() => navigate("/settings")}
+            folderContextName={chat.folderContext?.folderName}
           />
         </>
       )}

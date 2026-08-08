@@ -16,11 +16,16 @@ import type {
   BookmarksResponse,
   DeepSeekSettings,
   ExportData,
+  FeedQueryParams,
+  FeedResponse,
   Folder,
+  GithubImportParams,
+  GithubImportResult,
   InsightsRange,
   InsightsResponse,
   InstanceStatus,
   Tag,
+  TrackingSettings,
   UpdateEvent,
   User,
 } from "./types"
@@ -195,6 +200,7 @@ function toBookmarksQuery(params?: BookmarksQueryParams): string {
   if (params.site) search.set("site", params.site)
   if (params.source_type) search.set("sourceType", params.source_type)
   if (params.health_status) search.set("healthStatus", params.health_status)
+  if (params.ai_status) search.set("aiStatus", params.ai_status)
   if (params.has_account === true) search.set("hasAccount", "true")
   if (params.has_account === false) search.set("hasAccount", "false")
   if (params.q) search.set("q", params.q)
@@ -219,6 +225,15 @@ function toBookmarksQuery(params?: BookmarksQueryParams): string {
 
   const qs = search.toString()
   return qs ? `?${qs}` : ""
+}
+
+function toFeedQuery(params?: FeedQueryParams): string {
+  const search = new URLSearchParams()
+  if (params?.eventType) search.set("eventType", params.eventType)
+  if (params?.bookmarkId) search.set("bookmarkId", params.bookmarkId)
+  search.set("page", String(params?.page ?? 1))
+  search.set("pageSize", String(params?.pageSize ?? 20))
+  return `?${search.toString()}`
 }
 
 // ---------------------------------------------------------------------------
@@ -561,6 +576,9 @@ export const api = {
               b.source_type === "url" &&
               Boolean(b.account_registered) === params.has_account
           )
+        }
+        if (params?.ai_status) {
+          items = items.filter((b) => b.ai_status === params.ai_status)
         }
         if (params?.q) {
           const q = params.q.toLowerCase()
@@ -1222,7 +1240,7 @@ export const api = {
   },
 
   // Feed ---------------------------------------------------------------
-  async getFeed(): Promise<UpdateEvent[]> {
+  async getFeed(params?: FeedQueryParams): Promise<FeedResponse> {
     try {
       const res = await request<
         Paginated<{
@@ -1233,20 +1251,60 @@ export const api = {
           detected_at: string
           bookmark: { title: string; external_id: string | null } | null
         }>
-      >("/api/feed?pageSize=100")
-      return res.items.map((e) => ({
-        id: e.id,
-        bookmark_id: e.bookmark_id,
-        bookmark_title: e.bookmark?.title,
-        bookmark_external_id: e.bookmark?.external_id ?? undefined,
-        event_type: e.event_type,
-        payload_json: JSON.stringify(e.payload ?? {}),
-        detected_at: e.detected_at,
-      }))
+      >(`/api/feed${toFeedQuery(params)}`)
+      return {
+        items: res.items.map((e) => ({
+          id: e.id,
+          bookmark_id: e.bookmark_id,
+          bookmark_title: e.bookmark?.title,
+          bookmark_external_id: e.bookmark?.external_id ?? undefined,
+          event_type: e.event_type,
+          payload_json: JSON.stringify(e.payload ?? {}),
+          detected_at: e.detected_at,
+        })),
+        page: res.page,
+        pageSize: res.pageSize,
+        total: res.total,
+      }
     } catch (err) {
-      if (shouldFallbackToMock(err)) return mockStore().events
+      if (shouldFallbackToMock(err)) {
+        let items = mockStore().events
+        if (params?.eventType) {
+          items = items.filter((e) => e.event_type === params.eventType)
+        }
+        if (params?.bookmarkId) {
+          items = items.filter((e) => e.bookmark_id === params.bookmarkId)
+        }
+        const page = params?.page ?? 1
+        const pageSize = params?.pageSize ?? 20
+        return {
+          items: items.slice((page - 1) * pageSize, page * pageSize),
+          page,
+          pageSize,
+          total: items.length,
+        }
+      }
       throw err
     }
+  },
+
+  /**
+   * 从 GitHub Stars 分页导入。仅登录后使用，且必须先在设置中配置 GitHub PAT；
+   * 后端不可用时直接抛错，不做本地 mock（导入的是真实第三方数据，mock 无意义）。
+   */
+  async importGithubStars(
+    params?: GithubImportParams,
+  ): Promise<GithubImportResult> {
+    return await request<GithubImportResult>("/api/bookmarks/import/github", {
+      method: "POST",
+      body: JSON.stringify({
+        ...(params?.page !== undefined ? { page: params.page } : {}),
+        ...(params?.perPage !== undefined ? { perPage: params.perPage } : {}),
+        ...(params?.maxPages !== undefined
+          ? { maxPages: params.maxPages }
+          : {}),
+      }),
+    })
   },
 
   // Insights -----------------------------------------------------------
@@ -1437,15 +1495,11 @@ export const api = {
     }
   },
 
-  async updateTrackingSettings(data: {
-    hot_within_days?: number
-    stale_after_days?: number
-  }): Promise<{ hot_within_days: number; stale_after_days: number }> {
+  async updateTrackingSettings(
+    data: Partial<TrackingSettings>,
+  ): Promise<TrackingSettings> {
     try {
-      return await request<{
-        hot_within_days: number
-        stale_after_days: number
-      }>("/api/settings/tracking", {
+      return await request<TrackingSettings>("/api/settings/tracking", {
         method: "PUT",
         body: JSON.stringify({
           ...(data.hot_within_days !== undefined
@@ -1454,23 +1508,34 @@ export const api = {
           ...(data.stale_after_days !== undefined
             ? { staleAfterDays: data.stale_after_days }
             : {}),
+          ...(data.event_push !== undefined
+            ? { eventPush: data.event_push }
+            : {}),
+          ...(data.event_release !== undefined
+            ? { eventRelease: data.event_release }
+            : {}),
+          ...(data.event_stars_delta !== undefined
+            ? { eventStarsDelta: data.event_stars_delta }
+            : {}),
+          ...(data.event_meta_change !== undefined
+            ? { eventMetaChange: data.event_meta_change }
+            : {}),
         }),
       })
     } catch (err) {
       if (shouldFallbackToMock(err)) {
         const store = mockStore()
         if (store.user) {
-          if (data.hot_within_days !== undefined) {
-            store.user.hot_within_days = data.hot_within_days
-          }
-          if (data.stale_after_days !== undefined) {
-            store.user.stale_after_days = data.stale_after_days
-          }
+          Object.assign(store.user, data)
           saveMockStore()
         }
         return {
           hot_within_days: store.user?.hot_within_days ?? 30,
           stale_after_days: store.user?.stale_after_days ?? 180,
+          event_push: store.user?.event_push ?? true,
+          event_release: store.user?.event_release ?? true,
+          event_stars_delta: store.user?.event_stars_delta ?? true,
+          event_meta_change: store.user?.event_meta_change ?? true,
         }
       }
       throw err
@@ -1591,6 +1656,37 @@ export const api = {
 
   async clearKbConversations(): Promise<void> {
     await request("/api/kb/conversations", { method: "DELETE" })
+  },
+
+  /**
+   * 清空业务数据（收藏/文件夹/标签/动态/对话存档），保留账号与实例设置。
+   * 会连带清空当前会话，调用方需自行处理登出跳转。不做 mock 回退。
+   */
+  async clearData(): Promise<void> {
+    await request("/api/settings/clear-data", { method: "POST" })
+  },
+
+  /**
+   * Markdown 导出走原始 fetch：`request` 只认 JSON，非 JSON 响应会被吞成空对象。
+   */
+  async exportMarkdown(): Promise<string> {
+    let response: Response
+    try {
+      response = await fetch("/api/export?format=markdown", {
+        credentials: "include",
+      })
+    } catch {
+      throw new ApiError("无法连接服务器，请检查网络后重试。", 0, {
+        backendUnavailable: true,
+      })
+    }
+    if (!response.ok) {
+      throw new ApiError(
+        STATUS_FALLBACK_MESSAGES[response.status] ?? "请求失败，请稍后重试。",
+        response.status,
+      )
+    }
+    return await response.text()
   },
 
   async getExportData(): Promise<ExportData> {

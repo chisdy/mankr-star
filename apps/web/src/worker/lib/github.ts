@@ -1,3 +1,5 @@
+import { README_EXCERPT_MAX_CHARS } from "@mankr/shared"
+
 export type GithubRepoMeta = {
   owner: string
   repo: string
@@ -134,6 +136,29 @@ export async function fetchReadmeSnippet(
   if (!res.ok) return null
   const text = await res.text()
   return text.slice(0, maxChars)
+}
+
+/**
+ * 缓存用的 README 正文。抓取失败一律当作「没有」：
+ * README 只是锦上添花的展示内容，不该让收藏创建或整轮同步失败。
+ */
+export async function fetchReadmeExcerpt(
+  owner: string,
+  repo: string,
+  token?: string | null,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  try {
+    return await fetchReadmeSnippet(
+      owner,
+      repo,
+      README_EXCERPT_MAX_CHARS,
+      token,
+      signal,
+    )
+  } catch {
+    return null
+  }
 }
 
 export type StarredRepo = {

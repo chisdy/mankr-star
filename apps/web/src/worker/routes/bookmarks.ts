@@ -34,7 +34,7 @@ import {
   syncBookmarkTags,
 } from "../lib/ai-service"
 import { buildPathLabel, collectSubtreeIds } from "../lib/folder-utils"
-import { GithubApiError } from "../lib/github"
+import { GithubApiError, fetchReadmeExcerpt } from "../lib/github"
 import { parseGithubRepoInput } from "../lib/github-url"
 import { fetchUrlPageMetadata } from "../lib/url-metadata"
 import { fetchTwitterMetadata } from "../lib/twitter"
@@ -84,7 +84,12 @@ function serializeBookmark(
   tagNames: string[],
   folder?: typeof folders.$inferSelect | null,
   allFolders?: Array<typeof folders.$inferSelect>,
-  options?: { isPublicRead?: boolean; includeAccount?: boolean },
+  options?: {
+    isPublicRead?: boolean
+    includeAccount?: boolean
+    /** README 缓存可达 8KB，只在单条详情里带上，避免撑爆列表响应 */
+    includeReadme?: boolean
+  },
 ) {
   let topics: string[] = []
   let useCases: string[] = []
@@ -147,6 +152,7 @@ function serializeBookmark(
     image_url: b.imageUrl,
     favicon_url: b.faviconUrl,
     content_excerpt: b.contentExcerpt,
+    ...(options?.includeReadme ? { readme_excerpt: b.readmeExcerpt } : {}),
     platform_meta: platformMeta,
     ai_status: b.aiStatus,
     track_updates: b.trackUpdates,
@@ -209,6 +215,7 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     site,
     sourceType,
     healthStatus,
+    aiStatus,
     archived,
     includeArchived,
     hasAccount,
@@ -232,6 +239,10 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
   if (healthStatus) {
     conditions.push(eq(bookmarks.sourceType, "github"))
     conditions.push(eq(bookmarks.healthStatus, healthStatus))
+  }
+
+  if (aiStatus) {
+    conditions.push(eq(bookmarks.aiStatus, aiStatus))
   }
 
   if (folderId) {
@@ -468,6 +479,7 @@ bookmarkRoutes.get("/bookmarks/:id", async (c) => {
     serializeBookmark(row, tagMap.get(id) ?? [], folder, allFolders, {
       isPublicRead,
       includeAccount: !isPublicRead,
+      includeReadme: true,
     }),
   )
 })
@@ -818,6 +830,9 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
     return c.json({ error: "拉取 GitHub 元数据失败", code: "GITHUB_ERROR" }, 502)
   }
 
+  const readmeExcerpt =
+    (await fetchReadmeExcerpt(parsedRepo.owner, parsedRepo.repo, token)) ?? ""
+
   const { hotWithinDays, staleAfterDays } = await readSetting(db, "tracking")
   const syncStatus = meta.disabled ? ("forbidden" as const) : ("ok" as const)
   const healthStatus = computeHealthStatus({
@@ -848,6 +863,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
     homepage: meta.homepage,
     defaultBranch: meta.defaultBranch,
     topicsJson: JSON.stringify(meta.topics),
+    readmeExcerpt,
     folderId: parsed.data.folderId ?? null,
     notes: parsed.data.notes ?? null,
     aiStatus: "pending" as const,
@@ -1003,6 +1019,7 @@ bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
   return c.json(
     serializeBookmark(row!, tagMap.get(id) ?? [], folder, allFolders, {
       includeAccount: true,
+      includeReadme: true,
     }),
   )
 })

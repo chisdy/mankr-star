@@ -17,6 +17,7 @@
   "INTERNAL_ERROR": "Internal server error",
   "TARGET_NOT_FOUND": "Target folder not found",
   "INVALID_TARGET": "Invalid target folder",
+  "PAT_REQUIRED": "Please configure a GitHub PAT in settings first",
   "http": {
     "401": "Not signed in or session expired.",
     "403": "You do not have permission for this action.",

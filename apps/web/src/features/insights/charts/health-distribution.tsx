@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next"
+import { Link } from "react-router"
 
 import { formatNumber } from "@/features/insights/format"
 
 const HEALTH_BAR: Record<string, string> = {
-  hot: "bg-amber-500 dark:bg-amber-400",
-  active: "bg-emerald-500 dark:bg-emerald-400",
+  hot: "bg-emerald-500 dark:bg-emerald-400",
+  active: "bg-amber-500 dark:bg-amber-400",
   stale: "bg-zinc-400 dark:bg-zinc-500",
   archived: "bg-slate-500 dark:bg-slate-400",
   empty: "bg-slate-400 dark:bg-slate-500",
@@ -46,8 +47,8 @@ export function HealthDistribution({
         const pct = Math.round((item.count / total) * 100)
         const widthPct = Math.max(4, Math.round((item.count / maxCount) * 100))
 
-        return (
-          <li key={item.status} className="space-y-1">
+        const content = (
+          <>
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <span className={`size-2 shrink-0 rounded-full ${barClass}`} />
@@ -68,6 +69,22 @@ export function HealthDistribution({
                 style={{ width: `${widthPct}%` }}
               />
             </div>
+          </>
+        )
+
+        return (
+          <li key={item.status} className="space-y-1">
+            {item.count > 0 ? (
+              <Link
+                to={`/?source_type=github&health_status=${item.status}`}
+                className="-mx-1.5 block space-y-1 rounded-md px-1.5 py-0.5 transition-colors hover:bg-muted/50"
+                title={t("charts.healthLinkTitle", { label })}
+              >
+                {content}
+              </Link>
+            ) : (
+              content
+            )}
           </li>
         )
       })}

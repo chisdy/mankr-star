@@ -2,6 +2,11 @@
   "title": "Activity feed",
   "description": "Track Release, pushes, and changes for followed repos",
   "empty": "No updates yet. Tracked repos will appear here when they change.",
+  "emptyFiltered": "No matching updates. Try a different filter.",
+  "filterAll": "All types",
+  "loadMore": "Load more",
+  "filteredByBookmark": "Filtered to a single repo",
+  "clearFilter": "Clear filter",
   "eventType": {
     "release": "New Release",
     "push": "Branch updated",

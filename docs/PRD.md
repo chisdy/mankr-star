@@ -3,10 +3,10 @@
 | 字段 | 内容 |
 |------|------|
 | 项目代号 | **Mankr Star** |
-| 文档版本 | v1.6 |
+| 文档版本 | v1.7 |
 | 创建日期 | 2026-08-04 |
-| 修订日期 | 2026-08-05 |
-| 文档状态 | 初稿 / 待评审 |
+| 修订日期 | 2026-08-08 |
+| 文档状态 | 与实现对照修订 |
 | 产品定位 | 单实例「智能收藏与追踪」工具，优先解决 GitHub Star 难分类、难检索的问题 |
 | 核心约束 | **基础设施免费**（Cloudflare Workers + D1 + Cron）；**单用户**邮箱/密码登录；AI 使用 **DeepSeek 官方 API**（用户自备 Key，设置页配置，加密存 D1） |
 | 技术方案 | 详见 [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) |
@@ -98,19 +98,35 @@ GitHub 原生 Star 能力难以支撑长期知识管理：
 4. **搜索找回**：按仓库名、描述、AI 摘要、笔记全文搜索。
 5. **更新提醒**：关注的仓库有新 Release / 默认分支推送 / star 数显著变化时，在「动态」页可见。
 6. **手动精修**：用户可改文件夹、增删标签、写私有笔记；AI 结果可覆盖。
-7. **后续扩展**：粘贴 X/Twitter 链接，同样进入收藏流（二期）。
+7. **多来源收藏**：粘贴 X/Twitter 或通用网页链接，同样进入收藏流（**已落地**）。
 
 ---
 
+## 3.3 实现状态快照（2026-08-08）
+
+下列能力在代码中 **已落地**（与下方历史 Phase 文案对照时以本表为准）：
+
+| 能力 | 状态 |
+|------|------|
+| Phase 0 骨架、单用户注册/登录 | 已落地 |
+| GitHub 收藏 CRUD、AI 分类、文件夹/标签、Cron 同步、Feed | 已落地 |
+| X/Twitter + 通用 URL（含账号/加密密码字段） | 已落地 |
+| 归档、健康阈值（hot/stale 天）、JSON 导出、公开浏览 | 已落地 |
+| KB Chat、洞察页、设置（DeepSeek / PAT / AnySearch） | 已落地 |
+| GitHub Stars 导入 API | ✅ 含设置页导入 UI 与续导 |
+| 事件级订阅偏好、Markdown 导出、README 摘录缓存、renamed、PWA、浏览器扩展 | ✅ Wave 3 已落地 |
+
 ## 4. 产品范围与分期
 
-### 4.1 Phase 0 — 骨架（MVP 前置）
+> 分期描述保留产品意图；**已落地项**见 §3.3。未完成项仍按 Phase 推进。
+
+### 4.1 Phase 0 — 骨架（MVP 前置）— ✅
 
 - Cloudflare Workers + 静态前端可访问。
 - D1 schema（Drizzle）落地（含 `users` / `sessions`）；本地 `wrangler` 开发可用。
 - **注册 / 登录闭环**：单用户注册（仅当无用户时）→ Session Cookie → 登出（见 5.0、6.3）。
 
-### 4.2 Phase 1 — GitHub 收藏 MVP（必须交付）
+### 4.2 Phase 1 — GitHub 收藏 MVP — ✅（导入 UI 持续产品化）
 
 - 添加 / 编辑 / 删除 GitHub 收藏（单实例单用户库）。
 - 自动拉取：owner、repo、description、topics、language、stars、forks、license、homepage、默认分支、最近 push 时间。
@@ -119,26 +135,26 @@ GitHub 原生 Star 能力难以支撑长期知识管理：
 - Cron：定期检查已收藏仓库的更新，写入变更日志。
 - 导入：从 GitHub Starred 列表批量导入（需用户自备 Token，与登录无关）。
 
-### 4.3 Phase 2 — 体验增强
+### 4.3 Phase 2 — 体验增强 — 部分完成
 
-- 更新订阅偏好（仅 Release / 任意 push / star 阈值）。
-- README 摘要缓存（R2 或 D1 TEXT 截断，按体积决策）。
-- 重复链接检测、仓库转移（renamed）处理。
-- 导出 JSON / Markdown。
-- 简单「稍后阅读 / 已归档」状态。
-- 设置页：修改密码、DeepSeek API Key、登出、撤销 GitHub Token。
+- ✅ 健康阈值（hot / stale 天数）；⏳ 事件级订阅偏好（仅 Release / push / stars_delta 开关）。
+- ⏳ README 摘要缓存（优先 D1 TEXT 截断）。
+- ✅ 重复链接 canonical 去重；⏳ 仓库转移（renamed）处理加强。
+- ✅ 导出 JSON；⏳ Markdown。
+- ✅ 已归档；「稍后阅读」若需要则另定语义。
+- ✅ 设置页：改密、DeepSeek Key、登出；⏳ 撤销 GitHub Token UI。
 
-### 4.4 Phase 3 — 多平台链接
+### 4.4 Phase 3 — 多平台链接 — ✅ 首批已落地
 
-- 统一 `Bookmark` 模型 + `source_type` 插件化解析器。
-- 首批扩展：**X/Twitter** 链接（推文/账号 URL）。
-- 预留：博客、文档站、YouTube、通用 URL（仅元数据 + 用户笔记）。
+- ✅ 统一 `Bookmark` 模型 + `source_type` 解析（`github` / `twitter` / `url`）。
+- ✅ **X/Twitter** 与 **通用 URL**（元数据 + 笔记 + 可选站点账号字段）。
+- 预留：YouTube 等专项解析器。
 
 ### 4.5 Phase 4 — 可选增长（仍尽量免费）
 
-- 多设备同步体验优化、PWA（同一账号跨设备共享数据）。
-- 免费额度保护：实例级配额、登录/注册限流、AI/同步优先级。
-- 浏览器扩展「一键收藏」（携带同一 Session / Token）。
+- ⏳ 多设备同步体验优化、PWA。
+- ✅ 登录/注册限流等基础保护；配额策略可继续加强。
+- ⏳ 浏览器扩展「一键收藏」。
 
 ### 4.6 后续阶段（非 MVP）
 

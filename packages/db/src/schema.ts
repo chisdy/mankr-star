@@ -132,6 +132,8 @@ export const bookmarks = sqliteTable(
     imageUrl: text("image_url"),
     faviconUrl: text("favicon_url"),
     contentExcerpt: text("content_excerpt"),
+    /** GitHub README 缓存正文（截断存储），供详情展示与导出复用 */
+    readmeExcerpt: text("readme_excerpt"),
     platformMetaJson: text("platform_meta_json").notNull().default("{}"),
     aiStatus: text("ai_status").notNull().default("pending"),
     trackUpdates: integer("track_updates", { mode: "boolean" })

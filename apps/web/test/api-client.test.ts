@@ -392,10 +392,30 @@ describe("api client 业务映射", () => {
     expect((error as ApiError).code).toBe("DUPLICATE")
   })
 
-  it("getFeed 返回数组", async () => {
+  it("getFeed 返回分页信封 { items, page, pageSize, total }", async () => {
     const feed = await api.getFeed()
-    expect(Array.isArray(feed)).toBe(true)
-    expect(feed).toHaveLength(0)
+    expect(Array.isArray(feed.items)).toBe(true)
+    expect(feed.items).toHaveLength(0)
+    expect(feed.page).toBe(1)
+    expect(feed.pageSize).toBe(20)
+    expect(feed.total).toBe(0)
+  })
+
+  it("getFeed 支持传入 page/pageSize 查询参数", async () => {
+    const feed = await api.getFeed({ page: 2, pageSize: 5 })
+    expect(feed.page).toBe(2)
+    expect(feed.pageSize).toBe(5)
+    expect(feed.items).toHaveLength(0)
+  })
+
+  it("importGithubStars 未配置 PAT 时抛出 400 PAT_REQUIRED", async () => {
+    const error = await api
+      .importGithubStars()
+      .then(() => null)
+      .catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(ApiError)
+    expect((error as ApiError).status).toBe(400)
+    expect((error as ApiError).code).toBe("PAT_REQUIRED")
   })
 
   it("DeepSeek 设置映射 api_key→apiKey，响应映射为 configured/last4/model", async () => {
@@ -442,6 +462,18 @@ describe("api client 业务映射", () => {
       password: "another-strong-pass",
     })
     expect(relogin.username).toBe(OWNER.username)
+  })
+
+  it("clearData 清空后当前会话失效", async () => {
+    await api.createBookmark({ url: "facebook/react" })
+    await api.clearData()
+
+    const error = await api
+      .getMe()
+      .then(() => null)
+      .catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(ApiError)
+    expect((error as ApiError).status).toBe(401)
   })
 
   it("getExportData 返回导出信封", async () => {

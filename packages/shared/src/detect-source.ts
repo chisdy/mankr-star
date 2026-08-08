@@ -33,11 +33,8 @@ function labelFor(type: SourceType): string {
   )
 }
 
-function unsupportedMessage(type: SourceType, label: string): string {
-  if (type === "url") {
-    return "暂不支持通用网页链接，目前仅支持 GitHub 仓库"
-  }
-  return `识别为${label}，专项能力尚未接入；通用网页收藏即将开放`
+function unsupportedMessage(_type: SourceType, label: string): string {
+  return `识别为${label}，专项能力尚未接入`
 }
 
 /** 从输入中提取 hostname（不依赖 DOM URL） */

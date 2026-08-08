@@ -4,6 +4,7 @@ import { StarIcon, GitForkIcon, ClockIcon, HeartIcon } from "@phosphor-icons/rea
 import { Badge } from "@workspace/ui/components/badge"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import type { Bookmark } from "@/lib/types"
+import { AccountStatusBadge } from "./account-status-badge"
 import { HealthStatusBadge } from "./health-status-badge"
 import { BookmarkAccountCopyButton } from "./bookmark-account-copy-button"
 import { BookmarkOpenButton } from "./bookmark-open-button"
@@ -104,7 +105,9 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
             )}
             {isGithub ? (
               <HealthStatusBadge status={bookmark.health_status} />
-            ) : null}
+            ) : (
+              <AccountStatusBadge bookmark={bookmark} />
+            )}
           </div>
 
           <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">

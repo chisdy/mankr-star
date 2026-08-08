@@ -317,7 +317,14 @@ settingsRoutes.put("/settings/tracking", async (c) => {
     )
   }
 
-  await writeSetting(db, "tracking", { hotWithinDays, staleAfterDays })
+  const saved = await writeSetting(db, "tracking", {
+    hotWithinDays,
+    staleAfterDays,
+    eventPush: parsed.data.eventPush,
+    eventRelease: parsed.data.eventRelease,
+    eventStarsDelta: parsed.data.eventStarsDelta,
+    eventMetaChange: parsed.data.eventMetaChange,
+  })
 
   // 本地重算 hot/active/stale（不调 GitHub）
   const rows = await db
@@ -360,8 +367,12 @@ settingsRoutes.put("/settings/tracking", async (c) => {
   }
 
   return c.json({
-    hot_within_days: hotWithinDays,
-    stale_after_days: staleAfterDays,
+    hot_within_days: saved.hotWithinDays,
+    stale_after_days: saved.staleAfterDays,
+    event_push: saved.eventPush,
+    event_release: saved.eventRelease,
+    event_stars_delta: saved.eventStarsDelta,
+    event_meta_change: saved.eventMetaChange,
   })
 })
 
@@ -511,25 +522,34 @@ settingsRoutes.put("/settings/bookmark-pagination", async (c) => {
 
 /** 清空业务数据，保留 users 行与实例设置 */
 settingsRoutes.post("/settings/clear-data", async (c) => {
+  const ip = getClientIp(c.req.raw)
+  const rl = rateLimit(`clear-data:${ip}`, 3, 300_000)
+  if (!rl.ok) {
+    return c.json({ error: "请求过于频繁", code: "RATE_LIMITED" }, 429)
+  }
+
   const db = c.get("db")
   const userId = c.get("userId")
   if (!userId) {
     return c.json({ error: "未登录", code: "UNAUTHORIZED" }, 401)
   }
 
-  await db.delete(bookmarkTags)
-  await db.delete(updateEvents)
-  await db.delete(aiJobs)
-  await db.delete(aiUsageLogs)
-  // 对话存档引用的是收藏内容，收藏清空后留着只会指向不存在的条目
-  await db.delete(kbMessages)
-  await db.delete(kbConversations)
-  await db.delete(bookmarks)
-  // 触发器已随 bookmarks 删除清理，这里兜底防孤儿行
+  // D1 batch：九次删除一次提交，避免中途失败留下半清空状态
+  await db.batch([
+    db.delete(bookmarkTags),
+    db.delete(updateEvents),
+    db.delete(aiJobs),
+    db.delete(aiUsageLogs),
+    // 对话存档引用的是收藏内容，收藏清空后留着只会指向不存在的条目
+    db.delete(kbMessages),
+    db.delete(kbConversations),
+    db.delete(bookmarks),
+    db.delete(tags),
+    db.delete(folders),
+    db.delete(sessions).where(eq(sessions.userId, userId)),
+  ])
+  // 触发器已随 bookmarks 删除清理，这里兜底防孤儿行（FTS 不在 drizzle schema 内）
   await db.run(sql`DELETE FROM bookmarks_fts`)
-  await db.delete(tags)
-  await db.delete(folders)
-  await db.delete(sessions).where(eq(sessions.userId, userId))
 
   return c.json({ ok: true })
 })

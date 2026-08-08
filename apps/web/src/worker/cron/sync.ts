@@ -7,11 +7,17 @@ import {
   computeHealthStatus,
   type HealthStatus,
   type SyncStatus,
+  type TrackingSettingsValue,
 } from "@mankr/shared"
 import { and, asc, eq, isNull, sql } from "drizzle-orm"
 import type { Env } from "../env"
 import { resolveGithubToken, runAiForBookmark } from "../lib/ai-service"
-import { GithubApiError, fetchGithubRepo, fetchLatestRelease } from "../lib/github"
+import {
+  GithubApiError,
+  fetchGithubRepo,
+  fetchLatestRelease,
+  fetchReadmeExcerpt,
+} from "../lib/github"
 import { readSetting } from "../lib/settings-store"
 import { nowIso } from "../lib/utils"
 
@@ -45,11 +51,42 @@ async function insertEventIdempotent(
   return true
 }
 
-async function loadTrackingThresholds(db: Db): Promise<{
-  hotWithinDays: number
-  staleAfterDays: number
-}> {
+async function loadTrackingSettings(db: Db): Promise<TrackingSettingsValue> {
   return readSetting(db, "tracking")
+}
+
+/**
+ * 仓库改名或转移后要重写的坐标字段；未改名返回 null。
+ *
+ * 若新地址已被库里另一条收藏占用就整体放弃改写：
+ * (source_type, canonical_url) 上有唯一索引，硬写只会让整轮同步落到错误分支。
+ */
+async function renameIdentityPatch(
+  db: Db,
+  bookmark: typeof bookmarks.$inferSelect,
+  fullName: string,
+): Promise<Partial<typeof bookmarks.$inferInsert> | null> {
+  if (!fullName || fullName === bookmark.externalId) return null
+
+  const canonicalUrl = `https://github.com/${fullName}`
+  const conflict = await db
+    .select({ id: bookmarks.id })
+    .from(bookmarks)
+    .where(
+      and(
+        eq(bookmarks.sourceType, "github"),
+        eq(bookmarks.canonicalUrl, canonicalUrl),
+      ),
+    )
+    .get()
+  if (conflict && conflict.id !== bookmark.id) return null
+
+  return {
+    externalId: fullName,
+    canonicalUrl,
+    // 用户改过标题就保留他的写法，只有仍是默认的 owner/repo 才跟着改
+    ...(bookmark.title === bookmark.externalId ? { title: fullName } : {}),
+  }
 }
 
 function healthFromMeta(
@@ -78,7 +115,7 @@ function healthFromMeta(
 export async function syncUpdates(env: Env): Promise<{ scanned: number; events: number }> {
   const db = createDb(env)
   const token = await resolveGithubToken(db, env)
-  const thresholds = await loadTrackingThresholds(db)
+  const tracking = await loadTrackingSettings(db)
 
   const batch = await db
     .select()
@@ -109,7 +146,24 @@ export async function syncUpdates(env: Env): Promise<{ scanned: number; events: 
       const meta = await fetchGithubRepo(owner, repo, token)
       const release = await fetchLatestRelease(owner, repo, token)
 
-      if (meta.pushedAt && meta.pushedAt !== bookmark.pushedAt) {
+      // 用旧地址请求会被 GitHub 重定向到改名/转移后的仓库，full_name 即新坐标
+      const identityPatch = await renameIdentityPatch(db, bookmark, meta.fullName)
+      if (identityPatch && tracking.eventMetaChange) {
+        const ok = await insertEventIdempotent(
+          db,
+          bookmark.id,
+          "meta_change",
+          `meta:renamed:${bookmark.externalId}->${meta.fullName}`,
+          { kind: "renamed", from: bookmark.externalId, to: meta.fullName },
+        )
+        if (ok) events += 1
+      }
+
+      if (
+        tracking.eventPush &&
+        meta.pushedAt &&
+        meta.pushedAt !== bookmark.pushedAt
+      ) {
         const ok = await insertEventIdempotent(
           db,
           bookmark.id,
@@ -124,6 +178,7 @@ export async function syncUpdates(env: Env): Promise<{ scanned: number; events: 
       }
 
       if (
+        tracking.eventRelease &&
         release?.tagName &&
         release.tagName !== bookmark.latestReleaseTag
       ) {
@@ -147,8 +202,9 @@ export async function syncUpdates(env: Env): Promise<{ scanned: number; events: 
       const absDelta = Math.abs(nextStars - prevStars)
       const relDelta = prevStars > 0 ? absDelta / prevStars : absDelta > 0 ? 1 : 0
       if (
-        absDelta >= STARS_DELTA_ABS_MIN ||
-        (absDelta > 0 && relDelta >= STARS_DELTA_THRESHOLD)
+        tracking.eventStarsDelta &&
+        (absDelta >= STARS_DELTA_ABS_MIN ||
+          (absDelta > 0 && relDelta >= STARS_DELTA_THRESHOLD))
       ) {
         const ok = await insertEventIdempotent(
           db,
@@ -161,8 +217,9 @@ export async function syncUpdates(env: Env): Promise<{ scanned: number; events: 
       }
 
       if (
-        (meta.description ?? null) !== (bookmark.description ?? null) ||
-        (meta.language ?? null) !== (bookmark.language ?? null)
+        tracking.eventMetaChange &&
+        ((meta.description ?? null) !== (bookmark.description ?? null) ||
+          (meta.language ?? null) !== (bookmark.language ?? null))
       ) {
         const ok = await insertEventIdempotent(
           db,
@@ -178,11 +235,28 @@ export async function syncUpdates(env: Env): Promise<{ scanned: number; events: 
       }
 
       const syncStatus: SyncStatus = meta.disabled ? "forbidden" : "ok"
-      const healthStatus = healthFromMeta(meta, syncStatus, thresholds)
+      const healthStatus = healthFromMeta(meta, syncStatus, tracking)
+
+      // README：null = 从未试过；"" = 已试过但没有。避免对空仓库每轮空打
+      const shouldFetchReadme =
+        bookmark.readmeExcerpt == null ||
+        (meta.pushedAt != null && meta.pushedAt !== bookmark.pushedAt)
+      const readmeExcerpt = shouldFetchReadme
+        ? await fetchReadmeExcerpt(
+            owner,
+            repo,
+            token,
+            AbortSignal.timeout(8_000),
+          )
+        : null
 
       await db
         .update(bookmarks)
         .set({
+          ...identityPatch,
+          ...(shouldFetchReadme
+            ? { readmeExcerpt: readmeExcerpt ?? "" }
+            : {}),
           stars: meta.stars,
           forks: meta.forks,
           description: meta.description,
@@ -263,4 +337,4 @@ export async function runCronJobs(env: Env): Promise<void> {
   await aiBackfill(env)
 }
 
-export { healthFromMeta, loadTrackingThresholds }
+export { healthFromMeta, loadTrackingSettings }

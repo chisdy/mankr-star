@@ -12,6 +12,7 @@
     "anysearchTestSuccess": "AnySearch 连接测试成功！",
     "patSaved": "已保存 GitHub PAT",
     "patSaveFailed": "PAT 保存失败",
+    "patCleared": "已清除 GitHub PAT",
     "trackingSaved": "已更新跟踪阈值并重算仓库近况",
     "bookmarkPaginationSaved": "已保存收藏列表分页方式",
     "publicBrowsingEnabled": "已开启公开浏览",
@@ -20,7 +21,10 @@
     "passwordChanged": "密码修改成功",
     "passwordChangeFailed": "密码修改失败",
     "exportSuccess": "数据导出成功",
-    "exportFailed": "导出数据失败"
+    "exportFailed": "导出数据失败",
+    "importSuccess": "已导入 {{imported}} 个，跳过 {{skipped}} 个已收藏的仓库",
+    "importFailed": "导入失败",
+    "clearDataSuccess": "数据已清空，正在退出登录"
   },
   "account": {
     "section": "1. 账号信息",
@@ -76,17 +80,33 @@
     "description": "可选。配置 PAT 可提高 GitHub REST API 请求限额（提升星数与更新同步速度）。",
     "patPlaceholder": "粘贴 GitHub Personal Access Token",
     "savedPatPlaceholder": "已保存 PAT (****{{last4}})，留空保持不变",
-    "save": "保存 PAT"
+    "save": "保存 PAT",
+    "clear": "清除 PAT",
+    "clearConfirm": "确定要清除 GitHub PAT 吗？清除后星标导入与同步将回落到未认证的请求限额。"
+  },
+  "import": {
+    "section": "5. 导入 GitHub Stars",
+    "description": "批量将你在 GitHub 上标星的仓库导入为收藏。需先在上方配置 GitHub PAT。",
+    "button": "导入星标",
+    "continue": "从第 {{page}} 页继续导入",
+    "result": "已导入 {{imported}} 个，跳过 {{skipped}} 个已收藏的仓库，{{pendingAi}} 个待 AI 分类。",
+    "patRequired": "请先在上方配置 GitHub PAT 后再导入。"
   },
   "tracking": {
-    "section": "5. 更新跟踪",
+    "section": "6. 更新跟踪",
     "description": "系统每 6 小时同步一次 GitHub 近况。可调整「近期活跃」与「疑似停更」判定天数；保存后会按已有推送时间本地重算，不额外请求 GitHub。单条收藏可在详情中关闭跟踪。",
     "hotWithinDays": "近期活跃（天内有推送）",
     "staleAfterDays": "疑似停更（超过多少天无推送）",
-    "save": "保存阈值"
+    "save": "保存阈值",
+    "events": "动态订阅",
+    "eventsDescription": "选择同步任务要记录哪些仓库变化。关闭后不再产生该类型的新动态，已有记录保留。",
+    "eventPush": "新推送",
+    "eventRelease": "新版本发布",
+    "eventStarsDelta": "Star 明显变化",
+    "eventMetaChange": "元信息变更（简介、语言、改名）"
   },
   "bookmarkList": {
-    "section": "6. 收藏列表",
+    "section": "7. 收藏列表",
     "description": "实例级设置：决定收藏页如何加载更多内容，登录用户与公开访客看到的是同一套配置。",
     "modeLabel": "分页方式",
     "modeAuto": "滚动到底自动加载",
@@ -99,20 +119,34 @@
     "save": "保存分页设置"
   },
   "visibility": {
-    "section": "7. 可见性",
+    "section": "8. 可见性",
     "description": "控制未登录访客能否只读查看本实例的收藏与动态。",
     "publicBrowsing": "公开浏览",
     "publicBrowsingDescription": "开启后，任何人可通过本实例链接只读查看收藏与动态；关闭后必须登录才能访问。添加收藏、新建文件夹等操作仍需登录。私人笔记始终不对访客可见。"
   },
   "export": {
-    "section": "8. 数据备份与导出",
+    "section": "9. 数据备份与导出",
     "description": "导出全部收藏、分类与标签数据为 JSON 格式。不含站点账号与密码。",
     "title": "导出全库 JSON",
     "detail": "包含私有笔记、AI 摘要、标签与时间戳；不含站点账号与密码",
-    "button": "导出数据"
+    "button": "导出数据",
+    "mdTitle": "导出可读 Markdown",
+    "mdDetail": "按文件夹分组的标题、链接、AI 摘要、标签与笔记，方便阅读或归档到别处",
+    "mdButton": "导出 Markdown"
+  },
+  "danger": {
+    "section": "10. 危险操作",
+    "description": "以下操作不可撤销，请谨慎操作。",
+    "clearTitle": "清空全部数据",
+    "foldersNote": "将删除全部收藏、文件夹、标签、动态历史与对话存档。账号与设置会保留，重新登录后预置文件夹会自动恢复。",
+    "button": "清空全部数据",
+    "confirmTitle": "确定要清空全部数据吗？",
+    "confirmDescription": "此操作会删除全部收藏、文件夹、标签、动态事件与对话存档。账号与设置会保留，重新登录后预置文件夹会恢复。此操作不可撤销。",
+    "confirmLabel": "输入 {{phrase}} 以确认",
+    "confirmButton": "清空全部数据"
   },
   "appearance": {
-    "section": "9. 外观与语言",
+    "section": "11. 外观与语言",
     "description": "主题与界面语言",
     "themeDescription": "自适应浅色 / 深色界面主题",
     "system": "跟随系统",

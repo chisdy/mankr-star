@@ -452,6 +452,34 @@ describe("GET /api/bookmarks", () => {
     }
   })
 
+  it("可按 aiStatus 筛选", async () => {
+    const all = await client.json<BookmarkList>("/api/bookmarks")
+    expect(all.status).toBe(200)
+    expect(all.body.items.length).toBeGreaterThanOrEqual(1)
+    // 未配置 DeepSeek 时落回 pending/fallback，具体取值不保证，取实际值做筛选
+    const status = all.body.items[0]!.ai_status
+
+    const filtered = await client.json<BookmarkList>(
+      `/api/bookmarks?aiStatus=${status}`,
+    )
+    expect(filtered.status).toBe(200)
+    expect(filtered.body.total).toBeGreaterThanOrEqual(1)
+    for (const item of filtered.body.items) {
+      expect(item.ai_status).toBe(status)
+    }
+
+    const failed = await client.json<BookmarkList>(
+      "/api/bookmarks?aiStatus=failed",
+    )
+    expect(failed.status).toBe(200)
+    if (status !== "failed") expect(failed.body.total).toBe(0)
+
+    expect(
+      (await client.json<{ code: string }>("/api/bookmarks?aiStatus=bogus"))
+        .status,
+    ).toBe(400)
+  })
+
   it("非法查询参数返回 400", async () => {
     const { status, body } = await client.json<{ code: string }>(
       "/api/bookmarks?pageSize=999",

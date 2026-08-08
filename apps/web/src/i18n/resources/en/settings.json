@@ -12,6 +12,7 @@
     "anysearchTestSuccess": "AnySearch connection test succeeded!",
     "patSaved": "GitHub PAT saved",
     "patSaveFailed": "Failed to save PAT",
+    "patCleared": "GitHub PAT cleared",
     "trackingSaved": "Tracking thresholds updated and health recalculated",
     "bookmarkPaginationSaved": "Bookmark pagination settings saved",
     "publicBrowsingEnabled": "Public browsing enabled",
@@ -20,7 +21,10 @@
     "passwordChanged": "Password updated",
     "passwordChangeFailed": "Failed to change password",
     "exportSuccess": "Export succeeded",
-    "exportFailed": "Export failed"
+    "exportFailed": "Export failed",
+    "importSuccess": "Imported {{imported}}, skipped {{skipped}} already-saved repos",
+    "importFailed": "Import failed",
+    "clearDataSuccess": "Data cleared, signing you out"
   },
   "account": {
     "section": "1. Account",
@@ -76,17 +80,33 @@
     "description": "Optional. A PAT raises GitHub REST API rate limits for stars and sync.",
     "patPlaceholder": "Paste GitHub Personal Access Token",
     "savedPatPlaceholder": "Saved PAT (****{{last4}}), leave blank to keep",
-    "save": "Save PAT"
+    "save": "Save PAT",
+    "clear": "Clear PAT",
+    "clearConfirm": "Clear the GitHub PAT? Stars import and sync will fall back to unauthenticated rate limits."
+  },
+  "import": {
+    "section": "5. Import GitHub Stars",
+    "description": "Batch-import your starred GitHub repos as bookmarks. Requires a GitHub PAT configured above.",
+    "button": "Import stars",
+    "continue": "Continue from page {{page}}",
+    "result": "Imported {{imported}}, skipped {{skipped}} already-saved repos. {{pendingAi}} pending AI classification.",
+    "patRequired": "Please configure a GitHub PAT above before importing."
   },
   "tracking": {
-    "section": "5. Update tracking",
+    "section": "6. Update tracking",
     "description": "The system syncs GitHub activity every 6 hours. Adjust hot / stale day thresholds; saving recalculates locally from existing push times without extra GitHub calls. Per-bookmark tracking can be disabled in detail view.",
     "hotWithinDays": "Hot (pushed within days)",
     "staleAfterDays": "Stale (no push for days)",
-    "save": "Save thresholds"
+    "save": "Save thresholds",
+    "events": "Event subscriptions",
+    "eventsDescription": "Choose which repository changes the sync job records into your feed. Turning one off stops new events of that type; existing ones stay.",
+    "eventPush": "New pushes",
+    "eventRelease": "New releases",
+    "eventStarsDelta": "Star surges",
+    "eventMetaChange": "Metadata changes (description, language, rename)"
   },
   "bookmarkList": {
-    "section": "6. Bookmark list",
+    "section": "7. Bookmark list",
     "description": "Instance-level setting: how the bookmarks page loads more items. Signed-in users and public visitors share the same configuration.",
     "modeLabel": "Pagination mode",
     "modeAuto": "Auto-load on scroll",
@@ -99,20 +119,34 @@
     "save": "Save pagination settings"
   },
   "visibility": {
-    "section": "7. Visibility",
+    "section": "8. Visibility",
     "description": "Control whether signed-out visitors can read-only browse bookmarks and feed.",
     "publicBrowsing": "Public browsing",
     "publicBrowsingDescription": "When enabled, anyone with the link can read bookmarks and feed; when disabled, sign-in is required. Adding bookmarks and creating folders still require sign-in. Private notes stay hidden from guests."
   },
   "export": {
-    "section": "8. Backup & export",
+    "section": "9. Backup & export",
     "description": "Export all bookmarks, folders, and tags as JSON. Site accounts and passwords are excluded.",
     "title": "Export full library JSON",
     "detail": "Includes private notes, AI summaries, tags, and timestamps — not site accounts or passwords",
-    "button": "Export data"
+    "button": "Export data",
+    "mdTitle": "Export readable Markdown",
+    "mdDetail": "Bookmarks grouped by folder with title, link, AI summary, tags, and notes — for reading or archiving elsewhere",
+    "mdButton": "Export Markdown"
+  },
+  "danger": {
+    "section": "10. Danger zone",
+    "description": "Irreversible actions. Proceed with care.",
+    "clearTitle": "Clear all data",
+    "foldersNote": "Removes all bookmarks, folders, tags, feed history, and chat archives. Your account and settings are kept, and preset folders return automatically after you sign back in.",
+    "button": "Clear all data",
+    "confirmTitle": "Clear all data?",
+    "confirmDescription": "This deletes every bookmark, folder, tag, feed event, and chat archive. Your account and settings stay, and preset folders return after re-login. This cannot be undone.",
+    "confirmLabel": "Type {{phrase}} to confirm",
+    "confirmButton": "Clear all data"
   },
   "appearance": {
-    "section": "9. Appearance",
+    "section": "11. Appearance",
     "description": "Theme and interface language",
     "themeDescription": "Light / dark theme",
     "system": "System",

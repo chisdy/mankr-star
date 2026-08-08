@@ -26,9 +26,12 @@ import { FolderTreePanel } from "@/features/folders/folder-tree-panel"
 import { LoginDialog } from "@/features/auth/login-dialog"
 import { LoginDialogProvider } from "@/hooks/login-dialog-context"
 import { useRefreshFoldersOnAiComplete } from "@/hooks/use-refresh-folders-on-ai-complete"
-import { useRequireAuthAction } from "@/hooks/use-auth"
+import { useAuth, useRequireAuthAction } from "@/hooks/use-auth"
 import { BOOKMARK_PAGE_PARAM } from "@/features/bookmarks/bookmark-pagination"
 import { APP_SCROLL_ROOT_ID } from "@/lib/scroll-root"
+
+/** 浏览器扩展用的一次性入口参数：`/?add=<encoded url>` */
+const ADD_PARAM = "add"
 
 const FOLDER_TREE_HIDDEN_PATHS = new Set([
   "/tags",
@@ -54,13 +57,36 @@ function AppShellContent() {
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const requireAuth = useRequireAuthAction()
+  const { isAuthenticated } = useAuth()
 
   const [addDialogOpen, setAddDialogOpen] = React.useState(false)
+  const [addUrl, setAddUrl] = React.useState("")
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false)
   const { open: kbOpen, setOpen: setKbOpen } = useKbPanelOpen()
   const isMobile = useIsMobile()
 
   useRefreshFoldersOnAiComplete()
+
+  // 浏览器扩展跳转来的 `?add=<url>`：弹出新增框并预填，未登录时先走登录引导
+  const requireAuthRef = React.useRef(requireAuth)
+  requireAuthRef.current = requireAuth
+
+  React.useEffect(() => {
+    const pending = searchParams.get(ADD_PARAM)
+    if (!pending) return
+
+    // 访客会被引导去登录，参数留着，登录回来后 isAuthenticated 变化再补弹一次
+    const opened = requireAuthRef.current(() => {
+      setAddUrl(pending)
+      setAddDialogOpen(true)
+    })
+    if (!opened) return
+
+    // 参数只是一次性入口，留在地址栏里刷新会重复弹窗
+    const next = new URLSearchParams(searchParams)
+    next.delete(ADD_PARAM)
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams, isAuthenticated])
 
   const showFolderTree = !FOLDER_TREE_HIDDEN_PATHS.has(location.pathname)
 
@@ -183,7 +209,15 @@ function AppShellContent() {
         </SheetContent>
       </Sheet>
 
-      <AddBookmarkDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
+      <AddBookmarkDialog
+        open={addDialogOpen}
+        onOpenChange={(next) => {
+          setAddDialogOpen(next)
+          // 关闭即丢弃扩展带来的链接，下次手动新增不该被上一次的地址污染
+          if (!next) setAddUrl("")
+        }}
+        initialUrl={addUrl}
+      />
 
       {/* 由 ?bookmark 驱动，任何子路由都能原地弹出收藏详情 */}
       <BookmarkDetailDialog />

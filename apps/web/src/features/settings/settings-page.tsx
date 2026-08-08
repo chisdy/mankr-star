@@ -26,11 +26,22 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select"
 import { api } from "@/lib/api"
+import type { TrackingSettings } from "@/lib/types"
 import { formatApiError } from "@/lib/api-error"
 import { queryKeys } from "@/lib/query-keys"
 import { useTheme } from "@/components/theme-provider"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { BookmarkListSection } from "./bookmark-list-section"
+import { ClearDataSection } from "./clear-data-section"
+import { GithubImportSection } from "./github-import-section"
+
+/** 动态订阅开关；顺序与动态流筛选一致 */
+const EVENT_PREFS = [
+  { key: "event_push", labelKey: "tracking.eventPush" },
+  { key: "event_release", labelKey: "tracking.eventRelease" },
+  { key: "event_stars_delta", labelKey: "tracking.eventStarsDelta" },
+  { key: "event_meta_change", labelKey: "tracking.eventMetaChange" },
+] as const
 
 export function SettingsPage() {
   const { t } = useTranslation(["settings", "common", "errors"])
@@ -163,6 +174,18 @@ export function SettingsPage() {
     },
   })
 
+  const clearPatMutation = useMutation({
+    mutationFn: () => api.updateGithubPat({}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me })
+      toast.success(t("toasts.patCleared"))
+      setGithubPat("")
+    },
+    onError: (err: Error) => {
+      toast.error(formatApiError(err, t))
+    },
+  })
+
   const updateTrackingMutation = useMutation({
     mutationFn: () =>
       api.updateTrackingSettings({
@@ -174,6 +197,19 @@ export function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.all })
       setHotWithinDays(String(res.hot_within_days))
       setStaleAfterDays(String(res.stale_after_days))
+      toast.success(t("toasts.trackingSaved"))
+    },
+    onError: (err: Error) => toast.error(formatApiError(err, t)),
+  })
+
+  const updateEventPrefMutation = useMutation({
+    mutationFn: (patch: Partial<TrackingSettings>) =>
+      api.updateTrackingSettings(patch),
+    onSuccess: (res) => {
+      queryClient.setQueryData(queryKeys.auth.me, (prev: typeof user) =>
+        prev ? { ...prev, ...res } : prev,
+      )
+      void queryClient.invalidateQueries({ queryKey: queryKeys.auth.me })
       toast.success(t("toasts.trackingSaved"))
     },
     onError: (err: Error) => toast.error(formatApiError(err, t)),
@@ -216,17 +252,31 @@ export function SettingsPage() {
     },
   })
 
+  const downloadFile = (content: string, type: string, ext: string) => {
+    const blob = new Blob([content], { type })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `mankr-star-export-${new Date().toISOString().slice(0, 10)}.${ext}`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const exportMutation = useMutation({
     mutationFn: () => api.getExportData(),
     onSuccess: (data) => {
-      const jsonStr = JSON.stringify(data, null, 2)
-      const blob = new Blob([jsonStr], { type: "application/json" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `mankr-star-export-${new Date().toISOString().slice(0, 10)}.json`
-      a.click()
-      URL.revokeObjectURL(url)
+      downloadFile(JSON.stringify(data, null, 2), "application/json", "json")
+      toast.success(t("toasts.exportSuccess"))
+    },
+    onError: (err: Error) => {
+      toast.error(formatApiError(err, t))
+    },
+  })
+
+  const exportMarkdownMutation = useMutation({
+    mutationFn: () => api.exportMarkdown(),
+    onSuccess: (markdown) => {
+      downloadFile(markdown, "text/markdown;charset=utf-8", "md")
       toast.success(t("toasts.exportSuccess"))
     },
     onError: (err: Error) => {
@@ -633,20 +683,42 @@ export function SettingsPage() {
             />
           </div>
 
-          <Button
-            type="submit"
-            size="sm"
-            disabled={!githubPat || updatePatMutation.isPending}
-            className="text-xs font-medium"
-          >
-            {updatePatMutation.isPending
-              ? t("common:actions.wait")
-              : t("github.save")}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!githubPat || updatePatMutation.isPending}
+              className="text-xs font-medium"
+            >
+              {updatePatMutation.isPending
+                ? t("common:actions.wait")
+                : t("github.save")}
+            </Button>
+
+            {user?.github_pat_configured && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (confirm(t("github.clearConfirm"))) {
+                    clearPatMutation.mutate()
+                  }
+                }}
+                disabled={clearPatMutation.isPending}
+                className="text-xs text-muted-foreground hover:text-destructive"
+              >
+                {t("github.clear")}
+              </Button>
+            )}
+          </div>
         </form>
       </section>
 
-      {/* Section 5: Update tracking */}
+      {/* Section 5: Import GitHub Stars */}
+      <GithubImportSection user={user} />
+
+      {/* Section 6: Update tracking */}
       <section className="space-y-4 border-t border-border pt-6">
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">
@@ -705,12 +777,41 @@ export function SettingsPage() {
               : t("tracking.save")}
           </Button>
         </form>
+
+        <div className="bg-card p-4 rounded-xl border border-border/60 space-y-3">
+          <div className="space-y-0.5">
+            <div className="text-xs font-medium">{t("tracking.events")}</div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {t("tracking.eventsDescription")}
+            </p>
+          </div>
+
+          {EVENT_PREFS.map(({ key, labelKey }) => (
+            <div key={key} className="flex items-center justify-between gap-4">
+              <Label
+                htmlFor={`event-${key}`}
+                className="text-[11px] font-normal text-muted-foreground"
+              >
+                {t(labelKey)}
+              </Label>
+              <Switch
+                id={`event-${key}`}
+                checked={user?.[key] ?? true}
+                disabled={updateEventPrefMutation.isPending}
+                onCheckedChange={(checked) =>
+                  updateEventPrefMutation.mutate({ [key]: checked })
+                }
+                aria-label={t(labelKey)}
+              />
+            </div>
+          ))}
+        </div>
       </section>
 
-      {/* Section 6: Bookmark list pagination */}
+      {/* Section 7: Bookmark list pagination */}
       <BookmarkListSection user={user} />
 
-      {/* Section 7: Visibility */}
+      {/* Section 8: Visibility */}
       <section className="space-y-4 border-t border-border pt-6">
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">
@@ -739,7 +840,7 @@ export function SettingsPage() {
         </div>
       </section>
 
-      {/* Section 7: Data Export */}
+      {/* Section 9: Data Export */}
       <section className="space-y-4 border-t border-border pt-6">
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">
@@ -750,25 +851,49 @@ export function SettingsPage() {
           </p>
         </div>
 
-        <div className="bg-card p-4 rounded-xl border border-border/60 flex items-center justify-between">
-          <div className="space-y-0.5">
-            <div className="text-xs font-medium">{t("export.title")}</div>
-            <p className="text-[11px] text-muted-foreground">{t("export.detail")}</p>
+        <div className="bg-card p-4 rounded-xl border border-border/60 space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5 min-w-0">
+              <div className="text-xs font-medium">{t("export.title")}</div>
+              <p className="text-[11px] text-muted-foreground">{t("export.detail")}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportMutation.mutate()}
+              disabled={exportMutation.isPending}
+              className="text-xs gap-1.5 shrink-0"
+            >
+              <DownloadSimpleIcon className="size-4" />
+              <span>{t("export.button")}</span>
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportMutation.mutate()}
-            disabled={exportMutation.isPending}
-            className="text-xs gap-1.5"
-          >
-            <DownloadSimpleIcon className="size-4" />
-            <span>{t("export.button")}</span>
-          </Button>
+
+          <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-3">
+            <div className="space-y-0.5 min-w-0">
+              <div className="text-xs font-medium">{t("export.mdTitle")}</div>
+              <p className="text-[11px] text-muted-foreground">
+                {t("export.mdDetail")}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportMarkdownMutation.mutate()}
+              disabled={exportMarkdownMutation.isPending}
+              className="text-xs gap-1.5 shrink-0"
+            >
+              <DownloadSimpleIcon className="size-4" />
+              <span>{t("export.mdButton")}</span>
+            </Button>
+          </div>
         </div>
       </section>
 
-      {/* Section 8: Appearance / Theme */}
+      {/* Section 10: Danger zone */}
+      <ClearDataSection />
+
+      {/* Section 11: Appearance / Theme */}
       <section className="space-y-4 border-t border-border pt-6">
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">

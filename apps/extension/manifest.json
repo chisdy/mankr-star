@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Mankr Star",
+  "version": "0.1.0",
+  "description": "把当前标签页发送到你的 Mankr Star 实例收藏。",
+  "permissions": ["activeTab", "storage"],
+  "action": {
+    "default_title": "Mankr Star",
+    "default_popup": "popup.html"
+  }
+}

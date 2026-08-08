@@ -7,8 +7,11 @@ import {
   StarIcon,
   RowsIcon,
   GridFourIcon,
+  XIcon,
 } from "@phosphor-icons/react"
+import { AI_STATUSES, type AiStatus } from "@mankr/shared"
 
+import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import {
   Sheet,
@@ -101,6 +104,12 @@ export function BookmarksPage() {
         : sortRaw
   const q = searchParams.get("q") || ""
   const archived = searchParams.get("archived") === "true"
+  const aiStatusParam = searchParams.get("ai_status")
+  const aiStatus: AiStatus | undefined = (
+    AI_STATUSES as readonly string[]
+  ).includes(aiStatusParam || "")
+    ? (aiStatusParam as AiStatus)
+    : undefined
   const hasAccountParam = searchParams.get("has_account")
   const hasAccount =
     hasAccountParam === "true"
@@ -146,6 +155,7 @@ export function BookmarksPage() {
       source_type: sourceType || undefined,
       health_status: effectiveHealth,
       has_account: effectiveHasAccount,
+      ai_status: aiStatus,
       sort,
       q: q || undefined,
       archived: archived || undefined,
@@ -159,6 +169,7 @@ export function BookmarksPage() {
       sourceType,
       effectiveHealth,
       effectiveHasAccount,
+      aiStatus,
       sort,
       q,
       archived,
@@ -243,11 +254,19 @@ export function BookmarksPage() {
   const hasActiveFilters = !!(
     folderId ||
     q ||
-    panelFilterCount > 0
+    panelFilterCount > 0 ||
+    aiStatus
   )
 
   const clearListFilters = () => {
     setSearchParams(new URLSearchParams())
+  }
+
+  const clearAiStatusFilter = () => {
+    const next = new URLSearchParams(searchParams)
+    next.delete("ai_status")
+    next.delete(BOOKMARK_PAGE_PARAM)
+    setSearchParams(next)
   }
 
   return (
@@ -266,6 +285,26 @@ export function BookmarksPage() {
             <span className="truncate">
               {t("list.filterActiveCount", { count: panelFilterCount })}
             </span>
+          ) : null}
+          {aiStatus ? (
+            <Badge
+              variant="outline"
+              className="h-6 shrink-0 gap-1 pr-1 pl-2 text-[11px] font-normal"
+            >
+              <span className="truncate">
+                {t("list.aiStatusFilterLabel", {
+                  status: t(`list.aiStatus${aiStatus[0]!.toUpperCase()}${aiStatus.slice(1)}`),
+                })}
+              </span>
+              <button
+                type="button"
+                onClick={clearAiStatusFilter}
+                aria-label={t("list.clearAiStatusFilter")}
+                className="rounded-sm p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <XIcon className="size-3" />
+              </button>
+            </Badge>
           ) : null}
         </div>
 

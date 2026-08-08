@@ -20,6 +20,11 @@ export interface User {
   github_pat_last4?: string | null
   hot_within_days?: number
   stale_after_days?: number
+  /** 动态订阅开关；关闭后 Cron 同步不再写入对应类型的事件 */
+  event_push?: boolean
+  event_release?: boolean
+  event_stars_delta?: boolean
+  event_meta_change?: boolean
   public_browsing_enabled?: boolean
   bookmark_pagination_mode?: BookmarkPaginationMode
   bookmark_page_size?: number
@@ -95,6 +100,8 @@ export interface Bookmark {
   image_url?: string | null
   favicon_url?: string | null
   content_excerpt?: string | null
+  /** GitHub README 缓存正文（截断） */
+  readme_excerpt?: string | null
   platform_meta?: Record<string, unknown> | null
   folder_id?: string | null
   folder_name?: string | null
@@ -137,6 +144,34 @@ export interface UpdateEvent {
   detected_at: string
 }
 
+export interface FeedQueryParams {
+  eventType?: EventType
+  bookmarkId?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface FeedResponse {
+  items: UpdateEvent[]
+  page: number
+  pageSize: number
+  total: number
+}
+
+export interface GithubImportParams {
+  page?: number
+  perPage?: number
+  maxPages?: number
+}
+
+export interface GithubImportResult {
+  imported: number
+  skipped: number
+  next_page: number | null
+  has_more: boolean
+  pending_ai: number
+}
+
 export interface BookmarksQueryParams {
   folder_id?: string
   tag?: string
@@ -147,6 +182,8 @@ export interface BookmarksQueryParams {
   health_status?: HealthStatus
   /** 仅网页模式：是否有账号 */
   has_account?: boolean
+  /** AI 归类状态筛选 */
+  ai_status?: AiStatus
   sort?: "recent" | "updated" | "stars" | "name"
   q?: string
   archived?: boolean
@@ -180,6 +217,16 @@ export interface DeepSeekSettings {
 export interface AnySearchSettings {
   configured: boolean
   last4?: string | null
+}
+
+/** 更新跟踪：活跃阈值 + 动态订阅开关 */
+export interface TrackingSettings {
+  hot_within_days: number
+  stale_after_days: number
+  event_push: boolean
+  event_release: boolean
+  event_stars_delta: boolean
+  event_meta_change: boolean
 }
 
 export interface ExportData {

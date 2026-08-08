@@ -23,14 +23,24 @@ import { queryKeys } from "@/lib/query-keys"
 interface AddBookmarkDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** 外部带来的链接（浏览器扩展 `?add=`），打开时预填到地址框 */
+  initialUrl?: string
 }
 
-export function AddBookmarkDialog({ open, onOpenChange }: AddBookmarkDialogProps) {
+export function AddBookmarkDialog({
+  open,
+  onOpenChange,
+  initialUrl,
+}: AddBookmarkDialogProps) {
   const { t } = useTranslation(["bookmarks", "common", "errors"])
   const queryClient = useQueryClient()
   const [url, setUrl] = React.useState("")
   const [folderId, setFolderId] = React.useState<string>("")
   const [notes, setNotes] = React.useState("")
+
+  React.useEffect(() => {
+    if (open && initialUrl) setUrl(initialUrl)
+  }, [open, initialUrl])
 
   const { data: folders = [], isLoading: foldersLoading } = useQuery({
     queryKey: queryKeys.folders.all,

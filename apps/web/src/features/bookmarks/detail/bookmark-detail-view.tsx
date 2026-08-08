@@ -16,6 +16,9 @@ import { CopyIconButton } from "./copy-icon-button"
 import { useBookmarkAccountCopy } from "./use-bookmark-account-copy"
 import type { Bookmark } from "@/lib/types"
 
+/** 详情里只做预览，缓存的 README 全文（约 8KB）不必一次铺满面板 */
+const README_PREVIEW_CHARS = 2000
+
 function Field({
   label,
   children,
@@ -115,6 +118,18 @@ export function BookmarkDetailView({
           </summary>
           <p className="max-h-40 overflow-y-auto border-t border-border/40 px-3 py-2 text-[11px] leading-relaxed whitespace-pre-wrap text-muted-foreground">
             {bookmark.content_excerpt}
+          </p>
+        </details>
+      ) : null}
+
+      {bookmark.source_type === "github" && bookmark.readme_excerpt ? (
+        <details className="group rounded-lg border border-border/50 bg-muted/20">
+          <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium text-foreground marker:content-none">
+            {t("detail.readmeLabel")}
+          </summary>
+          <p className="max-h-64 overflow-y-auto border-t border-border/40 px-3 py-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-muted-foreground">
+            {bookmark.readme_excerpt.slice(0, README_PREVIEW_CHARS)}
+            {bookmark.readme_excerpt.length > README_PREVIEW_CHARS ? "…" : ""}
           </p>
         </details>
       ) : null}

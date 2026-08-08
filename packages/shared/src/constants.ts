@@ -341,6 +341,14 @@ export const STARS_DELTA_ABS_MIN = 50
 export const CRON_SYNC_BATCH_SIZE = 20
 export const CRON_AI_BACKFILL_BATCH_SIZE = 5
 export const GITHUB_README_MAX_CHARS = 4000
+/** 仓库 README 缓存入库上限（D1 TEXT，不落对象存储） */
+export const README_EXCERPT_MAX_CHARS = 8000
+/**
+ * 单次 Stars 导入最多顺带抓多少个 README。
+ * 一次导入可达上千条，逐个抓会撞 Worker 子请求上限并烧掉 GitHub 配额；
+ * 没抓到的留给 Cron 同步补（那里对缺 README 的收藏会重取）。
+ */
+export const IMPORT_README_FETCH_LIMIT = 30
 /** 网页/仓库正文摘录入库与 AI prompt 共用上限 */
 export const CONTENT_EXCERPT_MAX_CHARS = 8000
 /** URL 规范化时剥离的常见追踪参数前缀/全名 */

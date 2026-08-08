@@ -71,7 +71,13 @@
     "emptyDefault": "No bookmarks yet. Paste a GitHub, X, or web URL to start.",
     "total": "{{total}} bookmarks",
     "listView": "List view",
-    "gridView": "Grid view"
+    "gridView": "Grid view",
+    "aiStatusFilterLabel": "AI status: {{status}}",
+    "clearAiStatusFilter": "Clear AI status filter",
+    "aiStatusPending": "Pending",
+    "aiStatusDone": "Done",
+    "aiStatusFallback": "Fallback",
+    "aiStatusFailed": "Failed"
   },
   "pagination": {
     "loadingMore": "Loading more…",
@@ -92,7 +98,9 @@
     "noSummary": "No description or AI summary.",
     "copyAccountAria": "Copy username and password",
     "copyAccountTitle": "Copy username and password",
-    "copyAccountEmpty": "No username or password saved yet"
+    "copyAccountEmpty": "No username or password saved yet",
+    "accountBadgeTitle": "Has account",
+    "accountBadgeTitleWithPassword": "Has account & password"
   },
   "open": {
     "aria": "Open link, clicked {{count}} times",
@@ -142,6 +150,7 @@
     "copyUnsupported": "Clipboard unavailable. Please use HTTPS.",
     "copyFailed": "Copy failed. Please try again.",
     "excerptLabel": "Source excerpt",
+    "readmeLabel": "README excerpt",
     "trackUpdates": "Track updates",
     "trackUpdatesDescription": "Check Release and commits periodically and show them in Feed",
     "archive": "Archive",

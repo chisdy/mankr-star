@@ -47,10 +47,13 @@
     "topTags": "高频标签",
     "noTags": "暂无标签",
     "syncIssues": "同步异常状态",
+    "syncIssuesHint": "查看因同步异常而标记为已失效的收藏",
     "trackingSummary": "动态追踪: {{tracked}} / {{total}} 仓库在追踪中",
     "aiDone": "完成: {{count}}",
     "aiPending": "待处理: {{count}}",
+    "aiPendingHint": "查看待处理的收藏；打开详情页可重新生成 AI 摘要",
     "aiFailed": "失败: {{count}}",
+    "aiFailedHint": "查看失败的收藏；打开详情页可重新生成 AI 摘要",
     "aiFallback": "降级: {{count}}"
   },
   "charts": {
@@ -66,7 +69,8 @@
     "donutValue": "{{count}} 次",
     "languageEmpty": "暂无语言分类数据",
     "languageAria": "编程语言分布，共 {{total}} 条",
-    "healthEmpty": "暂无健康度数据"
+    "healthEmpty": "暂无健康度数据",
+    "healthLinkTitle": "查看健康度为「{{label}}」的收藏"
   },
   "format": {
     "costNone": "暂无",

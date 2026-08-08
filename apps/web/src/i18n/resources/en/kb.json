@@ -23,6 +23,7 @@
   },
   "composer": {
     "placeholder": "Ask anything. Enter to send, Shift + Enter for a new line",
+    "folderContextHint": "Context: folder \"{{name}}\" (from the bookmarks page filter)",
     "webSearch": "Web",
     "webSearchEnable": "Turn on web search",
     "webSearchDisable": "Turn off web search",

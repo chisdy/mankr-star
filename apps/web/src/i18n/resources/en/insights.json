@@ -47,10 +47,13 @@
     "topTags": "Frequent tags",
     "noTags": "No tags",
     "syncIssues": "Sync issues",
+    "syncIssuesHint": "View bookmarks flagged unavailable due to sync errors",
     "trackingSummary": "Tracking: {{tracked}} / {{total}} repos",
     "aiDone": "Done: {{count}}",
     "aiPending": "Pending: {{count}}",
+    "aiPendingHint": "View pending bookmarks; open a bookmark's detail to regenerate its AI summary",
     "aiFailed": "Failed: {{count}}",
+    "aiFailedHint": "View failed bookmarks; open a bookmark's detail to regenerate its AI summary",
     "aiFallback": "Fallback: {{count}}"
   },
   "charts": {
@@ -66,7 +69,8 @@
     "donutValue": "{{count}} calls",
     "languageEmpty": "No language data",
     "languageAria": "Language distribution, {{total}} items",
-    "healthEmpty": "No health data"
+    "healthEmpty": "No health data",
+    "healthLinkTitle": "View bookmarks with health status: {{label}}"
   },
   "format": {
     "costNone": "N/A",

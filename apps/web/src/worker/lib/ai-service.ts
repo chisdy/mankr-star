@@ -480,14 +480,16 @@ export async function runAiForBookmark(
 
   try {
     const signal = AbortSignal.timeout(AI_RUN_TIMEOUT_MS)
-    const token = await resolveGithubToken(db, env)
-    const readme = await fetchReadmeSnippet(
-      owner,
-      repo,
-      GITHUB_README_MAX_CHARS,
-      token,
-      signal,
-    )
+    // 收藏创建 / 同步时已缓存过 README，命中就不再多打一次 GitHub
+    const readme =
+      bookmark.readmeExcerpt?.slice(0, GITHUB_README_MAX_CHARS) ??
+      (await fetchReadmeSnippet(
+        owner,
+        repo,
+        GITHUB_README_MAX_CHARS,
+        await resolveGithubToken(db, env),
+        signal,
+      ))
     const excerpt =
       readme && readme.length > CONTENT_EXCERPT_MAX_CHARS
         ? readme.slice(0, CONTENT_EXCERPT_MAX_CHARS - 1) + "…"

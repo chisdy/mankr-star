@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mankr Star</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --accent: #d97706;
+      }
+      body {
+        width: 280px;
+        margin: 0;
+        padding: 14px;
+        font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      label {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 11px;
+        opacity: 0.7;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px 8px;
+        border: 1px solid rgba(128, 128, 128, 0.4);
+        border-radius: 6px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+      }
+      button {
+        width: 100%;
+        margin-top: 10px;
+        padding: 7px 8px;
+        border: 0;
+        border-radius: 6px;
+        background: var(--accent);
+        color: #fff;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      p {
+        margin: 10px 0 0;
+        font-size: 11px;
+        opacity: 0.6;
+        word-break: break-all;
+      }
+      .hint {
+        margin: 6px 0 0;
+        font-size: 10px;
+        line-height: 1.4;
+        opacity: 0.65;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>收藏当前页面</h1>
+
+    <label for="instance">实例地址</label>
+    <input id="instance" type="url" placeholder="https://star.example.com" />
+    <p class="hint">
+      只会打开你填写的站点。请确认地址可信——当前页完整 URL（可能含一次性参数）会作为查询参数传过去。
+    </p>
+
+    <button id="submit" disabled>在 Mankr Star 中添加</button>
+
+    <p id="current"></p>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
