@@ -524,11 +524,19 @@ export type RunGithubImportJobOpts = {
   continueBaseUrl?: string
 }
 
+/**
+ * 仅依赖 waitUntil，兼容 CF ExecutionContext 与 Hono 的 executionCtx
+ *（后者缺少 workers-types 新增的 tracing 等字段）。
+ */
+export type WaitUntilContext = {
+  waitUntil(promise: Promise<unknown>): void
+}
+
 async function scheduleContinue(
   env: Env,
   jobId: string,
   continueToken: string,
-  ctx: ExecutionContext,
+  ctx: WaitUntilContext,
   continueBaseUrl?: string,
 ): Promise<void> {
   const nested = () =>
@@ -572,7 +580,7 @@ async function scheduleContinue(
 export async function runGithubImportJob(
   env: Env,
   jobId: string,
-  ctx: ExecutionContext,
+  ctx: WaitUntilContext,
   opts?: RunGithubImportJobOpts,
 ): Promise<void> {
   const db = createDb(env)
@@ -601,7 +609,7 @@ export async function runGithubImportJob(
 /** Cron：捞 lease 过期仍未完成的任务 */
 export async function continueStaleGithubImportJobs(
   env: Env,
-  ctx?: ExecutionContext,
+  ctx?: WaitUntilContext,
 ): Promise<{ resumed: number }> {
   const db = createDb(env)
   const now = nowIso()
@@ -625,14 +633,13 @@ export async function continueStaleGithubImportJobs(
   const jobId = stale[0]?.id
   if (!jobId) return { resumed: 0 }
 
-  const execCtx =
+  const execCtx: WaitUntilContext =
     ctx ??
-    ({
+    {
       waitUntil(promise: Promise<unknown>) {
         void promise
       },
-      passThroughOnException() {},
-    } as ExecutionContext)
+    }
 
   // cron 本身是新 invocation；优先 APP_URL 自调用 continue，否则同链 renew
   const baseUrl = env.APP_URL
