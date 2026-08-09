@@ -8,10 +8,13 @@ function ScrollArea({
   className,
   children,
   viewportClassName,
+  contentClassName,
   viewportId,
   ...props
 }: ScrollAreaPrimitive.Root.Props & {
   viewportClassName?: string
+  /** 内边距等样式应挂在 Content 上，避免打在 Viewport 上造成假溢出 */
+  contentClassName?: string
   /** 挂到实际滚动的 Viewport 上（如虚拟列表 / scrollTo 需要绑定滚动根时） */
   viewportId?: string
 }) {
@@ -24,6 +27,8 @@ function ScrollArea({
       {/*
         Root 用 column flex，Viewport 用 min-h-0 flex-1：
         避免 size-full 在 flex/max-height 下被内容撑开导致无法滚动。
+        内边距放 Content，不放 Viewport：padding 会计入 scrollable overflow，
+        导致内容视觉上已放下仍出现滚动条。
       */}
       <ScrollAreaPrimitive.Viewport
         id={viewportId}
@@ -33,7 +38,14 @@ function ScrollArea({
           viewportClassName
         )}
       >
-        {children}
+        <ScrollAreaPrimitive.Content
+          data-slot="scroll-area-content"
+          // 覆盖 Content 默认 minWidth:fit-content，避免竖向滚动区被宽内容撑出横向假溢出
+          style={{ minWidth: 0 }}
+          className={contentClassName}
+        >
+          {children}
+        </ScrollAreaPrimitive.Content>
       </ScrollAreaPrimitive.Viewport>
       <ScrollBar />
       <ScrollAreaPrimitive.Corner />
@@ -54,12 +66,9 @@ function ScrollBar({
       className={cn(
         "m-px flex touch-none p-px select-none",
         "opacity-0 transition-opacity pointer-events-none",
-        // 仅内容确有溢出时，悬停 / 滚动才显示
-        "data-has-overflow-y:data-hovering:opacity-100 data-has-overflow-y:data-hovering:pointer-events-auto",
-        "data-has-overflow-x:data-hovering:opacity-100 data-has-overflow-x:data-hovering:pointer-events-auto",
-        "data-has-overflow-y:data-scrolling:opacity-100 data-has-overflow-y:data-scrolling:pointer-events-auto",
-        "data-has-overflow-x:data-scrolling:opacity-100 data-has-overflow-x:data-scrolling:pointer-events-auto",
-        "data-scrolling:duration-0",
+        // Base UI 无溢出时不挂载 Scrollbar；有溢出时仅悬停 / 滚动显示
+        "data-hovering:opacity-100 data-hovering:pointer-events-auto",
+        "data-scrolling:opacity-100 data-scrolling:pointer-events-auto data-scrolling:duration-0",
         "data-horizontal:h-2 data-horizontal:flex-col",
         "data-vertical:h-full data-vertical:w-2",
         className

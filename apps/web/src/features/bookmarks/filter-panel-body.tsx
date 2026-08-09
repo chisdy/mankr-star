@@ -304,7 +304,7 @@ export function FilterPanelBody({
         ) : null}
       </div>
 
-      <ScrollArea className="min-h-0 min-w-0 flex-1" viewportClassName="px-3">
+      <ScrollArea className="min-h-0 min-w-0 flex-1" contentClassName="px-3">
         <div className="w-full min-w-0 space-y-4 pt-1 pb-3">
           <Field label={t("list.sourceLabel")}>
             <Select

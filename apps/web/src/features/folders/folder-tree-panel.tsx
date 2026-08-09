@@ -429,7 +429,7 @@ export function FolderTreePanel({
           </button>
         </div>
 
-        <ScrollArea className="min-h-0 flex-1 px-1 py-1">
+        <ScrollArea className="min-h-0 flex-1" contentClassName="px-1 py-1">
           {isLoading ? (
             <div className="space-y-2 p-2">
               <Skeleton className="h-7 w-full" />

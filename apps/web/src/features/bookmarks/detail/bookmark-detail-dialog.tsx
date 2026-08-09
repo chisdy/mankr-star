@@ -174,7 +174,7 @@ export function BookmarkDetailDialog() {
           </div>
         ) : (
           <>
-            <ScrollArea className="min-h-0">
+            <ScrollArea className="min-h-0 flex-1">
               {showEditor ? (
                 <BookmarkDetailForm
                   bookmark={bookmark}

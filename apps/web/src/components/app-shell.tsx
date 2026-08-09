@@ -186,7 +186,7 @@ function AppShellContent() {
             <ScrollArea
               className="min-h-0 flex-1"
               viewportId={APP_SCROLL_ROOT_ID}
-              viewportClassName="p-4 md:p-6"
+              contentClassName="p-4 md:p-6"
             >
               <Outlet />
             </ScrollArea>
