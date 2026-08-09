@@ -12,6 +12,7 @@ import {
 import { and, asc, eq, isNull, sql } from "drizzle-orm"
 import type { Env } from "../env"
 import { resolveGithubToken, runAiForBookmark } from "../lib/ai-service"
+import { continueStaleGithubImportJobs } from "../lib/github-import-job"
 import {
   GithubApiError,
   fetchGithubRepo,
@@ -332,9 +333,13 @@ export async function aiBackfill(env: Env): Promise<{ processed: number }> {
   return { processed: pending.length }
 }
 
-export async function runCronJobs(env: Env): Promise<void> {
+export async function runCronJobs(
+  env: Env,
+  ctx?: ExecutionContext,
+): Promise<void> {
   await syncUpdates(env)
   await aiBackfill(env)
+  await continueStaleGithubImportJobs(env, ctx)
 }
 
 export { healthFromMeta, loadTrackingSettings }

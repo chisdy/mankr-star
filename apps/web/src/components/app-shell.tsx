@@ -13,6 +13,7 @@ import { Input } from "@workspace/ui/components/input"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import { Sheet, SheetContent, SheetTitle } from "@workspace/ui/components/sheet"
 import { AppSidebar } from "@/components/app-sidebar"
+import { GithubImportBanner } from "@/components/github-import-banner"
 import { AddBookmarkDialog } from "@/features/bookmarks/add-bookmark-dialog"
 import { BookmarkFilterPanel } from "@/features/bookmarks/bookmark-filter-panel"
 import { BookmarkDetailDialog } from "@/features/bookmarks/detail/bookmark-detail-dialog"
@@ -173,6 +174,8 @@ function AppShellContent() {
             </Button>
           </div>
         </header>
+
+        {isAuthenticated ? <GithubImportBanner /> : null}
 
         <div className="flex min-h-0 min-w-0 flex-1">
           {showFolderTree ? (

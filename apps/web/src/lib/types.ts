@@ -164,12 +164,31 @@ export interface GithubImportParams {
   maxPages?: number
 }
 
-export interface GithubImportResult {
+export type GithubImportJobStatus =
+  | "queued"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled"
+
+export interface GithubImportJob {
+  id: string
+  status: GithubImportJobStatus | string
+  phase: string
+  total: number
+  processed: number
   imported: number
   skipped: number
-  next_page: number | null
-  has_more: boolean
-  pending_ai: number
+  failed_count: number
+  current_title: string | null
+  last_error: string | null
+  started_at: string | null
+  updated_at: string
+  finished_at: string | null
+}
+
+export interface GithubImportStartResult {
+  job: GithubImportJob
 }
 
 export interface BookmarksQueryParams {

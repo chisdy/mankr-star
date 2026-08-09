@@ -1149,3 +1149,164 @@ bookmarkRoutes.post("/bookmarks/:id/ai/regenerate", async (c) => {
   )
   return c.json({ ok: true, ai_status: "pending" })
 })
+
+/**
+ * 重新走收藏流程：刷新远端元数据 + README/正文，再强制重跑 AI（覆盖文件夹与标签）。
+ */
+bookmarkRoutes.post("/bookmarks/:id/sync", async (c) => {
+  const db = c.get("db")
+  const id = c.req.param("id")
+  const existing = await db
+    .select()
+    .from(bookmarks)
+    .where(and(eq(bookmarks.id, id), isNull(bookmarks.deletedAt)))
+    .get()
+  if (!existing) return c.json({ error: "收藏不存在", code: "NOT_FOUND" }, 404)
+
+  const now = nowIso()
+  const sourceType = (existing.sourceType as SourceType) || "github"
+
+  try {
+    if (sourceType === "github") {
+      const [owner = "", repo = ""] = existing.externalId.split("/")
+      if (!owner || !repo) {
+        return c.json(
+          { error: "无效的 GitHub 仓库标识", code: "INVALID_URL" },
+          400,
+        )
+      }
+      const token = await resolveGithubToken(db, c.env)
+      const meta = await fetchGithubRepo(owner, repo, token)
+      const readmeExcerpt =
+        (await fetchReadmeExcerpt(owner, repo, token)) ?? ""
+      const { hotWithinDays, staleAfterDays } = await readSetting(db, "tracking")
+      const syncStatus = meta.disabled ? ("forbidden" as const) : ("ok" as const)
+      const healthStatus = computeHealthStatus({
+        syncStatus,
+        githubArchived: meta.archived,
+        githubDisabled: meta.disabled,
+        repoSize: meta.size,
+        pushedAt: meta.pushedAt,
+        defaultBranch: meta.defaultBranch,
+        hotWithinDays,
+        staleAfterDays,
+      })
+
+      await db
+        .update(bookmarks)
+        .set({
+          title: meta.fullName,
+          description: meta.description,
+          language: meta.language,
+          stars: meta.stars,
+          forks: meta.forks,
+          license: meta.license,
+          homepage: meta.homepage,
+          defaultBranch: meta.defaultBranch,
+          topicsJson: JSON.stringify(meta.topics),
+          readmeExcerpt,
+          owner: meta.fullName.split("/")[0] || owner,
+          pushedAt: meta.pushedAt,
+          githubUpdatedAt: meta.updatedAt,
+          githubArchived: meta.archived,
+          repoSize: meta.size,
+          syncStatus,
+          lastSyncError: null,
+          healthStatus,
+          lastSyncedAt: now,
+          summaryAi: null,
+          useCasesJson: null,
+          aiConfidence: null,
+          aiStatus: "pending",
+          updatedAt: now,
+        })
+        .where(eq(bookmarks.id, id))
+    } else if (sourceType === "url") {
+      let pageMeta
+      try {
+        pageMeta = await fetchUrlPageMetadata(existing.canonicalUrl)
+      } catch (e) {
+        if (e instanceof UrlFetchError) {
+          return c.json({ error: e.message, code: e.code }, 400)
+        }
+        return c.json({ error: "抓取网页失败", code: "FETCH_FAILED" }, 502)
+      }
+
+      await db
+        .update(bookmarks)
+        .set({
+          title: pageMeta.title,
+          description: pageMeta.description,
+          siteName: pageMeta.siteName,
+          imageUrl: pageMeta.imageUrl,
+          faviconUrl: pageMeta.faviconUrl,
+          contentExcerpt: pageMeta.contentExcerpt,
+          syncStatus: pageMeta.syncOk ? ("ok" as const) : ("error" as const),
+          lastSyncError: pageMeta.syncError,
+          lastSyncedAt: now,
+          summaryAi: null,
+          useCasesJson: null,
+          aiConfidence: null,
+          aiStatus: "pending",
+          updatedAt: now,
+        })
+        .where(eq(bookmarks.id, id))
+    } else if (sourceType === "twitter") {
+      const parsedTw = parseTwitterStatusInput(existing.canonicalUrl)
+      if (!parsedTw.ok) {
+        return c.json(
+          { error: parsedTw.error, code: parsedTw.code },
+          400,
+        )
+      }
+      const meta = await fetchTwitterMetadata(
+        parsedTw.data.tweetId,
+        parsedTw.data.handle,
+      )
+      await db
+        .update(bookmarks)
+        .set({
+          title: meta.title,
+          description: meta.description,
+          language: meta.language,
+          stars: meta.stars,
+          homepage: meta.homepage,
+          owner: meta.owner,
+          topicsJson: JSON.stringify(meta.topics),
+          siteName: meta.siteName,
+          imageUrl: meta.imageUrl,
+          faviconUrl: meta.faviconUrl,
+          contentExcerpt: meta.contentExcerpt,
+          platformMetaJson: JSON.stringify(meta.platformMeta),
+          pushedAt: meta.pushedAt,
+          syncStatus: meta.syncOk ? ("ok" as const) : ("error" as const),
+          lastSyncError: meta.syncError,
+          lastSyncedAt: now,
+          summaryAi: null,
+          useCasesJson: null,
+          aiConfidence: null,
+          aiStatus: "pending",
+          updatedAt: now,
+        })
+        .where(eq(bookmarks.id, id))
+    } else {
+      return c.json(
+        { error: "不支持的来源类型", code: "UNSUPPORTED_SOURCE" },
+        400,
+      )
+    }
+  } catch (e) {
+    if (e instanceof GithubApiError) {
+      return c.json(
+        { error: e.message, code: "GITHUB_ERROR" },
+        e.status === 404 ? 404 : e.status === 403 ? 403 : 502,
+      )
+    }
+    throw e
+  }
+
+  c.executionCtx.waitUntil(
+    runAiForBookmark(db, c.env, id, { overwriteFolder: true }),
+  )
+  return c.json({ ok: true, ai_status: "pending" })
+})

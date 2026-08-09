@@ -339,16 +339,23 @@ export const STARS_DELTA_THRESHOLD = 0.1
 export const STARS_DELTA_ABS_MIN = 50
 
 export const CRON_SYNC_BATCH_SIZE = 20
-export const CRON_AI_BACKFILL_BATCH_SIZE = 5
+/** pending AI 定时补跑每轮条数（导入任务外的兜底） */
+export const CRON_AI_BACKFILL_BATCH_SIZE = 20
 export const GITHUB_README_MAX_CHARS = 4000
 /** 仓库 README 缓存入库上限（D1 TEXT，不落对象存储） */
 export const README_EXCERPT_MAX_CHARS = 8000
 /**
- * 单次 Stars 导入最多顺带抓多少个 README。
- * 一次导入可达上千条，逐个抓会撞 Worker 子请求上限并烧掉 GitHub 配额；
- * 没抓到的留给 Cron 同步补（那里对缺 README 的收藏会重取）。
+ * @deprecated 导入已改为逐条 README+AI；保留常量以免外部引用断裂。
+ * Cron 同步仍可按需抓取缺 README 的收藏。
  */
 export const IMPORT_README_FETCH_LIMIT = 30
+/**
+ * 单次 waitUntil / continue 调用内处理导入条目的墙钟预算（毫秒）。
+ * 用尽后保存游标并自续跑，避免 Worker CPU/墙钟超时中断整批。
+ */
+export const IMPORT_JOB_TIME_BUDGET_MS = 20_000
+/** 导入任务 lease 时长：略长于单轮预算，过期后 cron 可认领卡住任务 */
+export const IMPORT_JOB_LEASE_MS = 45_000
 /** 网页/仓库正文摘录入库与 AI prompt 共用上限 */
 export const CONTENT_EXCERPT_MAX_CHARS = 8000
 /** URL 规范化时剥离的常见追踪参数前缀/全名 */

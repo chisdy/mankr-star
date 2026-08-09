@@ -23,6 +23,9 @@
     "exportSuccess": "数据导出成功",
     "exportFailed": "导出数据失败",
     "importSuccess": "已导入 {{imported}} 个，跳过 {{skipped}} 个已收藏的仓库",
+    "importStarted": "已开始导入 GitHub Stars",
+    "importFinished": "导入完成：新增 {{imported}}，跳过 {{skipped}}，失败 {{failed}}",
+    "importCancelled": "已取消导入",
     "importFailed": "导入失败",
     "clearDataSuccess": "数据已清空，正在退出登录"
   },
@@ -86,15 +89,17 @@
   },
   "import": {
     "section": "5. 导入 GitHub Stars",
-    "description": "批量将你在 GitHub 上标星的仓库导入为收藏。需先在上方配置 GitHub PAT。",
+    "description": "批量将你在 GitHub 上标星的仓库导入为收藏。导入在后台逐条完成（含 AI 归类），离开本页不会中断。需先在上方配置 GitHub PAT。",
     "button": "导入星标",
-    "continue": "从第 {{page}} 页继续导入",
-    "result": "已导入 {{imported}} 个，跳过 {{skipped}} 个已收藏的仓库，{{pendingAi}} 个待 AI 分类。",
+    "cancel": "取消导入",
+    "discovering": "正在拉取 Stars 列表…",
+    "progress": "进度 {{processed}}/{{total}} · 当前 {{current}}",
+    "result": "状态 {{status}}：新增 {{imported}}，跳过 {{skipped}}，失败 {{failed}}",
     "patRequired": "请先在上方配置 GitHub PAT 后再导入。"
   },
   "tracking": {
     "section": "6. 更新跟踪",
-    "description": "系统每 6 小时同步一次 GitHub 近况。可调整「近期活跃」与「疑似停更」判定天数；保存后会按已有推送时间本地重算，不额外请求 GitHub。单条收藏可在详情中关闭跟踪。",
+    "description": "系统约每 10 分钟同步一次 GitHub 近况与待处理任务。可调整「近期活跃」与「疑似停更」判定天数；保存后会按已有推送时间本地重算，不额外请求 GitHub。单条收藏可在详情中关闭跟踪。",
     "hotWithinDays": "近期活跃（天内有推送）",
     "staleAfterDays": "疑似停更（超过多少天无推送）",
     "save": "保存阈值",

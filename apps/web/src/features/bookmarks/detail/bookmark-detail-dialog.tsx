@@ -18,6 +18,21 @@ import { useAuth } from "@/hooks/use-auth"
 import { useBookmarkDetail } from "@/hooks/use-bookmark-detail"
 
 /**
+ * 本轮打开详情期间已成功同步的 id。放模块级是为了扛住 StrictMode /
+ * 查询失效导致的重挂载——useState 会被清掉，按钮又露出来。
+ */
+const syncedBookmarkIdsWhileOpen = new Set<string>()
+let trackedOpenBookmarkId: string | null = null
+
+function trackOpenBookmark(bookmarkId: string | null) {
+  if (bookmarkId === trackedOpenBookmarkId) return
+  if (trackedOpenBookmarkId) {
+    syncedBookmarkIdsWhileOpen.delete(trackedOpenBookmarkId)
+  }
+  trackedOpenBookmarkId = bookmarkId
+}
+
+/**
  * 收藏详情。全局挂一份，开关与展示/编辑模式都由 URL 决定，
  * 所以列表、动态、KB 引用可以共用同一个入口，链接也能直接分享。
  */
@@ -67,6 +82,8 @@ export function BookmarkDetailDialog() {
   const canEdit = isAuthenticated
   const showEditor = editing && canEdit
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
+  /** 仅用于在写入模块级 Set 后触发一次重渲染 */
+  const [, setSyncHideEpoch] = React.useState(0)
 
   const form = useBookmarkDetailForm({
     bookmark,
@@ -85,6 +102,29 @@ export function BookmarkDetailDialog() {
       toast.error(formatApiError(err, t) || t("detail.regenerateFailed"))
     },
   })
+
+  const syncMutation = useMutation({
+    mutationFn: (id: string) => api.syncBookmark(id),
+    onSuccess: (data, id) => {
+      syncedBookmarkIdsWhileOpen.add(id)
+      setSyncHideEpoch((n) => n + 1)
+      queryClient.setQueryData(queryKeys.bookmarks.detail(id), data)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.all })
+      toast.success(t("detail.syncSubmitted"))
+    },
+    onError: (err: Error) => {
+      toast.error(formatApiError(err, t) || t("detail.syncFailed"))
+    },
+  })
+
+  React.useEffect(() => {
+    trackOpenBookmark(bookmarkId)
+  }, [bookmarkId])
+
+  const showSync =
+    !!bookmark &&
+    bookmark.source_type === "github" &&
+    !syncedBookmarkIdsWhileOpen.has(bookmark.id)
 
   const archiveMutation = useMutation({
     mutationFn: (archived: boolean) =>
@@ -162,9 +202,19 @@ export function BookmarkDetailDialog() {
               onCancelEdit={() => setEditing(false)}
               onSave={() => form.updateMutation.mutate()}
               saving={form.updateMutation.isPending}
+              showSync={showSync}
+              onSync={() => {
+                if (!bookmarkId) return
+                syncMutation.mutate(bookmarkId)
+              }}
+              syncing={syncMutation.isPending}
               onArchive={() => archiveMutation.mutate(!bookmark.archived_at)}
               onRequestDelete={() => setDeleteConfirmOpen(true)}
-              mutating={archiveMutation.isPending || deleteMutation.isPending}
+              mutating={
+                archiveMutation.isPending ||
+                deleteMutation.isPending ||
+                syncMutation.isPending
+              }
             />
 
             <BookmarkDeleteDialog

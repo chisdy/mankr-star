@@ -613,6 +613,50 @@ describe("POST /api/bookmarks/:id/ai/regenerate", () => {
   })
 })
 
+describe("POST /api/bookmarks/:id/sync", () => {
+  it("刷新 GitHub 元数据并置 ai_status=pending", async () => {
+    const created = await createBookmark("facebook/react")
+    outbound.on("https://api.github.com/repos/facebook/react", () =>
+      new Response(
+        JSON.stringify({
+          ...githubRepoPayload("facebook/react", {
+            description: "synced description",
+            stargazers_count: 999,
+          }),
+        }),
+        { headers: { "content-type": "application/json" } },
+      ),
+    )
+    outbound.on("https://api.github.com/repos/facebook/react/readme", () =>
+      new Response("# synced readme", {
+        headers: { "content-type": "text/plain" },
+      }),
+    )
+
+    const { status, body } = await client.post<{
+      ok: boolean
+      ai_status: string
+    }>(`/api/bookmarks/${created.body.id}/sync`)
+    expect(status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(body.ai_status).toBe("pending")
+
+    const detail = await client.json<BookmarkPayload>(
+      `/api/bookmarks/${created.body.id}`,
+    )
+    expect(detail.body.description).toBe("synced description")
+    expect(detail.body.stars).toBe(999)
+    expect(["pending", "fallback", "done"]).toContain(detail.body.ai_status)
+  })
+
+  it("不存在的收藏返回 404", async () => {
+    const { status } = await client.post(
+      "/api/bookmarks/00000000-0000-0000-0000-0000000000ff/sync",
+    )
+    expect(status).toBe(404)
+  })
+})
+
 describe("GET /api/tags", () => {
   it("返回标签与使用次数", async () => {
     await createBookmark("facebook/react")

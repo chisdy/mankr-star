@@ -252,6 +252,45 @@ export const aiJobs = sqliteTable(
   ],
 )
 
+/**
+ * GitHub Stars 后台导入任务（单实例同时最多一个 queued/running）。
+ * queue_json 在 discover 阶段写入仓库列表；process 阶段按 cursor 逐条入库+AI。
+ */
+export const githubImportJobs = sqliteTable(
+  "github_import_jobs",
+  {
+    id: text("id").primaryKey(),
+    /** queued | running | completed | failed | cancelled */
+    status: text("status").notNull().default("queued"),
+    /** discover | process */
+    phase: text("phase").notNull().default("discover"),
+    total: integer("total").notNull().default(0),
+    processed: integer("processed").notNull().default(0),
+    imported: integer("imported").notNull().default(0),
+    skipped: integer("skipped").notNull().default(0),
+    failedCount: integer("failed_count").notNull().default(0),
+    cursor: integer("cursor").notNull().default(0),
+    queueJson: text("queue_json").notNull().default("[]"),
+    page: integer("page").notNull().default(1),
+    perPage: integer("per_page").notNull().default(30),
+    maxPages: integer("max_pages").notNull().default(3),
+    currentTitle: text("current_title"),
+    lastError: text("last_error"),
+    /** 自续跑鉴权；不对客户端暴露 */
+    continueToken: text("continue_token").notNull(),
+    leaseUntil: text("lease_until"),
+    startedAt: text("started_at"),
+    finishedAt: text("finished_at"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [index("github_import_jobs_status_idx").on(t.status)],
+)
+
 /** DeepSeek 真实 HTTP 调用用量（仅记 API 请求，不含规则降级） */
 export const aiUsageLogs = sqliteTable(
   "ai_usage_logs",
@@ -359,5 +398,6 @@ export type Tag = typeof tags.$inferSelect
 export type UpdateEvent = typeof updateEvents.$inferSelect
 export type AiUsageLog = typeof aiUsageLogs.$inferSelect
 export type AiJob = typeof aiJobs.$inferSelect
+export type GithubImportJob = typeof githubImportJobs.$inferSelect
 export type KbConversation = typeof kbConversations.$inferSelect
 export type KbMessageRow = typeof kbMessages.$inferSelect

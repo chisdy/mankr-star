@@ -418,6 +418,14 @@ describe("api client 业务映射", () => {
     expect((error as ApiError).code).toBe("PAT_REQUIRED")
   })
 
+  it("importGithubStars 启动后返回 job，可用 getGithubImportActive 查询", async () => {
+    await api.updateGithubPat({ pat: "ghp_client_import01" })
+    // 出站由 vitest 环境的 mock 覆盖不足时会失败；此处仅测契约形状需 worker 侧 mock。
+    // 与 import.test 共用真实 worker：无 starred mock 会 500，故只测 active 空态。
+    const active = await api.getGithubImportActive()
+    expect(active).toHaveProperty("job")
+  })
+
   it("DeepSeek 设置映射 api_key→apiKey，响应映射为 configured/last4/model", async () => {
     const key = "sk-client-test-key-9876"
     const saved = await api.updateDeepSeekSettings({

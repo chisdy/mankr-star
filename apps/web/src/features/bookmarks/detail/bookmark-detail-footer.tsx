@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next"
 import {
   ArchiveIcon,
+  ArrowsClockwiseIcon,
   PencilSimpleIcon,
   TrashIcon,
 } from "@phosphor-icons/react"
@@ -18,6 +19,9 @@ export function BookmarkDetailFooter({
   onCancelEdit,
   onSave,
   saving,
+  onSync,
+  syncing,
+  showSync,
   onArchive,
   onRequestDelete,
   mutating,
@@ -29,6 +33,10 @@ export function BookmarkDetailFooter({
   onCancelEdit: () => void
   onSave: () => void
   saving: boolean
+  onSync?: () => void
+  syncing?: boolean
+  /** 同步成功后隐藏，本轮详情只允许一次 */
+  showSync?: boolean
   onArchive: () => void
   onRequestDelete: () => void
   mutating: boolean
@@ -64,6 +72,22 @@ export function BookmarkDetailFooter({
         <>
           {canEdit ? (
             <>
+              {showSync && onSync ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onSync}
+                  disabled={syncing || mutating}
+                  className="h-8 gap-1 text-xs"
+                  title={t("detail.syncHint")}
+                >
+                  <ArrowsClockwiseIcon
+                    className={`size-3.5 ${syncing ? "animate-spin" : ""}`}
+                  />
+                  <span>{t("detail.sync")}</span>
+                </Button>
+              ) : null}
+
               <Button
                 variant="outline"
                 size="sm"

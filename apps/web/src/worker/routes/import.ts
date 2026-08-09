@@ -1,32 +1,74 @@
-import { bookmarks } from "@mankr/db"
-import {
-  IMPORT_README_FETCH_LIMIT,
-  computeHealthStatus,
-  importGithubSchema,
-} from "@mankr/shared"
-import { and, eq, inArray } from "drizzle-orm"
+import { githubImportJobs } from "@mankr/db"
+import { importGithubSchema } from "@mankr/shared"
+import { eq } from "drizzle-orm"
 import { Hono } from "hono"
 import type { AppEnv } from "../env"
-import { resolveGithubToken, runAiForBookmark } from "../lib/ai-service"
+import { resolveGithubToken } from "../lib/ai-service"
 import {
-  GithubApiError,
-  fetchReadmeExcerpt,
-  fetchStarredPage,
-  type StarredRepo,
-} from "../lib/github"
+  cancelActiveImportJob,
+  findActiveImportJob,
+  findLatestImportJob,
+  runGithubImportJob,
+  serializeGithubImportJob,
+} from "../lib/github-import-job"
 import { rateLimit } from "../lib/rate-limit"
-import { readSetting } from "../lib/settings-store"
 import { getClientIp, nowIso } from "../lib/utils"
 import { requireAuth } from "../middleware/auth"
 
 export const importRoutes = new Hono<AppEnv>()
 
-importRoutes.use("/bookmarks/import/*", requireAuth)
+/**
+ * 内部续跑：仅校验 continue_token（无用户会话）。
+ * 使用 renew 认领（调用方仍持有未过期 lease）。
+ */
+importRoutes.post("/bookmarks/import/github/jobs/:id/continue", async (c) => {
+  const ip = getClientIp(c.req.raw)
+  const rl = rateLimit(`import-github-continue:${ip}`, 60, 60_000)
+  if (!rl.ok) {
+    return c.json({ error: "请求过于频繁", code: "RATE_LIMITED" }, 429)
+  }
+
+  const db = c.get("db")
+  const id = c.req.param("id")
+  let body: { token?: string } = {}
+  try {
+    body = (await c.req.json()) as { token?: string }
+  } catch {
+    body = {}
+  }
+  const headerToken = c.req.header("X-Import-Continue-Token")
+  const token = headerToken || body.token
+  if (!token) {
+    return c.json({ error: "缺少续跑令牌", code: "UNAUTHORIZED" }, 401)
+  }
+
+  const job = await db
+    .select()
+    .from(githubImportJobs)
+    .where(eq(githubImportJobs.id, id))
+    .get()
+  if (!job || job.continueToken !== token) {
+    return c.json({ error: "续跑令牌无效", code: "UNAUTHORIZED" }, 401)
+  }
+  if (job.status !== "queued" && job.status !== "running") {
+    return c.json({ job: serializeGithubImportJob(job) })
+  }
+
+  const continueBaseUrl = new URL(c.req.url).origin
+  c.executionCtx.waitUntil(
+    runGithubImportJob(c.env, id, c.executionCtx, {
+      renew: true,
+      continueBaseUrl,
+    }),
+  )
+  return c.json({ ok: true, job: serializeGithubImportJob(job) })
+})
 
 /**
- * 分页基础版：从 GitHub Stars 导入（需配置 GitHub PAT）
+ * 启动 GitHub Stars 后台导入任务（discover → 逐条 README+AI）。
+ * 立即返回 job；进度通过 GET .../active 轮询。
  */
-importRoutes.post("/bookmarks/import/github", async (c) => {
+importRoutes.post("/bookmarks/import/github", requireAuth, async (c) => {
   const ip = getClientIp(c.req.raw)
   const rl = rateLimit(`import-github:${ip}`, 5, 300_000)
   if (!rl.ok) {
@@ -64,194 +106,76 @@ importRoutes.post("/bookmarks/import/github", async (c) => {
     )
   }
 
-  const { hotWithinDays, staleAfterDays } = await readSetting(db, "tracking")
-
-  const startPage = parsed.data.page
-  const perPage = parsed.data.perPage
-  const maxPages = parsed.data.maxPages
-
-  let imported = 0
-  let skipped = 0
-  let page = startPage
-  /** 下一页续导起点；无更多页时为 null（勿再对 page 二次 +1） */
-  let nextPage: number | null = null
-  const created: Array<{ id: string; owner: string; repo: string }> = []
-
-  try {
-    for (let i = 0; i < maxPages; i++) {
-      const { repos, hasMore } = await fetchStarredPage(token, page, perPage)
-      const result = await importStarredPage(db, repos, {
-        hotWithinDays,
-        staleAfterDays,
-      })
-      imported += result.imported
-      skipped += result.skipped
-      created.push(...result.created)
-
-      if (!hasMore || repos.length === 0) {
-        nextPage = null
-        break
-      }
-      nextPage = page + 1
-      page += 1
-    }
-  } catch (e) {
-    if (e instanceof GithubApiError) {
-      return c.json(
-        { error: e.message, code: "GITHUB_ERROR" },
-        e.status === 401 ? 401 : 502,
-      )
-    }
-    throw e
+  const active = await findActiveImportJob(db)
+  if (active) {
+    return c.json(
+      {
+        error: "已有导入任务进行中",
+        code: "IMPORT_IN_PROGRESS",
+        job: serializeGithubImportJob(active),
+      },
+      409,
+    )
   }
 
-  // README 与 AI 都放到响应之后：批量导入本就慢，不该再让用户等这些补充信息
+  const id = crypto.randomUUID()
+  const now = nowIso()
+  const continueToken = crypto.randomUUID()
+
+  await db.insert(githubImportJobs).values({
+    id,
+    status: "queued",
+    phase: "discover",
+    total: 0,
+    processed: 0,
+    imported: 0,
+    skipped: 0,
+    failedCount: 0,
+    cursor: 0,
+    queueJson: "[]",
+    page: parsed.data.page,
+    perPage: parsed.data.perPage,
+    maxPages: parsed.data.maxPages,
+    currentTitle: null,
+    lastError: null,
+    continueToken,
+    leaseUntil: null,
+    startedAt: null,
+    finishedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  })
+
+  const job = await db
+    .select()
+    .from(githubImportJobs)
+    .where(eq(githubImportJobs.id, id))
+    .get()
+
   c.executionCtx.waitUntil(
-    (async () => {
-      const readmeTargets = created.slice(0, IMPORT_README_FETCH_LIMIT)
-      const concurrency = 5
-      for (let i = 0; i < readmeTargets.length; i += concurrency) {
-        const chunk = readmeTargets.slice(i, i + concurrency)
-        await Promise.all(
-          chunk.map(async (item) => {
-            const readmeExcerpt = await fetchReadmeExcerpt(
-              item.owner,
-              item.repo,
-              token,
-            )
-            // null → 空串：标记「已尝试」，避免 Cron 对必然失败的仓库反复打点
-            await db
-              .update(bookmarks)
-              .set({ readmeExcerpt: readmeExcerpt ?? "" })
-              .where(eq(bookmarks.id, item.id))
-          }),
-        )
-      }
-      for (const item of created.slice(0, 10)) {
-        await runAiForBookmark(db, c.env, item.id)
-      }
-    })(),
+    runGithubImportJob(c.env, id, c.executionCtx, {
+      continueBaseUrl: new URL(c.req.url).origin,
+    }),
   )
 
-  return c.json({
-    imported,
-    skipped,
-    next_page: nextPage,
-    has_more: nextPage != null,
-    pending_ai: created.length,
-  })
+  return c.json({ job: serializeGithubImportJob(job!) }, 202)
 })
 
-type ImportDb = AppEnv["Variables"]["db"]
+/** 当前进行中任务，否则最近一次任务（供进度条轮询） */
+importRoutes.get("/bookmarks/import/github/active", requireAuth, async (c) => {
+  const db = c.get("db")
+  const active = await findActiveImportJob(db)
+  const job = active ?? (await findLatestImportJob(db))
+  if (!job) return c.json({ job: null })
+  return c.json({ job: serializeGithubImportJob(job) })
+})
 
-/** 单页 Stars：批量判重；软删同 URL 则复活，避免撞唯一索引 */
-async function importStarredPage(
-  db: ImportDb,
-  repos: StarredRepo[],
-  thresholds: { hotWithinDays: number; staleAfterDays: number },
-): Promise<{
-  imported: number
-  skipped: number
-  created: Array<{ id: string; owner: string; repo: string }>
-}> {
-  let imported = 0
-  let skipped = 0
-  const created: Array<{ id: string; owner: string; repo: string }> = []
-
-  const withUrl = repos
-    .filter((repo) => Boolean(repo.fullName))
-    .map((repo) => ({
-      repo,
-      canonicalUrl: `https://github.com/${repo.fullName}`,
-    }))
-  if (withUrl.length === 0) {
-    return { imported, skipped, created }
+/** 取消进行中的导入 */
+importRoutes.post("/bookmarks/import/github/cancel", requireAuth, async (c) => {
+  const db = c.get("db")
+  const job = await cancelActiveImportJob(db)
+  if (!job) {
+    return c.json({ error: "没有进行中的导入任务", code: "NOT_FOUND" }, 404)
   }
-
-  const urls = withUrl.map((r) => r.canonicalUrl)
-  const existingRows = await db
-    .select({
-      id: bookmarks.id,
-      canonicalUrl: bookmarks.canonicalUrl,
-      deletedAt: bookmarks.deletedAt,
-    })
-    .from(bookmarks)
-    .where(
-      and(
-        eq(bookmarks.sourceType, "github"),
-        inArray(bookmarks.canonicalUrl, urls),
-      ),
-    )
-  const byUrl = new Map(existingRows.map((r) => [r.canonicalUrl, r]))
-
-  for (const { repo, canonicalUrl } of withUrl) {
-    const existing = byUrl.get(canonicalUrl)
-    if (existing && !existing.deletedAt) {
-      skipped += 1
-      continue
-    }
-
-    const now = nowIso()
-    const syncStatus = repo.disabled ? ("forbidden" as const) : ("ok" as const)
-    const healthStatus = computeHealthStatus({
-      syncStatus,
-      githubArchived: repo.archived,
-      githubDisabled: repo.disabled,
-      repoSize: repo.size,
-      pushedAt: repo.pushedAt,
-      defaultBranch: repo.defaultBranch,
-      hotWithinDays: thresholds.hotWithinDays,
-      staleAfterDays: thresholds.staleAfterDays,
-    })
-    const owner = repo.fullName.split("/")[0] || repo.owner
-    const values = {
-      sourceType: "github" as const,
-      canonicalUrl,
-      externalId: repo.fullName,
-      owner,
-      title: repo.fullName,
-      description: repo.description,
-      language: repo.language,
-      stars: repo.stars,
-      forks: repo.forks,
-      license: repo.license,
-      homepage: repo.homepage,
-      defaultBranch: repo.defaultBranch,
-      topicsJson: JSON.stringify(repo.topics),
-      aiStatus: "pending" as const,
-      trackUpdates: true,
-      lastSyncedAt: now,
-      pushedAt: repo.pushedAt,
-      githubUpdatedAt: repo.updatedAt,
-      syncStatus,
-      healthStatus,
-      githubArchived: repo.archived,
-      repoSize: repo.size,
-      updatedAt: now,
-      // 复活时清掉旧 AI / 归档态，与 POST /bookmarks 对齐
-      summaryAi: null,
-      useCasesJson: null,
-      aiConfidence: null,
-      latestReleaseTag: null,
-      archivedAt: null,
-      deletedAt: null,
-      readmeExcerpt: null,
-    }
-
-    const id = existing?.id ?? crypto.randomUUID()
-    if (existing) {
-      await db
-        .update(bookmarks)
-        .set({ ...values, createdAt: now })
-        .where(eq(bookmarks.id, id))
-    } else {
-      await db.insert(bookmarks).values({ ...values, id, createdAt: now })
-      byUrl.set(canonicalUrl, { id, canonicalUrl, deletedAt: null })
-    }
-
-    created.push({ id, owner: repo.owner, repo: repo.repo })
-    imported += 1
-  }
-
-  return { imported, skipped, created }
-}
+  return c.json({ job: serializeGithubImportJob(job) })
+})

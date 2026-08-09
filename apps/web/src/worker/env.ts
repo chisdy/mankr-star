@@ -8,6 +8,8 @@ export type Env = {
   VAULT_ENCRYPTION_KEY: string
   /** 可选：公共元数据兜底 token */
   GITHUB_TOKEN?: string
+  /** 可选：站点公网 origin，供 cron 导入续跑 HTTP 自调用 */
+  APP_URL?: string
 }
 
 export type Variables = {

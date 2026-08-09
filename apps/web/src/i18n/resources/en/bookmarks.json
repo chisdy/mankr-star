@@ -122,6 +122,8 @@
     "lastSynced": "Last synced",
     "summaryLabel": "AI summary",
     "regenerate": "Regenerate",
+    "sync": "Sync",
+    "syncHint": "Re-fetch remote content and re-run AI (overwrites folder and tags)",
     "summaryPlaceholder": "AI summary — you can edit manually…",
     "noSummary": "No summary",
     "folderLabel": "Folder",
@@ -161,6 +163,8 @@
     "saveFailed": "Failed to save. Please try again.",
     "regenerateSubmitted": "Regeneration submitted",
     "regenerateFailed": "Regeneration failed",
+    "syncSubmitted": "Sync submitted",
+    "syncFailed": "Sync failed",
     "archivedToast": "Moved to archive",
     "unarchivedToast": "Unarchived",
     "deletedToast": "Bookmark deleted"

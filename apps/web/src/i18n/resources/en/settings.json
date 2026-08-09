@@ -23,6 +23,9 @@
     "exportSuccess": "Export succeeded",
     "exportFailed": "Export failed",
     "importSuccess": "Imported {{imported}}, skipped {{skipped}} already-saved repos",
+    "importStarted": "GitHub Stars import started",
+    "importFinished": "Import finished: {{imported}} new, {{skipped}} skipped, {{failed}} failed",
+    "importCancelled": "Import cancelled",
     "importFailed": "Import failed",
     "clearDataSuccess": "Data cleared, signing you out"
   },
@@ -86,15 +89,17 @@
   },
   "import": {
     "section": "5. Import GitHub Stars",
-    "description": "Batch-import your starred GitHub repos as bookmarks. Requires a GitHub PAT configured above.",
+    "description": "Batch-import your starred GitHub repos as bookmarks. Import runs in the background one-by-one (including AI), and continues if you leave this page. Requires a GitHub PAT configured above.",
     "button": "Import stars",
-    "continue": "Continue from page {{page}}",
-    "result": "Imported {{imported}}, skipped {{skipped}} already-saved repos. {{pendingAi}} pending AI classification.",
+    "cancel": "Cancel import",
+    "discovering": "Fetching starred repos…",
+    "progress": "{{processed}}/{{total}} · {{current}}",
+    "result": "Status {{status}}: {{imported}} new, {{skipped}} skipped, {{failed}} failed",
     "patRequired": "Please configure a GitHub PAT above before importing."
   },
   "tracking": {
     "section": "6. Update tracking",
-    "description": "The system syncs GitHub activity every 6 hours. Adjust hot / stale day thresholds; saving recalculates locally from existing push times without extra GitHub calls. Per-bookmark tracking can be disabled in detail view.",
+    "description": "The system syncs GitHub activity and pending jobs about every 10 minutes. Adjust hot / stale day thresholds; saving recalculates locally from existing push times without extra GitHub calls. Per-bookmark tracking can be disabled in detail view.",
     "hotWithinDays": "Hot (pushed within days)",
     "staleAfterDays": "Stale (no push for days)",
     "save": "Save thresholds",

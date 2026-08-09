@@ -16,7 +16,7 @@
     }
   ],
   "triggers": {
-    "crons": ["0 */6 * * *"]
+    "crons": ["*/10 * * * *"]
   },
   "vars": {
     "APP_NAME": "mankr-star"

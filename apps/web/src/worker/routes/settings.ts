@@ -4,6 +4,7 @@ import {
   bookmarkTags,
   bookmarks,
   folders,
+  githubImportJobs,
   kbConversations,
   kbMessages,
   sessions,
@@ -534,12 +535,13 @@ settingsRoutes.post("/settings/clear-data", async (c) => {
     return c.json({ error: "未登录", code: "UNAUTHORIZED" }, 401)
   }
 
-  // D1 batch：九次删除一次提交，避免中途失败留下半清空状态
+  // D1 batch：多次删除一次提交，避免中途失败留下半清空状态
   await db.batch([
     db.delete(bookmarkTags),
     db.delete(updateEvents),
     db.delete(aiJobs),
     db.delete(aiUsageLogs),
+    db.delete(githubImportJobs),
     // 对话存档引用的是收藏内容，收藏清空后留着只会指向不存在的条目
     db.delete(kbMessages),
     db.delete(kbConversations),

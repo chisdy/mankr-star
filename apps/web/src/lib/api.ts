@@ -20,7 +20,8 @@ import type {
   FeedResponse,
   Folder,
   GithubImportParams,
-  GithubImportResult,
+  GithubImportJob,
+  GithubImportStartResult,
   InsightsRange,
   InsightsResponse,
   InstanceStatus,
@@ -886,6 +887,27 @@ export const api = {
     }
   },
 
+  /** 重拉远端元数据并重跑 AI（覆盖文件夹与标签） */
+  async syncBookmark(id: string): Promise<Bookmark> {
+    try {
+      await request<{ ok: boolean; ai_status: string }>(
+        `/api/bookmarks/${id}/sync`,
+        { method: "POST" },
+      )
+      return toBookmark(await request<ApiBookmark>(`/api/bookmarks/${id}`))
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        const idx = store.bookmarks.findIndex((b) => b.id === id)
+        if (idx === -1) throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
+        store.bookmarks[idx] = { ...store.bookmarks[idx]!, ai_status: "pending" }
+        saveMockStore()
+        return store.bookmarks[idx]!
+      }
+      throw err
+    }
+  },
+
   // Folders ------------------------------------------------------------
   async getFolders(): Promise<Folder[]> {
     try {
@@ -1289,22 +1311,38 @@ export const api = {
   },
 
   /**
-   * 从 GitHub Stars 分页导入。仅登录后使用，且必须先在设置中配置 GitHub PAT；
-   * 后端不可用时直接抛错，不做本地 mock（导入的是真实第三方数据，mock 无意义）。
+   * 从 GitHub Stars 启动后台导入任务。仅登录后使用，且必须先配置 GitHub PAT；
+   * 后端不可用时直接抛错，不做本地 mock。
    */
   async importGithubStars(
     params?: GithubImportParams,
-  ): Promise<GithubImportResult> {
-    return await request<GithubImportResult>("/api/bookmarks/import/github", {
-      method: "POST",
-      body: JSON.stringify({
-        ...(params?.page !== undefined ? { page: params.page } : {}),
-        ...(params?.perPage !== undefined ? { perPage: params.perPage } : {}),
-        ...(params?.maxPages !== undefined
-          ? { maxPages: params.maxPages }
-          : {}),
-      }),
-    })
+  ): Promise<GithubImportStartResult> {
+    return await request<GithubImportStartResult>(
+      "/api/bookmarks/import/github",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          ...(params?.page !== undefined ? { page: params.page } : {}),
+          ...(params?.perPage !== undefined ? { perPage: params.perPage } : {}),
+          ...(params?.maxPages !== undefined
+            ? { maxPages: params.maxPages }
+            : {}),
+        }),
+      },
+    )
+  },
+
+  async getGithubImportActive(): Promise<{ job: GithubImportJob | null }> {
+    return await request<{ job: GithubImportJob | null }>(
+      "/api/bookmarks/import/github/active",
+    )
+  },
+
+  async cancelGithubImport(): Promise<{ job: GithubImportJob }> {
+    return await request<{ job: GithubImportJob }>(
+      "/api/bookmarks/import/github/cancel",
+      { method: "POST" },
+    )
   },
 
   // Insights -----------------------------------------------------------

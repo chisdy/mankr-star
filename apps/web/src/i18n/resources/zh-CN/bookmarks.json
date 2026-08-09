@@ -122,6 +122,8 @@
     "lastSynced": "上次同步",
     "summaryLabel": "AI 用途摘要",
     "regenerate": "重新生成",
+    "sync": "同步",
+    "syncHint": "重新拉取远端内容并重跑 AI 归类（覆盖文件夹与标签）",
     "summaryPlaceholder": "AI 生成的用途摘要，可手动编辑覆盖...",
     "noSummary": "暂无摘要",
     "folderLabel": "所属文件夹",
@@ -161,6 +163,8 @@
     "saveFailed": "保存失败，请稍后重试",
     "regenerateSubmitted": "已提交重新生成",
     "regenerateFailed": "重新生成失败",
+    "syncSubmitted": "已提交同步",
+    "syncFailed": "同步失败",
     "archivedToast": "已移至归档",
     "unarchivedToast": "已取消归档",
     "deletedToast": "已删除该收藏"

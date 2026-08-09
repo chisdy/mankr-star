@@ -9,7 +9,7 @@ export default {
     env: Env,
     ctx: ExecutionContext,
   ) {
-    ctx.waitUntil(runCronJobs(env))
+    ctx.waitUntil(runCronJobs(env, ctx))
   },
 }
 
