@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useSearchParams } from "react-router"
+import { useReadableSearchParams } from "@/lib/search-params"
 import { useTranslation } from "react-i18next"
 import {
   PlusIcon,
@@ -46,7 +46,7 @@ import "./bookmark-masonry.css"
 
 export function BookmarksPage() {
   const { t } = useTranslation(["bookmarks", "common"])
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useReadableSearchParams()
   const requireAuth = useRequireAuthAction()
   const { openDetail } = useBookmarkDetail()
 

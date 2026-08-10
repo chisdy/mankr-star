@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useSearchParams } from "react-router"
+import { useReadableSearchParams } from "@/lib/search-params"
 
 import {
   readBookmarkDetailParams,
@@ -15,7 +15,7 @@ import {
  * 打开、切换编辑、关闭都用 push：后退键沿「编辑态 → 展示态 → 关闭」原路退回。
  */
 export function useBookmarkDetail() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useReadableSearchParams()
   const { bookmarkId, editing } = readBookmarkDetailParams(searchParams)
 
   // 全部走函数式更新，回调才能不依赖当前 searchParams 而保持引用稳定 ——

@@ -21,7 +21,10 @@ interface BookmarkOpenButtonProps {
   className?: string
 }
 
-export function BookmarkOpenButton({ bookmark, className }: BookmarkOpenButtonProps) {
+export function BookmarkOpenButton({
+  bookmark,
+  className,
+}: BookmarkOpenButtonProps) {
   const { t } = useTranslation("bookmarks")
   const queryClient = useQueryClient()
   const [clickCount, setClickCount] = React.useState(bookmark.click_count ?? 0)
@@ -60,12 +63,15 @@ export function BookmarkOpenButton({ bookmark, className }: BookmarkOpenButtonPr
               onClick={handleClick}
               className={cn(
                 buttonVariants({ variant: "ghost", size: "xs" }),
-                "h-6 gap-1 px-1.5 font-mono text-[11px] text-muted-foreground hover:text-foreground",
-                className,
+                "h-6 gap-1 px-2 font-mono text-[11px] text-muted-foreground hover:text-foreground",
+                className
               )}
               aria-label={t("open.aria", { count: clickCount })}
             >
-              <ArrowSquareOutIcon className="size-3.5" data-icon="inline-start" />
+              <ArrowSquareOutIcon
+                className="size-3.5"
+                data-icon="inline-start"
+              />
               <span>{clickCount}</span>
             </ExternalLink>
           }

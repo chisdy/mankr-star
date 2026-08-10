@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useSearchParams } from "react-router"
+import { useReadableSearchParams } from "@/lib/search-params"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { UPDATE_EVENT_TYPES, type UpdateEventType } from "@mankr/shared"
@@ -41,7 +41,7 @@ function isEventType(value: string | null): value is UpdateEventType {
 export function FeedPage() {
   const { t, i18n } = useTranslation("feed")
   const { openDetail } = useBookmarkDetail()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useReadableSearchParams()
 
   const eventTypeParam = searchParams.get(EVENT_TYPE_PARAM)
   const eventTypeFilter = isEventType(eventTypeParam) ? eventTypeParam : null

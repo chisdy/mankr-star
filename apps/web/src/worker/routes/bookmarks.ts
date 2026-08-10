@@ -940,6 +940,7 @@ bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
   if (data.notes !== undefined) patch.notes = data.notes
   if (data.folderId !== undefined) patch.folderId = data.folderId
   if (data.title !== undefined) patch.title = data.title
+  if (data.description !== undefined) patch.description = data.description
   if (data.summaryAi !== undefined) patch.summaryAi = data.summaryAi
   if (data.trackUpdates !== undefined) {
     const caps =

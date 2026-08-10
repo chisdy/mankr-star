@@ -10,5 +10,6 @@
   "userMenuAria": "User menu",
   "fallbackName": "User",
   "searchPlaceholder": "Search name, summary, tags…",
+  "clearSearch": "Clear search",
   "addButton": "Add"
 }

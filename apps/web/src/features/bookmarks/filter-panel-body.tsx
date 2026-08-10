@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useSearchParams } from "react-router"
+import { useReadableSearchParams } from "@/lib/search-params"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react"
@@ -42,9 +42,7 @@ const CONTROL_WIDTH = "w-[11rem]"
 type SourceFilter = "" | "github" | "twitter" | "url"
 
 function SelectPrefix({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="shrink-0 text-muted-foreground/55">{children}</span>
-  )
+  return <span className="shrink-0 text-muted-foreground/55">{children}</span>
 }
 
 function Field({
@@ -70,7 +68,7 @@ export function countPanelFilters(searchParams: URLSearchParams): number {
 
 export function FilterPanelBody({ className }: { className?: string }) {
   const { t } = useTranslation("bookmarks")
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useReadableSearchParams()
 
   const sourceType = (searchParams.get("source_type") || "") as SourceFilter
   const tag = searchParams.get("tag") || ""
@@ -240,257 +238,255 @@ export function FilterPanelBody({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-nowrap items-center gap-3 overflow-x-auto pb-0.5",
+        "flex min-w-0 flex-nowrap items-center gap-3 pb-0.5",
         className
       )}
     >
       <Field className={CONTROL_WIDTH}>
-          <Select
-            items={sourceOptions.map((opt) => ({
-              value: opt.value || null,
-              label: opt.label,
-            }))}
-            value={sourceType || null}
-            onValueChange={(val) => setSourceType((val || "") as SourceFilter)}
+        <Select
+          items={sourceOptions.map((opt) => ({
+            value: opt.value || null,
+            label: opt.label,
+          }))}
+          value={sourceType || null}
+          onValueChange={(val) => setSourceType((val || "") as SourceFilter)}
+        >
+          <SelectTrigger
+            size="sm"
+            className={cn(
+              "h-8 w-full text-xs",
+              sourceType && ACTIVE_FILTER_CLASS
+            )}
           >
-            <SelectTrigger
-              size="sm"
-              className={cn(
-                "h-8 w-full text-xs",
-                sourceType && ACTIVE_FILTER_CLASS
-              )}
-            >
-              <SelectPrefix>{t("list.sourceLabel")}</SelectPrefix>
-              <SelectValue placeholder={t("list.sourceAll")} />
-            </SelectTrigger>
-            <SelectContent>
-              {sourceOptions.map((opt) => (
-                <SelectItem key={opt.value || "all"} value={opt.value || null}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
+            <SelectPrefix>{t("list.sourceLabel")}</SelectPrefix>
+            <SelectValue placeholder={t("list.sourceAll")} />
+          </SelectTrigger>
+          <SelectContent>
+            {sourceOptions.map((opt) => (
+              <SelectItem key={opt.value || "all"} value={opt.value || null}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
 
+      <Field className={CONTROL_WIDTH}>
+        <FacetSelect
+          items={tagFacetItems}
+          value={tag || null}
+          onValueChange={(val) => updateParam("tag", val)}
+          isLoading={tagsLoading}
+          fullWidth
+          size="sm"
+          variant="tag"
+          prefixLabel={t("list.tagLabel")}
+          allLabel={t("list.tagAll")}
+          searchPlaceholder={t("list.tagSearch")}
+          loadingLabel={t("list.tagLoading")}
+          noMatchLabel={t("list.tagNoMatch")}
+        />
+      </Field>
+
+      {showOwner ? (
         <Field className={CONTROL_WIDTH}>
           <FacetSelect
-            items={tagFacetItems}
-            value={tag || null}
-            onValueChange={(val) => updateParam("tag", val)}
-            isLoading={tagsLoading}
+            items={owners}
+            value={owner || null}
+            onValueChange={(val) => {
+              patchParams((next) => {
+                if (val) {
+                  next.set("owner", val)
+                  next.delete("site")
+                } else {
+                  next.delete("owner")
+                }
+              })
+            }}
+            isLoading={ownersLoading}
             fullWidth
             size="sm"
-            variant="tag"
-            prefixLabel={t("list.tagLabel")}
-            allLabel={t("list.tagAll")}
-            searchPlaceholder={t("list.tagSearch")}
-            loadingLabel={t("list.tagLoading")}
-            noMatchLabel={t("list.tagNoMatch")}
+            variant="owner"
+            prefixLabel={t("list.ownerLabel")}
+            allLabel={t("list.ownerAll")}
+            searchPlaceholder={t("list.ownerSearch")}
+            loadingLabel={t("list.ownerLoading")}
+            noMatchLabel={t("list.ownerNoMatch")}
           />
         </Field>
+      ) : null}
 
-        {showOwner ? (
-          <Field className={CONTROL_WIDTH}>
-            <FacetSelect
-              items={owners}
-              value={owner || null}
-              onValueChange={(val) => {
-                patchParams((next) => {
-                  if (val) {
-                    next.set("owner", val)
-                    next.delete("site")
-                  } else {
-                    next.delete("owner")
-                  }
-                })
-              }}
-              isLoading={ownersLoading}
-              fullWidth
-              size="sm"
-              variant="owner"
-              prefixLabel={t("list.ownerLabel")}
-              allLabel={t("list.ownerAll")}
-              searchPlaceholder={t("list.ownerSearch")}
-              loadingLabel={t("list.ownerLoading")}
-              noMatchLabel={t("list.ownerNoMatch")}
-            />
-          </Field>
-        ) : null}
-
-        {showWebFilters ? (
-          <Field className={CONTROL_WIDTH}>
-            <FacetSelect
-              items={sites}
-              value={site || null}
-              onValueChange={(val) => {
-                patchParams((next) => {
-                  if (val) {
-                    next.set("site", val)
-                    next.delete("owner")
-                  } else {
-                    next.delete("site")
-                  }
-                })
-              }}
-              isLoading={sitesLoading}
-              fullWidth
-              size="sm"
-              variant="site"
-              prefixLabel={t("list.siteLabel")}
-              allLabel={t("list.siteAll")}
-              searchPlaceholder={t("list.siteSearch")}
-              loadingLabel={t("list.siteLoading")}
-              noMatchLabel={t("list.siteNoMatch")}
-            />
-          </Field>
-        ) : null}
-
-        {showAccountFilter ? (
-          <Field className="w-auto">
-            <div
-              className={cn(
-                "flex h-8 min-w-0 items-center gap-2 rounded-md border border-input bg-transparent px-2.5 shadow-xs transition-[color,box-shadow]",
-                hasAccount && ACTIVE_FILTER_CLASS
-              )}
-            >
-              <Label
-                id="filter-has-account-label"
-                htmlFor="filter-has-account"
-                className="cursor-pointer whitespace-nowrap text-xs font-normal text-muted-foreground"
-              >
-                {t("list.hasAccountHint")}
-              </Label>
-              <Switch
-                id="filter-has-account"
-                size="sm"
-                className="shrink-0"
-                checked={hasAccount}
-                onCheckedChange={(checked) =>
-                  updateParam("has_account", checked ? "true" : null)
+      {showWebFilters ? (
+        <Field className={CONTROL_WIDTH}>
+          <FacetSelect
+            items={sites}
+            value={site || null}
+            onValueChange={(val) => {
+              patchParams((next) => {
+                if (val) {
+                  next.set("site", val)
+                  next.delete("owner")
+                } else {
+                  next.delete("site")
                 }
-                aria-labelledby="filter-has-account-label"
-              />
-            </div>
-          </Field>
-        ) : null}
+              })
+            }}
+            isLoading={sitesLoading}
+            fullWidth
+            size="sm"
+            variant="site"
+            prefixLabel={t("list.siteLabel")}
+            allLabel={t("list.siteAll")}
+            searchPlaceholder={t("list.siteSearch")}
+            loadingLabel={t("list.siteLoading")}
+            noMatchLabel={t("list.siteNoMatch")}
+          />
+        </Field>
+      ) : null}
 
-        {showGithubFilters ? (
-          <>
-            <Field className={CONTROL_WIDTH}>
-              <Select
-                items={languageItems}
-                value={language || null}
-                onValueChange={(val) => updateParam("language", val || null)}
-              >
-                <SelectTrigger
-                  size="sm"
-                  className={cn(
-                    "h-8 w-full text-xs",
-                    language && ACTIVE_FILTER_CLASS
-                  )}
-                >
-                  <SelectPrefix>{t("list.languageLabel")}</SelectPrefix>
-                  <SelectValue placeholder={t("list.languageAll")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {languageItems.map((item) => (
-                    <SelectItem key={String(item.value)} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-
-            <Field className={CONTROL_WIDTH}>
-              <Select
-                items={healthItems}
-                value={healthStatus || null}
-                onValueChange={(val) =>
-                  updateParam("health_status", val || null)
-                }
-              >
-                <SelectTrigger
-                  size="sm"
-                  className={cn(
-                    "h-8 w-full text-xs",
-                    healthStatus && ACTIVE_FILTER_CLASS
-                  )}
-                >
-                  <SelectPrefix>{t("list.healthLabel")}</SelectPrefix>
-                  <SelectValue placeholder={t("list.healthPlaceholder")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {healthItems.map((item) => (
-                    <SelectItem key={String(item.value)} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          </>
-        ) : null}
-
+      {showAccountFilter ? (
         <Field className="w-auto">
           <div
             className={cn(
               "flex h-8 min-w-0 items-center gap-2 rounded-md border border-input bg-transparent px-2.5 shadow-xs transition-[color,box-shadow]",
-              archived && ACTIVE_FILTER_CLASS
+              hasAccount && ACTIVE_FILTER_CLASS
             )}
           >
             <Label
-              id="filter-archived-label"
-              htmlFor="filter-archived"
-              className="cursor-pointer whitespace-nowrap text-xs font-normal text-muted-foreground"
+              id="filter-has-account-label"
+              htmlFor="filter-has-account"
+              className="cursor-pointer text-xs font-normal whitespace-nowrap text-muted-foreground"
             >
-              {t("list.includeArchived")}
+              {t("list.hasAccountHint")}
             </Label>
             <Switch
-              id="filter-archived"
+              id="filter-has-account"
               size="sm"
               className="shrink-0"
-              checked={archived}
+              checked={hasAccount}
               onCheckedChange={(checked) =>
-                updateParam("archived", checked ? "true" : null)
+                updateParam("has_account", checked ? "true" : null)
               }
-              aria-labelledby="filter-archived-label"
+              aria-labelledby="filter-has-account-label"
             />
           </div>
         </Field>
+      ) : null}
 
-        <Field className={CONTROL_WIDTH}>
-          <Select
-            items={sortItems}
-            value={
-              showStarsSort || sort === "recent" || sort === "name"
-                ? sort
-                : "recent"
-            }
-            onValueChange={(val) =>
-              updateParam("sort", !val || val === "recent" ? null : val)
-            }
-          >
-            <SelectTrigger
-              size="sm"
-              className={cn(
-                "h-8 w-full text-xs",
-                sort !== "recent" && ACTIVE_FILTER_CLASS
-              )}
+      {showGithubFilters ? (
+        <>
+          <Field className={CONTROL_WIDTH}>
+            <Select
+              items={languageItems}
+              value={language || null}
+              onValueChange={(val) => updateParam("language", val || null)}
             >
-              <SelectPrefix>{t("list.sortLabel")}</SelectPrefix>
-              <SelectValue placeholder={t("list.sortRecent")} />
-            </SelectTrigger>
-            <SelectContent>
-              {sortItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
+              <SelectTrigger
+                size="sm"
+                className={cn(
+                  "h-8 w-full text-xs",
+                  language && ACTIVE_FILTER_CLASS
+                )}
+              >
+                <SelectPrefix>{t("list.languageLabel")}</SelectPrefix>
+                <SelectValue placeholder={t("list.languageAll")} />
+              </SelectTrigger>
+              <SelectContent>
+                {languageItems.map((item) => (
+                  <SelectItem key={String(item.value)} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
+          <Field className={CONTROL_WIDTH}>
+            <Select
+              items={healthItems}
+              value={healthStatus || null}
+              onValueChange={(val) => updateParam("health_status", val || null)}
+            >
+              <SelectTrigger
+                size="sm"
+                className={cn(
+                  "h-8 w-full text-xs",
+                  healthStatus && ACTIVE_FILTER_CLASS
+                )}
+              >
+                <SelectPrefix>{t("list.healthLabel")}</SelectPrefix>
+                <SelectValue placeholder={t("list.healthPlaceholder")} />
+              </SelectTrigger>
+              <SelectContent>
+                {healthItems.map((item) => (
+                  <SelectItem key={String(item.value)} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </>
+      ) : null}
+
+      <Field className="w-auto">
+        <div
+          className={cn(
+            "flex h-8 min-w-0 items-center gap-2 rounded-md border border-input bg-transparent px-2.5 shadow-xs transition-[color,box-shadow]",
+            archived && ACTIVE_FILTER_CLASS
+          )}
+        >
+          <Label
+            id="filter-archived-label"
+            htmlFor="filter-archived"
+            className="cursor-pointer text-xs font-normal whitespace-nowrap text-muted-foreground"
+          >
+            {t("list.includeArchived")}
+          </Label>
+          <Switch
+            id="filter-archived"
+            size="sm"
+            className="shrink-0"
+            checked={archived}
+            onCheckedChange={(checked) =>
+              updateParam("archived", checked ? "true" : null)
+            }
+            aria-labelledby="filter-archived-label"
+          />
+        </div>
+      </Field>
+
+      <Field className={CONTROL_WIDTH}>
+        <Select
+          items={sortItems}
+          value={
+            showStarsSort || sort === "recent" || sort === "name"
+              ? sort
+              : "recent"
+          }
+          onValueChange={(val) =>
+            updateParam("sort", !val || val === "recent" ? null : val)
+          }
+        >
+          <SelectTrigger
+            size="sm"
+            className={cn(
+              "h-8 w-full text-xs",
+              sort !== "recent" && ACTIVE_FILTER_CLASS
+            )}
+          >
+            <SelectPrefix>{t("list.sortLabel")}</SelectPrefix>
+            <SelectValue placeholder={t("list.sortRecent")} />
+          </SelectTrigger>
+          <SelectContent>
+            {sortItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
 
       {hasPanelFilters ? (
         <Button

@@ -47,7 +47,7 @@ export function BookmarkDetailFooter({
   if (!hasExternalLink && !canEdit) return null
 
   return (
-    <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border px-4 py-3 md:px-6">
+    <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border/50 bg-muted/50 p-3">
       {editing ? (
         <>
           <Button
@@ -114,7 +114,7 @@ export function BookmarkDetailFooter({
               </Button>
 
               <Button
-                variant="outline"
+                variant="destructive"
                 size="sm"
                 onClick={onRequestDelete}
                 disabled={mutating}
@@ -129,7 +129,7 @@ export function BookmarkDetailFooter({
           {hasExternalLink ? (
             <BookmarkOpenButton
               bookmark={bookmark}
-              className="h-8 gap-1.5 rounded-md border border-input px-2.5 text-xs font-medium hover:bg-accent hover:text-accent-foreground"
+              className="h-8 gap-1.5 rounded-md border border-input bg-secondary px-2.5 text-xs font-medium hover:bg-accent hover:text-accent-foreground"
             />
           ) : null}
         </>

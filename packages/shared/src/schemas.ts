@@ -69,6 +69,7 @@ export const updateBookmarkSchema = z.object({
   notes: z.string().max(10000).optional().nullable(),
   folderId: z.string().uuid().optional().nullable(),
   title: z.string().min(1).max(500).optional(),
+  description: z.string().max(2000).optional().nullable(),
   summaryAi: z.string().max(AI_SUMMARY_MAX_CHARS).optional().nullable(),
   trackUpdates: z.boolean().optional(),
   archived: z.boolean().optional(),

@@ -43,7 +43,7 @@ export function BrandLogo({
           <linearGradient id={faceId} x1="16%" y1="6%" x2="90%" y2="94%">
             <stop
               offset="0%"
-              stopColor="color-mix(in oklch, currentColor 68%, white)"
+              stopColor="color-mix(in oklch, currentColor 82%, white)"
             />
             <stop offset="46%" stopColor="currentColor" />
             <stop
@@ -52,8 +52,8 @@ export function BrandLogo({
             />
           </linearGradient>
           <linearGradient id={glossId} x1="28%" y1="0%" x2="72%" y2="58%">
-            <stop offset="0%" stopColor="#fff" stopOpacity="0.42" />
-            <stop offset="48%" stopColor="#fff" stopOpacity="0.1" />
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.2" />
+            <stop offset="48%" stopColor="#fff" stopOpacity="0.05" />
             <stop offset="100%" stopColor="#fff" stopOpacity="0" />
           </linearGradient>
           <clipPath id={clipId}>

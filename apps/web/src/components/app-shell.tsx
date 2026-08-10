@@ -1,11 +1,14 @@
 import * as React from "react"
-import { Outlet, useLocation, useNavigate, useSearchParams } from "react-router"
+import { Outlet, useLocation, useNavigate } from "react-router"
 import { useTranslation } from "react-i18next"
 import {
+  CaretLeftIcon,
+  CaretRightIcon,
   PlusIcon,
   MagnifyingGlassIcon,
   ListIcon,
   SparkleIcon,
+  XIcon,
 } from "@phosphor-icons/react"
 
 import { Button } from "@workspace/ui/components/button"
@@ -16,6 +19,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { GithubImportBanner } from "@/components/github-import-banner"
 import { AddBookmarkDialog } from "@/features/bookmarks/add-bookmark-dialog"
 import { FilterPanelBody } from "@/features/bookmarks/filter-panel-body"
+import { getHorizontalScrollStep } from "@/features/bookmarks/horizontal-scroll"
 import { BookmarkDetailDialog } from "@/features/bookmarks/detail/bookmark-detail-dialog"
 import { KbChatBody } from "@/features/kb/kb-chat-body"
 import { KbChatPanel } from "@/features/kb/kb-chat-panel"
@@ -30,6 +34,7 @@ import { useRefreshFoldersOnAiComplete } from "@/hooks/use-refresh-folders-on-ai
 import { useAuth, useRequireAuthAction } from "@/hooks/use-auth"
 import { BOOKMARK_PAGE_PARAM } from "@/features/bookmarks/bookmark-pagination"
 import { APP_SCROLL_ROOT_ID } from "@/lib/scroll-root"
+import { toReadableSearch, useReadableSearchParams } from "@/lib/search-params"
 
 /** 浏览器扩展用的一次性入口参数：`/?add=<encoded url>` */
 const ADD_PARAM = "add"
@@ -56,7 +61,7 @@ function AppShellContent() {
   const { t } = useTranslation("nav")
   const navigate = useNavigate()
   const location = useLocation()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useReadableSearchParams()
   const requireAuth = useRequireAuthAction()
   const { isAuthenticated } = useAuth()
 
@@ -65,6 +70,7 @@ function AppShellContent() {
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false)
   const { open: kbOpen, setOpen: setKbOpen } = useKbPanelOpen()
   const isMobile = useIsMobile()
+  const filterScrollViewportRef = React.useRef<HTMLDivElement>(null)
 
   useRefreshFoldersOnAiComplete()
 
@@ -98,20 +104,44 @@ function AppShellContent() {
     setSearchInput(searchQuery)
   }, [searchQuery])
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const applySearchParams = (query: string) => {
     const newParams = new URLSearchParams(searchParams)
-    if (searchInput.trim()) {
-      newParams.set("q", searchInput.trim())
+    if (query) {
+      newParams.set("q", query)
     } else {
       newParams.delete("q")
     }
     // 换了搜索词就换了结果集，旧页码不再有意义
     newParams.delete(BOOKMARK_PAGE_PARAM)
-    setSearchParams(newParams)
+    const search = toReadableSearch(newParams)
     if (window.location.pathname !== "/") {
-      navigate("/?" + newParams.toString())
+      navigate(`/${search}`)
+      return
     }
+    setSearchParams(newParams)
+  }
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    applySearchParams(searchInput.trim())
+  }
+
+  const handleSearchClear = () => {
+    setSearchInput("")
+    // 同步清掉 URL 搜索状态，避免只清空输入框但结果仍按旧关键词过滤
+    if (searchQuery) applySearchParams("")
+  }
+
+  const scrollFilterToolbar = (direction: "left" | "right") => {
+    const viewport = filterScrollViewportRef.current
+    if (!viewport) return
+
+    viewport.scrollBy({
+      left: getHorizontalScrollStep(viewport.clientWidth, direction),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    })
   }
 
   return (
@@ -142,14 +172,24 @@ function AppShellContent() {
               onSubmit={handleSearchSubmit}
               className="relative w-40 sm:w-52 md:w-64 lg:w-80"
             >
-              <MagnifyingGlassIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder={t("searchPlaceholder")}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="h-8 w-full border-muted bg-muted/40 pr-3 pl-8 text-xs md:text-sm"
+                className="h-8 w-full border-muted bg-muted/40 pr-8 pl-8 text-xs md:text-sm [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
               />
+              {searchInput ? (
+                <button
+                  type="button"
+                  onClick={handleSearchClear}
+                  aria-label={t("clearSearch")}
+                  className="absolute top-1/2 right-1.5 flex size-5 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <XIcon className="size-3.5" />
+                </button>
+              ) : null}
             </form>
 
             <Button
@@ -184,8 +224,45 @@ function AppShellContent() {
 
           <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             {location.pathname === "/" ? (
-              <div className="shrink-0 border-b border-border/50 bg-card/50 px-4 py-3 md:px-6">
-                <FilterPanelBody />
+              <div className="group/filter-toolbar relative shrink-0 border-b border-border/50 bg-card/50 px-4 pt-[13px] pb-0 md:px-6">
+                <ScrollArea
+                  className="min-w-0 pb-[11px]"
+                  viewportRef={filterScrollViewportRef}
+                  scrollbars="horizontal"
+                  overflowEdgeThreshold={1}
+                >
+                  <FilterPanelBody className="w-max min-w-full" />
+                </ScrollArea>
+
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-20 items-center bg-linear-to-r from-card/60 via-card/40 to-transparent pl-2 group-has-data-[overflow-x-start]/filter-toolbar:flex md:pl-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon-sm"
+                    tabIndex={-1}
+                    className="pointer-events-auto rounded-full border-border/60 bg-background/65 shadow-md backdrop-blur-xl supports-[backdrop-filter]:bg-background/50"
+                    onClick={() => scrollFilterToolbar("left")}
+                    aria-label={t("bookmarks:list.filterScrollLeftAria")}
+                    title={t("bookmarks:list.filterScrollLeftAria")}
+                  >
+                    <CaretLeftIcon weight="bold" />
+                  </Button>
+                </div>
+
+                <div className="pointer-events-none absolute inset-y-0 right-0 z-10 hidden w-20 items-center justify-end bg-linear-to-l from-card/60 via-card/40 to-transparent pr-2 group-has-data-[overflow-x-end]/filter-toolbar:flex md:pr-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon-sm"
+                    tabIndex={-1}
+                    className="pointer-events-auto rounded-full border-border/60 bg-background/65 shadow-md backdrop-blur-xl supports-[backdrop-filter]:bg-background/50"
+                    onClick={() => scrollFilterToolbar("right")}
+                    aria-label={t("bookmarks:list.filterScrollRightAria")}
+                    title={t("bookmarks:list.filterScrollRightAria")}
+                  >
+                    <CaretRightIcon weight="bold" />
+                  </Button>
+                </div>
               </div>
             ) : null}
             <ScrollArea

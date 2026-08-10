@@ -8,7 +8,6 @@ import { Switch } from "@workspace/ui/components/switch"
 import { Textarea } from "@workspace/ui/components/textarea"
 import { Button } from "@workspace/ui/components/button"
 import { FolderSelect } from "@/features/folders/folder-select"
-import { BookmarkDetailMeta } from "./bookmark-detail-meta"
 import { CopyIconButton } from "./copy-icon-button"
 import { useBookmarkAccountCopy } from "./use-bookmark-account-copy"
 import type { BookmarkFormValues } from "./use-bookmark-detail-form"
@@ -39,7 +38,27 @@ export function BookmarkDetailForm({
 
   return (
     <div className="space-y-5 p-4 text-sm md:p-6">
-      <BookmarkDetailMeta bookmark={bookmark} />
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">{t("detail.titleLabel")}</Label>
+        <Input
+          value={values.title}
+          onChange={(e) => patch({ title: e.target.value })}
+          placeholder={t("detail.titlePlaceholder")}
+          className="h-9 text-sm"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">
+          {t("detail.descriptionLabel")}
+        </Label>
+        <Textarea
+          value={values.description}
+          onChange={(e) => patch({ description: e.target.value })}
+          placeholder={t("detail.descriptionPlaceholder")}
+          className="min-h-[64px] resize-none text-sm leading-relaxed"
+        />
+      </div>
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">

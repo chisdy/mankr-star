@@ -1,5 +1,6 @@
 "use client"
 
+import type { Ref } from "react"
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area"
 
 import { cn } from "@workspace/ui/lib/utils"
@@ -10,6 +11,9 @@ function ScrollArea({
   viewportClassName,
   contentClassName,
   viewportId,
+  viewportRef,
+  scrollbars = "vertical",
+  scrollbarClassName,
   ...props
 }: ScrollAreaPrimitive.Root.Props & {
   viewportClassName?: string
@@ -17,7 +21,14 @@ function ScrollArea({
   contentClassName?: string
   /** 挂到实际滚动的 Viewport 上（如虚拟列表 / scrollTo 需要绑定滚动根时） */
   viewportId?: string
+  /** 获取实际滚动的 Viewport，供滚动按钮等外部控制使用 */
+  viewportRef?: Ref<HTMLDivElement>
+  scrollbars?: "vertical" | "horizontal" | "both" | "none"
+  scrollbarClassName?: string
 }) {
+  const showVertical = scrollbars === "vertical" || scrollbars === "both"
+  const showHorizontal = scrollbars === "horizontal" || scrollbars === "both"
+
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
@@ -31,6 +42,7 @@ function ScrollArea({
         导致内容视觉上已放下仍出现滚动条。
       */}
       <ScrollAreaPrimitive.Viewport
+        ref={viewportRef}
         id={viewportId}
         data-slot="scroll-area-viewport"
         className={cn(
@@ -40,14 +52,21 @@ function ScrollArea({
       >
         <ScrollAreaPrimitive.Content
           data-slot="scroll-area-content"
-          // 覆盖 Content 默认 minWidth:fit-content，避免竖向滚动区被宽内容撑出横向假溢出
-          style={{ minWidth: 0 }}
+          // 纵向滚动时避免宽内容造成假溢出；横向滚动时按内容宽度展开
+          style={
+            showHorizontal
+              ? { width: "max-content", minWidth: "100%" }
+              : { minWidth: 0 }
+          }
           className={contentClassName}
         >
           {children}
         </ScrollAreaPrimitive.Content>
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
+      {showVertical ? <ScrollBar className={scrollbarClassName} /> : null}
+      {showHorizontal ? (
+        <ScrollBar orientation="horizontal" className={scrollbarClassName} />
+      ) : null}
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )

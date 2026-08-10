@@ -164,7 +164,7 @@ export function BookmarkDetailDialog() {
       }}
     >
       <DialogContent className="flex h-dvh w-full max-w-none flex-col gap-0 overflow-hidden rounded-none p-0 sm:max-w-none md:h-auto md:max-h-[85dvh] md:max-w-2xl md:rounded-xl">
-        <BookmarkDetailHeader bookmark={bookmark} editing={showEditor} />
+        <BookmarkDetailHeader bookmark={bookmark} />
 
         {isLoading || !bookmark ? (
           <div className="space-y-4 p-6">

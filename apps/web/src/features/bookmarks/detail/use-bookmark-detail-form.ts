@@ -9,6 +9,8 @@ import { queryKeys } from "@/lib/query-keys"
 import type { Bookmark } from "@/lib/types"
 
 export interface BookmarkFormValues {
+  title: string
+  description: string
   summaryAi: string
   folderId: string
   tagsInput: string
@@ -22,6 +24,8 @@ export interface BookmarkFormValues {
 }
 
 const EMPTY_VALUES: BookmarkFormValues = {
+  title: "",
+  description: "",
   summaryAi: "",
   folderId: "",
   tagsInput: "",
@@ -35,6 +39,8 @@ const EMPTY_VALUES: BookmarkFormValues = {
 
 function fromBookmark(bookmark: Bookmark): BookmarkFormValues {
   return {
+    title: bookmark.title || bookmark.external_id || "",
+    description: bookmark.description || "",
     summaryAi: bookmark.summary_ai || "",
     folderId: bookmark.folder_id || "",
     tagsInput: bookmark.tags ? bookmark.tags.join(", ") : "",
@@ -110,6 +116,8 @@ export function useBookmarkDetailForm({
   const updateMutation = useMutation({
     mutationFn: () => {
       const payload: Parameters<typeof api.updateBookmark>[1] = {
+        title: values.title.trim() || bookmark?.title || bookmark?.external_id || "Untitled",
+        description: values.description.trim() || null,
         summary_ai: values.summaryAi.trim() || null,
         folder_id: values.folderId || null,
         tags: parseTags(values.tagsInput),

@@ -1,7 +1,8 @@
 import type { ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
-import { Link, useSearchParams } from "react-router"
+import { Link } from "react-router"
+import { useReadableSearchParams } from "@/lib/search-params"
 import {
   ChartBarIcon,
   CpuIcon,
@@ -90,7 +91,7 @@ function localizeFolderName(
 
 export function InsightsPage() {
   const { t, i18n } = useTranslation(["insights", "common"])
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useReadableSearchParams()
   const range = parseRange(searchParams.get("range"))
   const locale = i18n.language
 

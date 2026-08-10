@@ -1,5 +1,6 @@
 import * as React from "react"
-import { Link, useSearchParams } from "react-router"
+import { Link } from "react-router"
+import { useReadableSearchParams } from "@/lib/search-params"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import {
@@ -247,7 +248,7 @@ function TagCard({
 export function TagsPage() {
   const { t } = useTranslation("tags")
   const { isAuthenticated: canManage } = useAuth()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useReadableSearchParams()
   const [filter, setFilter] = React.useState("")
   const [sort, setSort] = React.useState<TagSort>("count")
   const [renameTag, setRenameTag] = React.useState<Tag | null>(null)

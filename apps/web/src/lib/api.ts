@@ -758,6 +758,7 @@ export const api = {
       track_updates: boolean
       archived: boolean
       title: string
+      description: string | null
       account_registered: boolean
       account_username: string | null
       /** 明文仅写入时传输；空字符串清除。永不进入 mock/localStorage */
@@ -772,6 +773,7 @@ export const api = {
     if (data.track_updates !== undefined) body.trackUpdates = data.track_updates
     if (data.archived !== undefined) body.archived = data.archived
     if (data.title !== undefined) body.title = data.title
+    if (data.description !== undefined) body.description = data.description
     if (data.account_registered !== undefined) {
       body.accountRegistered = data.account_registered
     }
@@ -821,6 +823,8 @@ export const api = {
           ...(data.archived !== undefined && {
             archived_at: data.archived ? new Date().toISOString() : null,
           }),
+          ...(data.title !== undefined && { title: data.title }),
+          ...(data.description !== undefined && { description: data.description }),
           account_registered: accountRegistered,
           account_username: accountUsername,
           account_password_set: false,

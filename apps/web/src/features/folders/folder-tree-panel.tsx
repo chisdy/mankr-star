@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useNavigate, useSearchParams } from "react-router"
+import { toReadableSearch } from "@/lib/search-params"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import {
@@ -348,8 +349,8 @@ export function FolderTreePanel({
     if (id) next.set("folder_id", id)
     else next.delete("folder_id")
     next.delete(BOOKMARK_PAGE_PARAM)
-    const qs = next.toString()
-    navigate(qs ? `/?${qs}` : "/")
+    const search = toReadableSearch(next)
+    navigate(search ? `/${search}` : "/")
     onNavigate?.()
   }
 
