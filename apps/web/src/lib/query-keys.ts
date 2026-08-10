@@ -31,6 +31,7 @@ export const queryKeys = {
       page?: number
       pageSize?: number
     }) => ["feed", "list", params] as const,
+    stats: (range: string) => ["feed", "stats", range] as const,
   },
   insights: {
     all: ["insights"] as const,

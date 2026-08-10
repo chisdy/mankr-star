@@ -4,6 +4,7 @@
   "empty": "No updates yet. Tracked repos will appear here when they change.",
   "emptyFiltered": "No matching updates. Try a different filter.",
   "filterAll": "All types",
+  "timelineTitle": "Update timeline",
   "loadMore": "Load more",
   "filteredByBookmark": "Filtered to a single repo",
   "clearFilter": "Clear filter",
@@ -12,5 +13,35 @@
     "push": "Branch updated",
     "stars_delta": "Stars surged",
     "meta_change": "Metadata changed"
+  },
+  "range": {
+    "7d": "7 days",
+    "30d": "30 days",
+    "all": "All",
+    "aria": "Stats time range"
+  },
+  "stats": {
+    "totalEvents": "Events",
+    "totalEventsFooter": "In the selected range",
+    "todayEvents": "Today",
+    "todayEventsFooter": "UTC day boundary",
+    "activeBookmarks": "Active repos",
+    "activeBookmarksFooter": "Repos with updates in range",
+    "trackedBookmarks": "Tracked",
+    "trackedBookmarksFooter": "Bookmarks with tracking on",
+    "error": "Stats failed to load; the timeline still works",
+    "byTypeTitle": "Event types",
+    "dailyTitle": "Daily trend"
+  },
+  "charts": {
+    "typeEmpty": "No event type data yet",
+    "typeFilterHint": "Click to filter the timeline",
+    "dailyEmptyTitle": "No trend yet",
+    "dailyEmptyDescription": "Daily event counts appear after updates",
+    "dailySummary": "{{count}} days",
+    "dailyPeak": "Peak {{count}}",
+    "dailyHover": "{{count}} events",
+    "dailyAria": "{{count}}-day trend, peak {{peak}}",
+    "dailyBarDetail": "{{date}}: {{count}} events"
   }
 }

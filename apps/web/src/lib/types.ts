@@ -259,6 +259,18 @@ export interface ExportData {
 
 export type InsightsRange = "7d" | "30d" | "all"
 
+export interface FeedStatsResponse {
+  range: InsightsRange
+  summary: {
+    total_events: number
+    today_events: number
+    active_bookmarks: number
+    tracked_bookmarks: number
+  }
+  events_by_type: Array<{ event_type: string; count: number }>
+  daily: Array<{ date: string; count: number }>
+}
+
 export interface InsightsResponse {
   range: InsightsRange
   library: {

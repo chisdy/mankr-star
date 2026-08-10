@@ -51,6 +51,7 @@ describe("公开浏览", () => {
       "/api/folders",
       "/api/tags",
       "/api/feed",
+      "/api/feed/stats",
     ]) {
       const res = await guest.json<{ code?: string }>(path)
       expect(res.status).toBe(401)
@@ -116,6 +117,9 @@ describe("公开浏览", () => {
 
     const feed = await guest.json("/api/feed")
     expect(feed.status).toBe(200)
+
+    const feedStats = await guest.json("/api/feed/stats")
+    expect(feedStats.status).toBe(200)
 
     const create = await guest.post<{ code?: string }>("/api/bookmarks", {
       url: "https://github.com/facebook/react",

@@ -18,6 +18,7 @@ import type {
   ExportData,
   FeedQueryParams,
   FeedResponse,
+  FeedStatsResponse,
   Folder,
   GithubImportParams,
   GithubImportJob,
@@ -146,6 +147,25 @@ function emptyInsights(range: InsightsRange): InsightsResponse {
       daily: [],
       estimated_cost_usd: null,
     },
+  }
+}
+
+function emptyFeedStats(range: InsightsRange): FeedStatsResponse {
+  return {
+    range,
+    summary: {
+      total_events: 0,
+      today_events: 0,
+      active_bookmarks: 0,
+      tracked_bookmarks: 0,
+    },
+    events_by_type: [
+      { event_type: "push", count: 0 },
+      { event_type: "release", count: 0 },
+      { event_type: "stars_delta", count: 0 },
+      { event_type: "meta_change", count: 0 },
+    ],
+    daily: [],
   }
 }
 
@@ -1305,6 +1325,19 @@ export const api = {
           pageSize,
           total: items.length,
         }
+      }
+      throw err
+    }
+  },
+
+  async getFeedStats(range: InsightsRange = "30d"): Promise<FeedStatsResponse> {
+    try {
+      return await request<FeedStatsResponse>(
+        `/api/feed/stats?range=${encodeURIComponent(range)}`,
+      )
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        return emptyFeedStats(range)
       }
       throw err
     }

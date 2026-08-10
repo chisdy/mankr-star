@@ -10,6 +10,7 @@ import {
   StarIcon,
   InfoIcon,
   XIcon,
+  ClockCounterClockwiseIcon,
 } from "@phosphor-icons/react"
 
 import { Badge } from "@workspace/ui/components/badge"
@@ -22,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
+import { FeedStats } from "@/features/feed/feed-stats"
 import { api } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 import type { EventType, UpdateEvent } from "@/lib/types"
@@ -56,13 +58,7 @@ export function FeedPage() {
   const page = pager.key === filterKey ? pager.page : 1
   const events = pager.key === filterKey ? pager.events : []
 
-  const {
-    data,
-    isLoading,
-    isFetching,
-    isError,
-    error,
-  } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: queryKeys.feed.list({
       eventType: eventTypeFilter ?? undefined,
       bookmarkId: bookmarkIdFilter ?? undefined,
@@ -88,10 +84,7 @@ export function FeedPage() {
       events:
         data.page === 1
           ? data.items
-          : [
-              ...(prev.key === filterKey ? prev.events : []),
-              ...data.items,
-            ],
+          : [...(prev.key === filterKey ? prev.events : []), ...data.items],
     }))
   }, [data, filterKey])
 
@@ -128,18 +121,21 @@ export function FeedPage() {
         label: t(`eventType.${type}`),
       })),
     ],
-    [t],
+    [t]
   )
 
   // Group events by date (YYYY-MM-DD)
   const groupedEvents = React.useMemo(() => {
     const map = new Map<string, UpdateEvent[]>()
     events.forEach((evt) => {
-      const dateStr = new Date(evt.detected_at).toLocaleDateString(i18n.language, {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      const dateStr = new Date(evt.detected_at).toLocaleDateString(
+        i18n.language,
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }
+      )
       if (!map.has(dateStr)) {
         map.set(dateStr, [])
       }
@@ -151,159 +147,190 @@ export function FeedPage() {
   const renderEventIcon = (type: EventType) => {
     switch (type) {
       case "release":
-        return <TagIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
+        return (
+          <TagIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
+        )
       case "push":
-        return <GitCommitIcon className="size-4 text-sky-600 dark:text-sky-400" />
+        return (
+          <GitCommitIcon className="size-4 text-sky-600 dark:text-sky-400" />
+        )
       case "stars_delta":
-        return <StarIcon className="size-4 text-amber-500/90 dark:text-amber-400" />
+        return (
+          <StarIcon className="size-4 text-amber-500/90 dark:text-amber-400" />
+        )
       case "meta_change":
       default:
-        return <InfoIcon className="size-4 text-violet-500 dark:text-violet-400" />
+        return (
+          <InfoIcon className="size-4 text-violet-500 dark:text-violet-400" />
+        )
     }
   }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto pb-12">
+    <div className="mx-auto max-w-3xl space-y-6 pb-12">
       {/* Header */}
-      <div className="border-b border-border pb-4 space-y-3">
+      <div className="space-y-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
             {t("title")}
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {t("description")}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Select
-            items={eventTypeItems}
-            value={eventTypeFilter}
-            onValueChange={(val) => setEventTypeFilter(val)}
-          >
-            <SelectTrigger size="sm" className="h-8 w-full text-xs sm:w-56">
-              <SelectValue placeholder={t("filterAll")} />
-            </SelectTrigger>
-            <SelectContent>
-              {eventTypeItems.map((item) => (
-                <SelectItem key={item.value ?? "all"} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {bookmarkIdFilter && (
-            <Badge
-              variant="outline"
-              className="h-8 gap-1.5 px-2.5 text-[11px] font-normal"
-            >
-              <span>{t("filteredByBookmark")}</span>
-              <button
-                type="button"
-                onClick={clearBookmarkFilter}
-                aria-label={t("clearFilter")}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <XIcon className="size-3" />
-              </button>
-            </Badge>
-          )}
-        </div>
+        <FeedStats
+          selectedEventType={eventTypeFilter}
+          onSelectEventType={setEventTypeFilter}
+        />
       </div>
 
-      {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-20 w-full rounded-lg" />
-        </div>
-      ) : events.length === 0 ? (
-        /* Empty state with UI_DESIGN exact text */
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/80 bg-card p-12 text-center space-y-3">
-          <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <RssIcon className="size-5" />
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-foreground">
+            <ClockCounterClockwiseIcon className="size-4 text-primary" />
+            {t("timelineTitle")}
+          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              items={eventTypeItems}
+              value={eventTypeFilter}
+              onValueChange={(val) => setEventTypeFilter(val)}
+            >
+              <SelectTrigger size="sm" className="h-8 w-full text-xs sm:w-56">
+                <SelectValue placeholder={t("filterAll")} />
+              </SelectTrigger>
+              <SelectContent>
+                {eventTypeItems.map((item) => (
+                  <SelectItem key={item.value ?? "all"} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {bookmarkIdFilter && (
+              <Badge
+                variant="outline"
+                className="h-8 gap-1.5 px-2.5 text-[11px] font-normal"
+              >
+                <span>{t("filteredByBookmark")}</span>
+                <button
+                  type="button"
+                  onClick={clearBookmarkFilter}
+                  aria-label={t("clearFilter")}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <XIcon className="size-3" />
+                </button>
+              </Badge>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
-            {isFiltered ? t("emptyFiltered") : t("empty")}
-          </p>
         </div>
-      ) : (
-        <>
-          {/* Timeline List */}
-          <div className="space-y-8">
-            {groupedEvents.map(([date, items]) => (
-              <div key={date} className="space-y-3">
-                <h2 className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">
-                  {date}
-                </h2>
 
-                <div className="space-y-2 border-l-2 border-border/60 pl-3 md:pl-4 ml-1">
-                  {items.map((evt) => {
-                    let payloadData: Record<string, string> = {}
-                    try {
-                      if (evt.payload_json) {
-                        payloadData = JSON.parse(evt.payload_json)
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-20 w-full rounded-lg" />
+            <Skeleton className="h-20 w-full rounded-lg" />
+          </div>
+        ) : events.length === 0 ? (
+          <div className="flex flex-col items-center justify-center space-y-3 rounded-xl border border-dashed border-border/80 bg-card p-12 text-center">
+            <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <RssIcon className="size-5" />
+            </div>
+            <p className="max-w-xs text-xs leading-relaxed text-muted-foreground">
+              {isFiltered ? t("emptyFiltered") : t("empty")}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-8">
+              {groupedEvents.map(([date, items]) => (
+                <div key={date} className="space-y-3">
+                  <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                    {date}
+                  </h3>
+
+                  <div className="ml-1 space-y-2 border-l-2 border-border/60 pl-3 md:pl-4">
+                    {items.map((evt) => {
+                      let payloadData: Record<string, string> = {}
+                      try {
+                        if (evt.payload_json) {
+                          payloadData = JSON.parse(evt.payload_json)
+                        }
+                      } catch {
+                        // ignore
                       }
-                    } catch {
-                      // ignore
-                    }
 
-                    return (
-                      <div
-                        key={evt.id}
-                        onClick={() => openDetail(evt.bookmark_id)}
-                        className="group flex flex-col gap-1.5 rounded-lg border border-border/60 bg-card p-3.5 text-card-foreground shadow-2xs hover:border-border transition-all cursor-pointer"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            {renderEventIcon(evt.event_type)}
-                            <span className="font-semibold text-xs md:text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                              {evt.bookmark_external_id || evt.bookmark_title}
+                      return (
+                        <div
+                          key={evt.id}
+                          onClick={() => openDetail(evt.bookmark_id)}
+                          className="group flex cursor-pointer flex-col gap-1.5 rounded-lg border border-border/60 bg-card p-3.5 text-card-foreground shadow-2xs transition-all hover:border-border"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex min-w-0 items-center gap-2">
+                              {renderEventIcon(evt.event_type)}
+                              <span className="truncate text-xs font-semibold text-foreground transition-colors group-hover:text-primary md:text-sm">
+                                {evt.bookmark_external_id || evt.bookmark_title}
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className="h-4.5 px-1.5 text-[10px] font-normal"
+                              >
+                                {t(`eventType.${evt.event_type}`)}
+                              </Badge>
+                            </div>
+
+                            <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                              {new Date(evt.detected_at).toLocaleTimeString(
+                                i18n.language,
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
                             </span>
-                            <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 font-normal">
-                              {t(`eventType.${evt.event_type}`)}
-                            </Badge>
                           </div>
 
-                          <span className="font-mono text-[10px] text-muted-foreground shrink-0">
-                            {new Date(evt.detected_at).toLocaleTimeString(i18n.language, {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
+                          {(payloadData.tag ||
+                            payloadData.title ||
+                            payloadData.commit) && (
+                            <p className="pl-6 text-xs text-muted-foreground">
+                              {payloadData.tag && (
+                                <span className="mr-1.5 font-mono font-medium text-foreground">
+                                  {payloadData.tag}
+                                </span>
+                              )}
+                              {payloadData.title || payloadData.commit}
+                            </p>
+                          )}
                         </div>
-
-                        {(payloadData.tag || payloadData.title || payloadData.commit) && (
-                          <p className="text-xs text-muted-foreground pl-6">
-                            {payloadData.tag && <span className="font-mono font-medium text-foreground mr-1.5">{payloadData.tag}</span>}
-                            {payloadData.title || payloadData.commit}
-                          </p>
-                        )}
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {hasMore && (
-            <div className="flex justify-center pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={loadMore}
-                disabled={isFetching}
-                className="text-xs"
-              >
-                {t("loadMore")}
-              </Button>
+              ))}
             </div>
-          )}
-        </>
-      )}
+
+            {hasMore && (
+              <div className="flex justify-center pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={loadMore}
+                  disabled={isFetching}
+                  className="text-xs"
+                >
+                  {t("loadMore")}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
