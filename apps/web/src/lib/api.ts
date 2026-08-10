@@ -1218,6 +1218,26 @@ export const api = {
     }
   },
 
+  async deleteEmptyTags(): Promise<{ deleted: number }> {
+    try {
+      const res = await request<{ ok: boolean; deleted: number }>(
+        "/api/tags/empty",
+        { method: "DELETE" },
+      )
+      return { deleted: res.deleted }
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        const before = store.tags.length
+        store.tags = store.tags.filter((t) => (t.count ?? 0) > 0)
+        const deleted = before - store.tags.length
+        if (deleted > 0) saveMockStore()
+        return { deleted }
+      }
+      throw err
+    }
+  },
+
   async getOwners(opts?: {
     q?: string
     sourceType?: "github" | "twitter" | "url"

@@ -4,6 +4,7 @@ import { useReadableSearchParams } from "@/lib/search-params"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import {
+  BroomIcon,
   CaretLeftIcon,
   CaretRightIcon,
   DotsThreeVerticalIcon,
@@ -29,7 +30,14 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select"
 import { Skeleton } from "@workspace/ui/components/skeleton"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip"
 import { cn } from "@workspace/ui/lib/utils"
+import { TagClearEmptyDialog } from "@/features/tags/tag-clear-empty-dialog"
 import { TagDeleteDialog } from "@/features/tags/tag-delete-dialog"
 import { TagRenameDialog } from "@/features/tags/tag-rename-dialog"
 import { useAuth, useRedirectGuestOnUnauthorized } from "@/hooks/use-auth"
@@ -253,6 +261,7 @@ export function TagsPage() {
   const [sort, setSort] = React.useState<TagSort>("count")
   const [renameTag, setRenameTag] = React.useState<Tag | null>(null)
   const [deleteTag, setDeleteTag] = React.useState<Tag | null>(null)
+  const [clearEmptyOpen, setClearEmptyOpen] = React.useState(false)
 
   const requestedPage = parsePageParam(searchParams.get(PAGE_PARAM))
 
@@ -262,6 +271,8 @@ export function TagsPage() {
   })
 
   useRedirectGuestOnUnauthorized(isError ? (error as Error) : null)
+
+  const emptyCount = tags.filter((tag) => (tag.count ?? 0) === 0).length
 
   const filtered = React.useMemo(() => {
     const q = filter.trim().toLowerCase()
@@ -351,6 +362,28 @@ export function TagsPage() {
               ))}
             </SelectContent>
           </Select>
+          {canManage && emptyCount > 0 ? (
+            <TooltipProvider delay={200}>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9 shrink-0 gap-1.5 border-muted bg-muted/40 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                      aria-label={t("clearEmpty.label")}
+                      onClick={() => setClearEmptyOpen(true)}
+                    >
+                      <BroomIcon className="size-3.5" />
+                      <span className="font-mono tabular-nums">{emptyCount}</span>
+                    </Button>
+                  }
+                />
+                <TooltipContent side="top">{t("clearEmpty.label")}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : null}
         </div>
       ) : null}
 
@@ -420,6 +453,11 @@ export function TagsPage() {
           if (!open) setDeleteTag(null)
         }}
         tag={deleteTag}
+      />
+      <TagClearEmptyDialog
+        open={clearEmptyOpen}
+        onOpenChange={setClearEmptyOpen}
+        emptyCount={emptyCount}
       />
     </div>
   )

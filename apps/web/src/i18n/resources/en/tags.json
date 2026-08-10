@@ -31,6 +31,14 @@
     "successToast": "Tag deleted",
     "errorToast": "Could not delete tag"
   },
+  "clearEmpty": {
+    "label": "Clear empty tags",
+    "dialogTitle": "Clear empty tags",
+    "confirm": "Delete all {{count}} empty tags? This cannot be undone.",
+    "confirmDelete": "Clear",
+    "successToast": "Cleared {{count}} empty tags",
+    "errorToast": "Could not clear empty tags"
+  },
   "pagination": {
     "navAria": "Tag pagination",
     "prev": "Previous",

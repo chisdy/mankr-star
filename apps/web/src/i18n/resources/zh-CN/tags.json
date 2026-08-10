@@ -31,6 +31,14 @@
     "successToast": "已删除标签",
     "errorToast": "删除失败"
   },
+  "clearEmpty": {
+    "label": "清除空标签",
+    "dialogTitle": "清除空标签",
+    "confirm": "确定要删除全部 {{count}} 个空标签吗？此操作不可撤销。",
+    "confirmDelete": "确认清除",
+    "successToast": "已清除 {{count}} 个空标签",
+    "errorToast": "清除失败"
+  },
   "pagination": {
     "navAria": "标签分页导航",
     "prev": "上一页",

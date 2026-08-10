@@ -792,6 +792,68 @@ describe("DELETE /api/tags/:id", () => {
   })
 })
 
+describe("DELETE /api/tags/empty", () => {
+  it("只删除空标签，保留仍有收藏关联的标签", async () => {
+    const created = await createBookmark("facebook/react")
+    await client.patch(`/api/bookmarks/${created.body.id}`, {
+      tagNames: ["空的", "保留"],
+    })
+    await client.patch(`/api/bookmarks/${created.body.id}`, {
+      tagNames: ["保留"],
+    })
+
+    const before = await client.json<{
+      items: Array<{ name: string; usage_count: number }>
+    }>("/api/tags")
+    expect(before.body.items.find((t) => t.name === "空的")?.usage_count).toBe(0)
+    expect(before.body.items.find((t) => t.name === "保留")?.usage_count).toBe(1)
+    const emptyBefore = before.body.items.filter((t) => t.usage_count === 0)
+    expect(emptyBefore.length).toBeGreaterThanOrEqual(1)
+
+    const { status, body } = await client.delete<{ ok: boolean; deleted: number }>(
+      "/api/tags/empty",
+    )
+    expect(status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(body.deleted).toBe(emptyBefore.length)
+
+    const after = await client.json<{
+      items: Array<{ name: string; usage_count: number }>
+    }>("/api/tags")
+    expect(after.body.items.find((t) => t.name === "空的")).toBeUndefined()
+    expect(after.body.items.find((t) => t.name === "保留")?.usage_count).toBe(1)
+    expect(after.body.items.every((t) => t.usage_count > 0)).toBe(true)
+  })
+
+  it("无空标签时 deleted 为 0", async () => {
+    const created = await createBookmark("facebook/react")
+    await client.patch(`/api/bookmarks/${created.body.id}`, {
+      tagNames: ["在用"],
+    })
+    // 清掉 AI waitUntil 可能留下的孤儿空标签，再断言幂等
+    await client.delete("/api/tags/empty")
+
+    const { status, body } = await client.delete<{ ok: boolean; deleted: number }>(
+      "/api/tags/empty",
+    )
+    expect(status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(body.deleted).toBe(0)
+
+    const after = await client.json<{
+      items: Array<{ name: string; usage_count: number }>
+    }>("/api/tags")
+    expect(after.body.items.find((t) => t.name === "在用")?.usage_count).toBe(1)
+  })
+
+  it("未登录返回 401", async () => {
+    const guest = new TestClient()
+    const { status, body } = await guest.delete<{ code: string }>("/api/tags/empty")
+    expect(status).toBe(401)
+    expect(body.code).toBe("UNAUTHORIZED")
+  })
+})
+
 describe("GET /api/bookmarks/owners", () => {
   it("返回去重开发者列表，支持 q 过滤", async () => {
     await createBookmark("facebook/react")

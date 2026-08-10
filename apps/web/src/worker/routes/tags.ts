@@ -1,6 +1,6 @@
 import { bookmarkTags, tags, type Db } from "@mankr/db"
 import { updateTagSchema } from "@mankr/shared"
-import { and, asc, count, desc, eq, ne, or } from "drizzle-orm"
+import { and, asc, count, desc, eq, inArray, ne, or } from "drizzle-orm"
 import { Hono } from "hono"
 import type { AppEnv } from "../env"
 import { slugify } from "../lib/utils"
@@ -119,6 +119,32 @@ tagRoutes.patch("/tags/:id", async (c) => {
     usage_count,
     created_at: existing.createdAt,
   })
+})
+
+// Must register before DELETE /tags/:id so "empty" is not treated as an id.
+tagRoutes.delete("/tags/empty", async (c) => {
+  const db = c.get("db")
+
+  const usageCount = count(bookmarkTags.bookmarkId).as("usage_count")
+  const rows = await db
+    .select({
+      id: tags.id,
+      usage_count: usageCount,
+    })
+    .from(tags)
+    .leftJoin(bookmarkTags, eq(tags.id, bookmarkTags.tagId))
+    .groupBy(tags.id)
+
+  const emptyIds = rows
+    .filter((r) => Number(r.usage_count) === 0)
+    .map((r) => r.id)
+
+  if (emptyIds.length === 0) {
+    return c.json({ ok: true, deleted: 0 })
+  }
+
+  await db.delete(tags).where(inArray(tags.id, emptyIds))
+  return c.json({ ok: true, deleted: emptyIds.length })
 })
 
 tagRoutes.delete("/tags/:id", async (c) => {
