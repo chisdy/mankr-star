@@ -7,6 +7,8 @@ import {
 import {
   AI_STATUSES,
   AI_SUMMARY_MAX_CHARS,
+  BOOKMARK_PRICING_FILTER_VALUES,
+  BOOKMARK_PRICING_VALUES,
   BOOKMARK_SORT_OPTIONS,
   DEEPSEEK_MODELS,
   DEFAULT_DEEPSEEK_MODEL,
@@ -83,6 +85,10 @@ export const updateBookmarkSchema = z.object({
    * 列表/详情永不回传明文或密文。
    */
   accountPassword: z.string().max(512).optional().nullable(),
+  /** 付费属性；null 表示清除为未设置 */
+  pricing: z.enum(BOOKMARK_PRICING_VALUES).optional().nullable(),
+  /** 精选标记 */
+  featured: z.boolean().optional(),
 })
 export type UpdateBookmarkInput = z.infer<typeof updateBookmarkSchema>
 
@@ -111,6 +117,16 @@ export const listBookmarksQuerySchema = z.object({
     .transform((v) => v === "true" || v === "1"),
   /** 仅网页来源：是否有账号。公开浏览时服务端忽略该参数 */
   hasAccount: z
+    .enum(["true", "false", "1", "0"])
+    .optional()
+    .transform((v) => {
+      if (v === undefined) return undefined
+      return v === "true" || v === "1"
+    }),
+  /** 付费属性筛选；unset 匹配未设置（DB NULL） */
+  pricing: z.enum(BOOKMARK_PRICING_FILTER_VALUES).optional(),
+  /** 精选筛选；仅传参时过滤 */
+  featured: z
     .enum(["true", "false", "1", "0"])
     .optional()
     .transform((v) => {

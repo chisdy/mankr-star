@@ -34,6 +34,10 @@
     "siteLabel": "Site",
     "hasAccountLabel": "Account",
     "hasAccountHint": "Has account",
+    "pricingLabel": "Pricing",
+    "pricingAll": "All",
+    "pricingUnset": "Unset",
+    "featuredHint": "Featured only",
     "healthLabel": "Health",
     "sortLabel": "Sort",
     "tagAll": "All",
@@ -88,6 +92,11 @@
     "currentPageAria": "Page {{page}} (current)",
     "pageStatus": "Page {{page}} of {{pageCount}}"
   },
+  "pricing": {
+    "free": "Free",
+    "freemium": "Freemium",
+    "paid": "Paid"
+  },
   "card": {
     "archived": "Archived",
     "aiPending": "AI generating…",
@@ -95,8 +104,7 @@
     "copyAccountAria": "Copy username and password",
     "copyAccountTitle": "Copy username and password",
     "copyAccountEmpty": "No username or password saved yet",
-    "accountBadgeTitle": "Has account",
-    "accountBadgeTitleWithPassword": "Has account & password"
+    "featured": "Featured"
   },
   "open": {
     "aria": "Open link, clicked {{count}} times",
@@ -133,6 +141,9 @@
     "tagsReadonly": "Tags",
     "notesLabel": "Private notes",
     "notesPlaceholder": "Personal notes about this project…",
+    "pricingLabel": "Pricing",
+    "pricingUnset": "Unset",
+    "featuredLabel": "Featured",
     "accountSection": "Site account",
     "accountHint": "Passwords are encrypted with a server vault key and visible only when signed in. Plaintext is never shown—only copy. If the key is lost, passwords cannot be recovered.",
     "accountRegistered": "Registered",

@@ -2,9 +2,10 @@ import { useTranslation } from "react-i18next"
 import { StarIcon, GitForkIcon, ClockIcon, HeartIcon } from "@phosphor-icons/react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Skeleton } from "@workspace/ui/components/skeleton"
+import { cn } from "@workspace/ui/lib/utils"
 import type { Bookmark } from "@/lib/types"
-import { AccountStatusBadge } from "./account-status-badge"
 import { HealthStatusBadge } from "./health-status-badge"
+import { PricingFeaturedBadges } from "./pricing-featured-badges"
 import { BookmarkAccountCopyButton } from "./bookmark-account-copy-button"
 import { BookmarkOpenButton } from "./bookmark-open-button"
 
@@ -46,38 +47,41 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
   return (
     <div
       onClick={onClick}
-      className={
-        isGithub && bookmark.health_status === "unavailable"
-          ? "group relative flex flex-col justify-between rounded-xl border border-border/60 bg-card p-4 text-card-foreground shadow-2xs transition-all hover:border-border hover:bg-accent/30 hover:shadow-xs cursor-pointer opacity-75"
-          : "group relative flex flex-col justify-between rounded-xl border border-border/60 bg-card p-4 text-card-foreground shadow-2xs transition-all hover:border-border hover:bg-accent/30 hover:shadow-xs cursor-pointer"
-      }
+      className={cn(
+        "group relative flex cursor-pointer flex-col justify-between rounded-xl border border-border/60 bg-card p-4 text-card-foreground shadow-2xs",
+        // Compositor-friendly props only — parent virtualizer already owns its own transform
+        "transition-[translate,box-shadow,border-color,background-color] duration-200 ease-out",
+        "hover:-translate-y-1 hover:border-border hover:bg-accent/30 hover:shadow-md",
+        "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+        isGithub && bookmark.health_status === "unavailable" && "opacity-75",
+      )}
     >
-      <div className="space-y-3 min-w-0">
+      <div className="min-w-0 space-y-3">
         {isTwitter && bookmark.image_url ? (
           <div className="-mx-4 -mt-4 overflow-hidden rounded-t-xl">
             <img
               src={bookmark.image_url}
               alt=""
-              className="aspect-[16/9] w-full object-cover"
+              className="aspect-[16/9] w-full object-cover transition-[scale] duration-300 ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
               loading="lazy"
               referrerPolicy="no-referrer"
             />
           </div>
         ) : null}
-        <div className="space-y-1.5 min-w-0">
-          <div className="flex items-start justify-between gap-2 min-w-0">
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex min-w-0 items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               {bookmark.favicon_url ? (
                 <img
                   src={bookmark.favicon_url}
                   alt=""
-                  className="size-4 shrink-0 rounded-sm"
+                  className="size-4 shrink-0 rounded-sm transition-[scale] duration-200 ease-out group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                   loading="lazy"
                   referrerPolicy="no-referrer"
                 />
               ) : null}
               <h3
-                className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors flex-1"
+                className="flex-1 truncate text-sm font-semibold text-foreground transition-colors duration-200 group-hover:text-primary"
                 title={displayTitle}
               >
                 {displayTitle}
@@ -90,9 +94,8 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
             )}
             {isGithub ? (
               <HealthStatusBadge status={bookmark.health_status} />
-            ) : (
-              <AccountStatusBadge bookmark={bookmark} />
-            )}
+            ) : null}
+            <PricingFeaturedBadges bookmark={bookmark} />
           </div>
 
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -183,9 +186,12 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
             )}
           </div>
 
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 opacity-80 transition-opacity duration-200 group-hover:opacity-100">
             <BookmarkAccountCopyButton bookmark={bookmark} />
-            <BookmarkOpenButton bookmark={bookmark} className="-mr-1" />
+            <BookmarkOpenButton
+              bookmark={bookmark}
+              className="-mr-1 transition-[translate] duration-200 ease-out group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+            />
           </div>
         </div>
       </div>

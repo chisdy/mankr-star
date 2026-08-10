@@ -3,9 +3,13 @@
  * Aligned with TECHNICAL_DESIGN §7 and PRD.md
  */
 
-import type { BookmarkPaginationMode } from "@mankr/shared"
+import type {
+  BookmarkPaginationMode,
+  BookmarkPricing,
+  BookmarkPricingFilter,
+} from "@mankr/shared"
 
-export type { BookmarkPaginationMode }
+export type { BookmarkPaginationMode, BookmarkPricing, BookmarkPricingFilter }
 
 export interface User {
   id: string
@@ -108,6 +112,10 @@ export interface Bookmark {
   folder?: Folder | null
   tags?: string[]
   notes?: string | null
+  /** 付费属性：null/未设置 | free | freemium | paid */
+  pricing?: BookmarkPricing | null
+  /** 精选标记 */
+  featured?: boolean
   /** 是否已在该站点注册（仅登录态、url 来源） */
   account_registered?: boolean
   /** 站点账号明文（仅登录态；可本地复制） */
@@ -201,6 +209,10 @@ export interface BookmarksQueryParams {
   health_status?: HealthStatus
   /** 仅网页模式：是否有账号 */
   has_account?: boolean
+  /** 付费属性筛选；unset 表示未设置 */
+  pricing?: BookmarkPricingFilter
+  /** 精选筛选 */
+  featured?: boolean
   /** AI 归类状态筛选 */
   ai_status?: AiStatus
   sort?: "recent" | "updated" | "stars" | "name"

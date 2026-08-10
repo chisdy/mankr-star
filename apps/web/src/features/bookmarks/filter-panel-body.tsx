@@ -3,6 +3,7 @@ import { useReadableSearchParams } from "@/lib/search-params"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react"
+import type { BookmarkPricingFilter } from "@mankr/shared"
 
 import { Button } from "@workspace/ui/components/button"
 import { Label } from "@workspace/ui/components/label"
@@ -19,6 +20,7 @@ import { api } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 import { BOOKMARK_PAGE_PARAM } from "./bookmark-pagination"
 import { FacetSelect } from "./owner-select"
+import { parsePricingFilterParam } from "./pricing-filter"
 
 const PANEL_FILTER_KEYS = [
   "source_type",
@@ -28,6 +30,8 @@ const PANEL_FILTER_KEYS = [
   "site",
   "health_status",
   "has_account",
+  "pricing",
+  "featured",
   "sort",
   "archived",
 ] as const
@@ -40,6 +44,7 @@ const ACTIVE_FILTER_CLASS =
 const CONTROL_WIDTH = "w-[11rem]"
 
 type SourceFilter = "" | "github" | "twitter" | "url"
+type PricingFilter = "" | BookmarkPricingFilter
 
 function SelectPrefix({ children }: { children: React.ReactNode }) {
   return <span className="shrink-0 text-muted-foreground/55">{children}</span>
@@ -61,6 +66,8 @@ export function countPanelFilters(searchParams: URLSearchParams): number {
     const value = searchParams.get(key)
     if (!value) continue
     if (key === "sort" && value === "recent") continue
+    if (key === "pricing" && !parsePricingFilterParam(value)) continue
+    if (key === "featured" && value !== "true") continue
     n += 1
   }
   return n
@@ -78,6 +85,9 @@ export function FilterPanelBody({ className }: { className?: string }) {
   const healthStatus = searchParams.get("health_status") || ""
   const hasAccountParam = searchParams.get("has_account")
   const hasAccount = hasAccountParam === "true"
+  const pricing = (parsePricingFilterParam(searchParams.get("pricing")) ??
+    "") as PricingFilter
+  const featured = searchParams.get("featured") === "true"
   const sortParam = searchParams.get("sort")
   const sort: "recent" | "updated" | "stars" | "name" =
     sortParam === "stars" || sortParam === "name" || sortParam === "updated"
@@ -176,6 +186,14 @@ export function FilterPanelBody({ className }: { className?: string }) {
     { value: "github", label: t("list.sourceGithub") },
     { value: "twitter", label: t("list.sourceX") },
     { value: "url", label: t("list.sourceWeb") },
+  ]
+
+  const pricingOptions: { value: PricingFilter; label: string }[] = [
+    { value: "", label: t("list.pricingAll") },
+    { value: "unset", label: t("list.pricingUnset") },
+    { value: "free", label: t("pricing.free") },
+    { value: "freemium", label: t("pricing.freemium") },
+    { value: "paid", label: t("pricing.paid") },
   ]
 
   const patchParams = React.useCallback(
@@ -372,6 +390,64 @@ export function FilterPanelBody({ className }: { className?: string }) {
           </div>
         </Field>
       ) : null}
+
+      <Field className={CONTROL_WIDTH}>
+        <Select
+          items={pricingOptions.map((opt) => ({
+            value: opt.value || null,
+            label: opt.label,
+          }))}
+          value={pricing || null}
+          onValueChange={(val) =>
+            updateParam("pricing", (val as PricingFilter) || null)
+          }
+        >
+          <SelectTrigger
+            size="sm"
+            className={cn(
+              "h-8 w-full text-xs",
+              pricing && ACTIVE_FILTER_CLASS
+            )}
+          >
+            <SelectPrefix>{t("list.pricingLabel")}</SelectPrefix>
+            <SelectValue placeholder={t("list.pricingAll")} />
+          </SelectTrigger>
+          <SelectContent>
+            {pricingOptions.map((opt) => (
+              <SelectItem key={opt.value || "all"} value={opt.value || null}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
+
+      <Field className="w-auto">
+        <div
+          className={cn(
+            "flex h-8 min-w-0 items-center gap-2 rounded-md border border-input bg-transparent px-2.5 shadow-xs transition-[color,box-shadow]",
+            featured && ACTIVE_FILTER_CLASS
+          )}
+        >
+          <Label
+            id="filter-featured-label"
+            htmlFor="filter-featured"
+            className="cursor-pointer text-xs font-normal whitespace-nowrap text-muted-foreground"
+          >
+            {t("list.featuredHint")}
+          </Label>
+          <Switch
+            id="filter-featured"
+            size="sm"
+            className="shrink-0"
+            checked={featured}
+            onCheckedChange={(checked) =>
+              updateParam("featured", checked ? "true" : null)
+            }
+            aria-labelledby="filter-featured-label"
+          />
+        </div>
+      </Field>
 
       {showGithubFilters ? (
         <>

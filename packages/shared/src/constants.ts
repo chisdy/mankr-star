@@ -290,6 +290,18 @@ export const HEALTH_STATUSES = [
 ] as const
 export type HealthStatus = (typeof HEALTH_STATUSES)[number]
 
+/** 收藏付费属性（存储值；null/未设置为未选择） */
+export const BOOKMARK_PRICING_VALUES = ["free", "freemium", "paid"] as const
+export type BookmarkPricing = (typeof BOOKMARK_PRICING_VALUES)[number]
+
+/** 列表筛选：含 unset（匹配 DB NULL） */
+export const BOOKMARK_PRICING_FILTER_VALUES = [
+  ...BOOKMARK_PRICING_VALUES,
+  "unset",
+] as const
+export type BookmarkPricingFilter =
+  (typeof BOOKMARK_PRICING_FILTER_VALUES)[number]
+
 export const HEALTH_STATUS_LABELS: Record<HealthStatus, string> = {
   unavailable: "已失效",
   empty: "空仓库",

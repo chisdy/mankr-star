@@ -34,6 +34,10 @@
     "siteLabel": "站点",
     "hasAccountLabel": "账号",
     "hasAccountHint": "是否有账号",
+    "pricingLabel": "付费属性",
+    "pricingAll": "全部",
+    "pricingUnset": "未设置",
+    "featuredHint": "只看精选",
     "healthLabel": "近况",
     "sortLabel": "排序",
     "tagAll": "全部",
@@ -88,6 +92,11 @@
     "currentPageAria": "第 {{page}} 页（当前页）",
     "pageStatus": "第 {{page}} / {{pageCount}} 页"
   },
+  "pricing": {
+    "free": "免费",
+    "freemium": "免费增值",
+    "paid": "付费"
+  },
   "card": {
     "archived": "已归档",
     "aiPending": "AI 生成中…",
@@ -95,8 +104,7 @@
     "copyAccountAria": "复制账号和密码",
     "copyAccountTitle": "复制账号和密码",
     "copyAccountEmpty": "尚未填写账号或密码",
-    "accountBadgeTitle": "已有账号",
-    "accountBadgeTitleWithPassword": "已有账号与密码"
+    "featured": "精选"
   },
   "open": {
     "aria": "打开链接，已点击 {{count}} 次",
@@ -133,6 +141,9 @@
     "tagsReadonly": "标签",
     "notesLabel": "私有笔记",
     "notesPlaceholder": "撰写关于该项目的个人用途、思考或使用经验...",
+    "pricingLabel": "付费属性",
+    "pricingUnset": "未设置",
+    "featuredLabel": "精选",
     "accountSection": "站点账号",
     "accountHint": "密码经服务端密钥加密存储，仅登录可见；界面不展示明文，只能复制。丢失加密密钥则密码不可恢复。",
     "accountRegistered": "已注册账号",

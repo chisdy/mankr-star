@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { api } from "@/lib/api"
 import { formatApiError } from "@/lib/api-error"
 import { queryKeys } from "@/lib/query-keys"
-import type { Bookmark } from "@/lib/types"
+import type { Bookmark, BookmarkPricing } from "@/lib/types"
 
 export interface BookmarkFormValues {
   title: string
@@ -16,6 +16,8 @@ export interface BookmarkFormValues {
   tagsInput: string
   notes: string
   trackUpdates: boolean
+  pricing: BookmarkPricing | null
+  featured: boolean
   accountRegistered: boolean
   accountUsername: string
   accountPassword: string
@@ -31,6 +33,8 @@ const EMPTY_VALUES: BookmarkFormValues = {
   tagsInput: "",
   notes: "",
   trackUpdates: true,
+  pricing: null,
+  featured: false,
   accountRegistered: false,
   accountUsername: "",
   accountPassword: "",
@@ -46,6 +50,8 @@ function fromBookmark(bookmark: Bookmark): BookmarkFormValues {
     tagsInput: bookmark.tags ? bookmark.tags.join(", ") : "",
     notes: bookmark.notes || "",
     trackUpdates: bookmark.track_updates ?? true,
+    pricing: bookmark.pricing ?? null,
+    featured: Boolean(bookmark.featured),
     accountRegistered: Boolean(bookmark.account_registered),
     accountUsername: bookmark.account_username || "",
     accountPassword: "",
@@ -123,6 +129,8 @@ export function useBookmarkDetailForm({
         tags: parseTags(values.tagsInput),
         notes: values.notes.trim() || null,
         track_updates: values.trackUpdates,
+        pricing: values.pricing,
+        featured: values.featured,
       }
 
       if (bookmark?.source_type === "url") {

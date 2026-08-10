@@ -121,6 +121,12 @@ export const bookmarks = sqliteTable(
       onDelete: "set null",
     }),
     notes: text("notes"),
+    /** 付费属性：null=未设置，free/freemium/paid */
+    pricing: text("pricing"),
+    /** 精选标记；默认 false，须手动开启 */
+    featured: integer("featured", { mode: "boolean" })
+      .notNull()
+      .default(false),
     /** 是否已在该站点注册账号（仅 url 来源有意义；筛选用，默认 false） */
     accountRegistered: integer("account_registered", { mode: "boolean" })
       .notNull()
@@ -172,6 +178,8 @@ export const bookmarks = sqliteTable(
     index("bookmarks_owner_idx").on(t.owner),
     index("bookmarks_health_status_idx").on(t.healthStatus),
     index("bookmarks_source_type_idx").on(t.sourceType),
+    index("bookmarks_pricing_idx").on(t.pricing),
+    index("bookmarks_featured_idx").on(t.featured),
   ],
 )
 

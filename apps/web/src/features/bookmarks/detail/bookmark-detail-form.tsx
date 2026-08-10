@@ -4,6 +4,13 @@ import { ArrowClockwiseIcon } from "@phosphor-icons/react"
 import { Input } from "@workspace/ui/components/input"
 import { Label } from "@workspace/ui/components/label"
 import { Separator } from "@workspace/ui/components/separator"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select"
 import { Switch } from "@workspace/ui/components/switch"
 import { Textarea } from "@workspace/ui/components/textarea"
 import { Button } from "@workspace/ui/components/button"
@@ -12,6 +19,15 @@ import { CopyIconButton } from "./copy-icon-button"
 import { useBookmarkAccountCopy } from "./use-bookmark-account-copy"
 import type { BookmarkFormValues } from "./use-bookmark-detail-form"
 import type { Bookmark, Folder } from "@/lib/types"
+
+type PricingFormValue = BookmarkFormValues["pricing"]
+
+const PRICING_FORM_OPTIONS: PricingFormValue[] = [
+  null,
+  "free",
+  "freemium",
+  "paid",
+]
 
 export function BookmarkDetailForm({
   bookmark,
@@ -113,6 +129,49 @@ export function BookmarkDetailForm({
           onChange={(e) => patch({ notes: e.target.value })}
           placeholder={t("detail.notesPlaceholder")}
           className="min-h-[100px] resize-none text-xs leading-relaxed"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">
+          {t("detail.pricingLabel")}
+        </Label>
+        <Select
+          items={PRICING_FORM_OPTIONS.map((value) => ({
+            value,
+            label:
+              value === null
+                ? t("detail.pricingUnset")
+                : t(`pricing.${value}`),
+          }))}
+          value={values.pricing}
+          onValueChange={(val) =>
+            patch({ pricing: (val as PricingFormValue) ?? null })
+          }
+        >
+          <SelectTrigger className="h-9 w-full text-xs">
+            <SelectValue placeholder={t("detail.pricingUnset")} />
+          </SelectTrigger>
+          <SelectContent>
+            {PRICING_FORM_OPTIONS.map((value) => (
+              <SelectItem key={value ?? "unset"} value={value}>
+                {value === null
+                  ? t("detail.pricingUnset")
+                  : t(`pricing.${value}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center justify-between py-1">
+        <Label htmlFor="bookmark-featured" className="text-xs font-medium">
+          {t("detail.featuredLabel")}
+        </Label>
+        <Switch
+          id="bookmark-featured"
+          checked={values.featured}
+          onCheckedChange={(v) => patch({ featured: v })}
         />
       </div>
 

@@ -31,6 +31,7 @@ import { AddBookmarkDialog } from "./add-bookmark-dialog"
 import {
   countPanelFilters,
 } from "./filter-panel-body"
+import { parsePricingFilterParam } from "./pricing-filter"
 import {
   BOOKMARK_PAGE_PARAM,
   clampPage,
@@ -103,6 +104,8 @@ export function BookmarksPage() {
       : hasAccountParam === "false"
         ? false
         : undefined
+  const pricing = parsePricingFilterParam(searchParams.get("pricing"))
+  const featured = searchParams.get("featured") === "true" ? true : undefined
 
   const isGithubSource = sourceType === "github"
   const isUrlSource = sourceType === "url"
@@ -141,6 +144,8 @@ export function BookmarksPage() {
       source_type: sourceType || undefined,
       health_status: effectiveHealth,
       has_account: effectiveHasAccount,
+      pricing,
+      featured,
       ai_status: aiStatus,
       sort,
       q: q || undefined,
@@ -155,6 +160,8 @@ export function BookmarksPage() {
       sourceType,
       effectiveHealth,
       effectiveHasAccount,
+      pricing,
+      featured,
       aiStatus,
       sort,
       q,

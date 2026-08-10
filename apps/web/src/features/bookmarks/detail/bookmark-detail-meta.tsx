@@ -8,6 +8,7 @@ import {
 
 import { Badge } from "@workspace/ui/components/badge"
 import { HealthStatusBadge } from "../health-status-badge"
+import { PricingFeaturedBadges } from "../pricing-featured-badges"
 import type { Bookmark } from "@/lib/types"
 
 /** 详情顶部的一行元信息：站点、语言、热度、近况、推送时间 */
@@ -38,6 +39,7 @@ export function BookmarkDetailMeta({ bookmark }: { bookmark: Bookmark }) {
           {bookmark.language}
         </span>
       ) : null}
+      <PricingFeaturedBadges bookmark={bookmark} />
       {(isGithub || isTwitter) && bookmark.stars !== undefined ? (
         <span className="flex items-center gap-1 font-mono text-[11px]">
           {isTwitter ? (

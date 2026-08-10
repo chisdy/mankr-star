@@ -11,6 +11,7 @@ import type {
   Bookmark,
   BookmarkPaginationSettings,
   BookmarkOwner,
+  BookmarkPricing,
   BookmarkSite,
   BookmarksQueryParams,
   BookmarksResponse,
@@ -224,6 +225,9 @@ function toBookmarksQuery(params?: BookmarksQueryParams): string {
   if (params.ai_status) search.set("aiStatus", params.ai_status)
   if (params.has_account === true) search.set("hasAccount", "true")
   if (params.has_account === false) search.set("hasAccount", "false")
+  if (params.pricing) search.set("pricing", params.pricing)
+  if (params.featured === true) search.set("featured", "true")
+  if (params.featured === false) search.set("featured", "false")
   if (params.q) search.set("q", params.q)
   if (params.page) search.set("page", String(params.page))
   if (params.limit) search.set("pageSize", String(params.limit))
@@ -598,6 +602,16 @@ export const api = {
               Boolean(b.account_registered) === params.has_account
           )
         }
+        if (params?.pricing === "unset") {
+          items = items.filter((b) => b.pricing == null)
+        } else if (params?.pricing) {
+          items = items.filter((b) => b.pricing === params.pricing)
+        }
+        if (params?.featured !== undefined) {
+          items = items.filter(
+            (b) => Boolean(b.featured) === params.featured
+          )
+        }
         if (params?.ai_status) {
           items = items.filter((b) => b.ai_status === params.ai_status)
         }
@@ -695,6 +709,8 @@ export const api = {
           folder_name: folder ? folder.path_label ?? folder.name : null,
           tags: [],
           notes: data.notes || "",
+          pricing: null,
+          featured: false,
           ai_status: "pending",
           track_updates: data.track_updates ?? true,
           click_count: 0,
@@ -763,6 +779,8 @@ export const api = {
       account_username: string | null
       /** 明文仅写入时传输；空字符串清除。永不进入 mock/localStorage */
       account_password: string | null
+      pricing: BookmarkPricing | null
+      featured: boolean
     }>
   ): Promise<Bookmark> {
     const body: Record<string, unknown> = {}
@@ -783,6 +801,8 @@ export const api = {
     if (data.account_password !== undefined) {
       body.accountPassword = data.account_password
     }
+    if (data.pricing !== undefined) body.pricing = data.pricing
+    if (data.featured !== undefined) body.featured = data.featured
 
     try {
       const raw = await request<ApiBookmark>(`/api/bookmarks/${id}`, {
@@ -825,6 +845,8 @@ export const api = {
           }),
           ...(data.title !== undefined && { title: data.title }),
           ...(data.description !== undefined && { description: data.description }),
+          ...(data.pricing !== undefined && { pricing: data.pricing }),
+          ...(data.featured !== undefined && { featured: data.featured }),
           account_registered: accountRegistered,
           account_username: accountUsername,
           account_password_set: false,

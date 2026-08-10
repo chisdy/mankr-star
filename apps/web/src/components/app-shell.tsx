@@ -229,6 +229,7 @@ function AppShellContent() {
                   className="min-w-0 pb-[11px]"
                   viewportRef={filterScrollViewportRef}
                   scrollbars="horizontal"
+                  scrollbarClassName="hidden"
                   overflowEdgeThreshold={1}
                 >
                   <FilterPanelBody className="w-max min-w-full" />

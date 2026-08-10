@@ -85,6 +85,8 @@ describe("公开浏览", () => {
       items: Array<{
         id: string
         notes: string | null
+        pricing?: string | null
+        featured?: boolean
         account_username?: string | null
         account_registered?: boolean
         account_password_set?: boolean
@@ -93,18 +95,24 @@ describe("公开浏览", () => {
     expect(list.status).toBe(200)
     expect(list.body.items.length).toBeGreaterThan(0)
     expect(list.body.items[0]!.notes).toBeNull()
+    expect(list.body.items[0]!.pricing).toBeNull()
+    expect(list.body.items[0]!.featured).toBe(false)
     expect(list.body.items[0]!.account_username).toBeUndefined()
     expect(list.body.items[0]!.account_registered).toBeUndefined()
     expect(list.body.items[0]!.account_password_set).toBeUndefined()
 
     const detail = await guest.json<{
       notes: string | null
+      pricing?: string | null
+      featured?: boolean
       account_username?: string | null
       account_registered?: boolean
       account_password_set?: boolean
     }>(`/api/bookmarks/${bookmarkId}`)
     expect(detail.status).toBe(200)
     expect(detail.body.notes).toBeNull()
+    expect(detail.body.pricing).toBeNull()
+    expect(detail.body.featured).toBe(false)
     expect(detail.body.account_username).toBeUndefined()
     expect(detail.body.account_registered).toBeUndefined()
     expect(detail.body.account_password_set).toBeUndefined()

@@ -96,6 +96,8 @@ exportRoutes.get("/export", async (c) => {
       })(),
       folder_id: b.folderId,
       notes: b.notes,
+      pricing: b.pricing ?? null,
+      featured: Boolean(b.featured),
       ai_status: b.aiStatus,
       topics: JSON.parse(b.topicsJson || "[]"),
       tags: tagsByBookmark.get(b.id) ?? [],
@@ -156,6 +158,20 @@ function bookmarkSection(
       "",
       `标签：${tagNames.map((t) => `\`${escapeMdCode(t)}\``).join(" ")}`,
     )
+  }
+  if (b.pricing) {
+    const pricingLabel =
+      b.pricing === "free"
+        ? "免费"
+        : b.pricing === "freemium"
+          ? "免费增值"
+          : b.pricing === "paid"
+            ? "付费"
+            : b.pricing
+    lines.push("", `付费属性：${pricingLabel}`)
+  }
+  if (b.featured) {
+    lines.push("", "精选：是")
   }
   if (b.notes) lines.push("", `> ${escapeMd(b.notes)}`)
 

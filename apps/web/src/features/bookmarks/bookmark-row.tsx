@@ -3,8 +3,9 @@ import { isLikelySiteIconUrl } from "@mankr/shared"
 import { StarIcon, GitForkIcon, ClockIcon, HeartIcon } from "@phosphor-icons/react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Skeleton } from "@workspace/ui/components/skeleton"
+import { cn } from "@workspace/ui/lib/utils"
 import type { Bookmark } from "@/lib/types"
-import { AccountStatusBadge } from "./account-status-badge"
+import { PricingFeaturedBadges } from "./pricing-featured-badges"
 import { HealthStatusBadge } from "./health-status-badge"
 import { BookmarkAccountCopyButton } from "./bookmark-account-copy-button"
 import { BookmarkOpenButton } from "./bookmark-open-button"
@@ -50,14 +51,20 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
   return (
     <div
       onClick={onClick}
-      className="group relative flex min-w-0 w-full max-w-full gap-3 rounded-lg border border-border/60 bg-card p-3.5 md:gap-4 md:p-4 text-card-foreground shadow-2xs transition-all hover:border-border hover:bg-accent/30 cursor-pointer"
+      className={cn(
+        "group relative flex w-full max-w-full min-w-0 cursor-pointer gap-3 rounded-lg border border-border/60 bg-card p-3.5 text-card-foreground shadow-2xs md:gap-4 md:p-4",
+        "transition-[translate,box-shadow,border-color,background-color] duration-200 ease-out",
+        "hover:-translate-y-1 hover:border-border hover:bg-accent/30 hover:shadow-md",
+        "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+        isGithub && bookmark.health_status === "unavailable" && "opacity-75",
+      )}
     >
       {hasCover ? (
         <div className="size-20 shrink-0 overflow-hidden rounded-md bg-muted sm:size-24">
           <img
             src={bookmark.image_url!}
             alt=""
-            className="size-full object-cover"
+            className="size-full object-cover transition-[scale] duration-300 ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
             loading="lazy"
             referrerPolicy="no-referrer"
           />
@@ -71,12 +78,12 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
               <img
                 src={bookmark.favicon_url}
                 alt=""
-                className="size-5 shrink-0 rounded-full object-cover"
+                className="size-5 shrink-0 rounded-full object-cover transition-[scale] duration-200 ease-out group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                 loading="lazy"
                 referrerPolicy="no-referrer"
               />
             ) : null}
-            <h3 className="min-w-0 flex-1 truncate font-semibold text-sm md:text-base text-foreground group-hover:text-primary transition-colors">
+            <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground transition-colors duration-200 group-hover:text-primary md:text-base">
               {displayTitle}
             </h3>
 
@@ -105,9 +112,8 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
             )}
             {isGithub ? (
               <HealthStatusBadge status={bookmark.health_status} />
-            ) : (
-              <AccountStatusBadge bookmark={bookmark} />
-            )}
+            ) : null}
+            <PricingFeaturedBadges bookmark={bookmark} />
           </div>
 
           <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
@@ -179,15 +185,18 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
             )}
           </div>
 
-          <div className="flex items-center gap-0.5 shrink-0">
+          <div className="flex shrink-0 items-center gap-0.5 opacity-80 transition-opacity duration-200 group-hover:opacity-100">
             {formattedDate && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-mono text-muted-foreground/80">
+              <span className="inline-flex items-center gap-1 font-mono text-[10px] text-muted-foreground/80">
                 <ClockIcon className="size-3" />
                 {formattedDate}
               </span>
             )}
             <BookmarkAccountCopyButton bookmark={bookmark} />
-            <BookmarkOpenButton bookmark={bookmark} className="-mr-1" />
+            <BookmarkOpenButton
+              bookmark={bookmark}
+              className="-mr-1 transition-[translate] duration-200 ease-out group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+            />
           </div>
         </div>
       </div>

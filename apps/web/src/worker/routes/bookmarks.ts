@@ -148,6 +148,8 @@ function serializeBookmark(
         }
       : null,
     notes: options?.isPublicRead ? null : b.notes,
+    pricing: b.pricing ?? null,
+    featured: Boolean(b.featured),
     site_name: b.siteName,
     image_url: b.imageUrl,
     favicon_url: b.faviconUrl,
@@ -219,6 +221,8 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     archived,
     includeArchived,
     hasAccount,
+    pricing,
+    featured,
     q,
     sort,
     order,
@@ -270,6 +274,16 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
   if (!isPublicRead && hasAccount !== undefined) {
     conditions.push(eq(bookmarks.sourceType, "url"))
     conditions.push(eq(bookmarks.accountRegistered, hasAccount))
+  }
+
+  if (pricing === "unset") {
+    conditions.push(isNull(bookmarks.pricing))
+  } else if (pricing) {
+    conditions.push(eq(bookmarks.pricing, pricing))
+  }
+
+  if (featured !== undefined) {
+    conditions.push(eq(bookmarks.featured, featured))
   }
 
   if (q) {
@@ -953,6 +967,8 @@ bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
   if (data.archived !== undefined) {
     patch.archivedAt = data.archived ? nowIso() : null
   }
+  if (data.pricing !== undefined) patch.pricing = data.pricing
+  if (data.featured !== undefined) patch.featured = data.featured
 
   const accountCaps =
     SOURCE_CAPABILITIES[(existing.sourceType as SourceType) ?? "github"] ??

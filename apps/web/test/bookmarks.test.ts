@@ -39,6 +39,8 @@ interface BookmarkPayload {
   } | null
   tags: string[]
   notes: string | null
+  pricing?: string | null
+  featured?: boolean
   account_registered?: boolean
   account_username?: string | null
   account_password_set?: boolean
@@ -105,6 +107,8 @@ describe("POST /api/bookmarks", () => {
     expect(body.topics).toEqual(["react", "ui"])
     expect(body.track_updates).toBe(true)
     expect(["pending", "fallback"]).toContain(body.ai_status)
+    expect(body.pricing).toBeNull()
+    expect(body.featured).toBe(false)
     expect(outbound.calls).toContain(`${GITHUB}facebook/react`)
   })
 
@@ -1402,5 +1406,107 @@ describe("站点账号密码 vault", () => {
     expect(row!.account_registered).toBeUndefined()
     expect(row!.account_password_encrypted).toBeUndefined()
     expect(row!.account_password_set).toBeUndefined()
+  })
+})
+
+describe("付费属性与精选", () => {
+  it("PATCH 可设置/清除 pricing，并可开关 featured", async () => {
+    const created = await createBookmark("facebook/react")
+    expect(created.status).toBe(201)
+    const id = created.body.id
+
+    const setPaid = await client.patch<BookmarkPayload>(`/api/bookmarks/${id}`, {
+      pricing: "paid",
+      featured: true,
+    })
+    expect(setPaid.status).toBe(200)
+    expect(setPaid.body.pricing).toBe("paid")
+    expect(setPaid.body.featured).toBe(true)
+
+    const setFreemium = await client.patch<BookmarkPayload>(
+      `/api/bookmarks/${id}`,
+      { pricing: "freemium" },
+    )
+    expect(setFreemium.status).toBe(200)
+    expect(setFreemium.body.pricing).toBe("freemium")
+    expect(setFreemium.body.featured).toBe(true)
+
+    const cleared = await client.patch<BookmarkPayload>(`/api/bookmarks/${id}`, {
+      pricing: null,
+      featured: false,
+    })
+    expect(cleared.status).toBe(200)
+    expect(cleared.body.pricing).toBeNull()
+    expect(cleared.body.featured).toBe(false)
+  })
+
+  it("列表可按 pricing 与 featured 筛选，unset 匹配未设置", async () => {
+    const free = await createBookmark("facebook/react")
+    const paid = await createBookmark("astral-sh/uv")
+    expect(free.status).toBe(201)
+    expect(paid.status).toBe(201)
+
+    outbound.text(
+      "https://pricing-filter.example.com/",
+      "<html><head><title>Unset Tool</title></head><body>ok</body></html>",
+    )
+    const unset = await createBookmark("https://pricing-filter.example.com/")
+    expect(unset.status).toBe(201)
+
+    await client.patch(`/api/bookmarks/${free.body.id}`, {
+      pricing: "free",
+      featured: true,
+    })
+    await client.patch(`/api/bookmarks/${paid.body.id}`, {
+      pricing: "paid",
+      featured: false,
+    })
+
+    const freeList = await client.json<BookmarkList>(
+      "/api/bookmarks?pricing=free",
+    )
+    expect(freeList.status).toBe(200)
+    expect(freeList.body.items.every((i) => i.pricing === "free")).toBe(true)
+    expect(freeList.body.items.some((i) => i.id === free.body.id)).toBe(true)
+    expect(freeList.body.items.some((i) => i.id === paid.body.id)).toBe(false)
+
+    const unsetList = await client.json<BookmarkList>(
+      "/api/bookmarks?pricing=unset",
+    )
+    expect(unsetList.status).toBe(200)
+    expect(unsetList.body.items.every((i) => i.pricing == null)).toBe(true)
+    expect(unsetList.body.items.some((i) => i.id === unset.body.id)).toBe(true)
+    expect(unsetList.body.items.some((i) => i.id === free.body.id)).toBe(false)
+
+    const featuredList = await client.json<BookmarkList>(
+      "/api/bookmarks?featured=true",
+    )
+    expect(featuredList.status).toBe(200)
+    expect(featuredList.body.items.every((i) => i.featured === true)).toBe(true)
+    expect(featuredList.body.items.some((i) => i.id === free.body.id)).toBe(
+      true,
+    )
+    expect(featuredList.body.items.some((i) => i.id === paid.body.id)).toBe(
+      false,
+    )
+  })
+
+  it("export JSON 含 pricing 与 featured", async () => {
+    const created = await createBookmark("facebook/react")
+    await client.patch(`/api/bookmarks/${created.body.id}`, {
+      pricing: "freemium",
+      featured: true,
+    })
+    const exported = await client.json<{
+      bookmarks: Array<{
+        id: string
+        pricing?: string | null
+        featured?: boolean
+      }>
+    }>("/api/export")
+    expect(exported.status).toBe(200)
+    const row = exported.body.bookmarks.find((b) => b.id === created.body.id)
+    expect(row?.pricing).toBe("freemium")
+    expect(row?.featured).toBe(true)
   })
 })
