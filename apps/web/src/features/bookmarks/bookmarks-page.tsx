@@ -2,7 +2,6 @@ import * as React from "react"
 import { useSearchParams } from "react-router"
 import { useTranslation } from "react-i18next"
 import {
-  FunnelIcon,
   PlusIcon,
   StarIcon,
   RowsIcon,
@@ -14,19 +13,11 @@ import { AI_STATUSES, type AiStatus } from "@mankr/shared"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@workspace/ui/components/sheet"
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { useFilterPanelOpen } from "@/hooks/use-filter-panel-open"
 import {
   useBookmarkPaginationSettings,
   useRedirectGuestOnUnauthorized,
@@ -38,7 +29,6 @@ import { BookmarkRowSkeleton } from "./bookmark-row"
 import { BookmarkCardSkeleton } from "./bookmark-card"
 import { AddBookmarkDialog } from "./add-bookmark-dialog"
 import {
-  FilterPanelBody,
   countPanelFilters,
 } from "./filter-panel-body"
 import {
@@ -57,14 +47,10 @@ import "./bookmark-masonry.css"
 export function BookmarksPage() {
   const { t } = useTranslation(["bookmarks", "common"])
   const [searchParams, setSearchParams] = useSearchParams()
-  const isMobile = useIsMobile()
   const requireAuth = useRequireAuthAction()
   const { openDetail } = useBookmarkDetail()
-  const { open: filterPanelOpen, setOpen: setFilterPanelOpen } =
-    useFilterPanelOpen()
 
   const [addDialogOpen, setAddDialogOpen] = React.useState(false)
-  const [filterSheetOpen, setFilterSheetOpen] = React.useState(false)
 
   const [viewMode, setViewMode] = React.useState<"list" | "grid">(() => {
     if (typeof window !== "undefined") {
@@ -250,7 +236,6 @@ export function BookmarksPage() {
   const loadMoreError = isError && items.length > 0
 
   const panelFilterCount = countPanelFilters(searchParams)
-  const filterUiOpen = isMobile ? filterSheetOpen : filterPanelOpen
   const hasActiveFilters = !!(
     folderId ||
     q ||
@@ -309,52 +294,6 @@ export function BookmarksPage() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <TooltipProvider delay={200}>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant={
-                      panelFilterCount > 0
-                        ? "default"
-                        : filterUiOpen
-                          ? "secondary"
-                          : "outline"
-                    }
-                    size="sm"
-                    className="relative h-8 gap-1.5 px-2.5 text-xs"
-                    aria-pressed={filterUiOpen}
-                    aria-label={
-                      filterUiOpen
-                        ? t("list.filterCollapseAria")
-                        : t("list.filterOpenAria")
-                    }
-                    onClick={() => {
-                      if (isMobile) setFilterSheetOpen((open) => !open)
-                      else setFilterPanelOpen(!filterPanelOpen)
-                    }}
-                  >
-                    <FunnelIcon
-                      className="size-4"
-                      weight={panelFilterCount > 0 ? "fill" : "regular"}
-                    />
-                    {panelFilterCount > 0 ? (
-                      <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-background text-[10px] text-foreground shadow-xs">
-                        {panelFilterCount}
-                      </span>
-                    ) : null}
-                  </Button>
-                }
-              />
-              <TooltipContent side="top">
-                {filterUiOpen
-                  ? t("list.filterCollapseAria")
-                  : t("list.filterOpenAria")}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
           <TooltipProvider delay={200}>
             <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-card p-0.5 shadow-2xs">
               <Tooltip>
@@ -470,18 +409,6 @@ export function BookmarksPage() {
       )}
 
       <AddBookmarkDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
-
-      <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
-        <SheetContent
-          side="right"
-          className="flex w-[min(100vw,20rem)] flex-col gap-0 p-0 sm:max-w-xs"
-        >
-          <SheetHeader className="sr-only">
-            <SheetTitle>{t("list.filterTitle")}</SheetTitle>
-          </SheetHeader>
-          <FilterPanelBody className="min-h-0 flex-1" />
-        </SheetContent>
-      </Sheet>
     </div>
   )
 }

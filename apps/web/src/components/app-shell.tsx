@@ -15,7 +15,7 @@ import { Sheet, SheetContent, SheetTitle } from "@workspace/ui/components/sheet"
 import { AppSidebar } from "@/components/app-sidebar"
 import { GithubImportBanner } from "@/components/github-import-banner"
 import { AddBookmarkDialog } from "@/features/bookmarks/add-bookmark-dialog"
-import { BookmarkFilterPanel } from "@/features/bookmarks/bookmark-filter-panel"
+import { FilterPanelBody } from "@/features/bookmarks/filter-panel-body"
 import { BookmarkDetailDialog } from "@/features/bookmarks/detail/bookmark-detail-dialog"
 import { KbChatBody } from "@/features/kb/kb-chat-body"
 import { KbChatPanel } from "@/features/kb/kb-chat-panel"
@@ -183,6 +183,11 @@ function AppShellContent() {
           ) : null}
 
           <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            {location.pathname === "/" ? (
+              <div className="shrink-0 border-b border-border/50 bg-card/50 px-4 py-3 md:px-6">
+                <FilterPanelBody />
+              </div>
+            ) : null}
             <ScrollArea
               className="min-h-0 flex-1"
               viewportId={APP_SCROLL_ROOT_ID}
@@ -191,10 +196,6 @@ function AppShellContent() {
               <Outlet />
             </ScrollArea>
           </main>
-
-          {showFolderTree ? (
-            <BookmarkFilterPanel className="hidden md:flex" resizable />
-          ) : null}
 
           {!isMobile ? <KbChatPanel resizable /> : null}
         </div>

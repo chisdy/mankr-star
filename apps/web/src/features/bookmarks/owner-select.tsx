@@ -28,6 +28,8 @@ export type FacetSelectProps = {
   size?: "sm" | "default"
   /** full width trigger for side panel */
   fullWidth?: boolean
+  /** 触发器内前缀标签，如「标签」「开发者」 */
+  prefixLabel?: string
   allLabel: string
   searchPlaceholder: string
   loadingLabel: string
@@ -57,6 +59,7 @@ export function FacetSelect({
   contentClassName,
   size = "default",
   fullWidth = false,
+  prefixLabel,
   allLabel,
   searchPlaceholder,
   loadingLabel,
@@ -286,7 +289,12 @@ export function FacetSelect({
         )}
         onClick={() => setOpenSafe(!open)}
       >
-        <span className="truncate">{label}</span>
+        <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+          {prefixLabel ? (
+            <span className="shrink-0 text-muted-foreground/55">{prefixLabel}</span>
+          ) : null}
+          <span className="truncate">{label}</span>
+        </span>
         <CaretDownIcon className="size-3.5 shrink-0 opacity-50" />
       </button>
       {panel}

@@ -2,15 +2,10 @@ import * as React from "react"
 import { useSearchParams } from "react-router"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
-import {
-  ArrowCounterClockwiseIcon,
-  CaretRightIcon,
-  FunnelIcon,
-} from "@phosphor-icons/react"
+import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react"
 
 import { Button } from "@workspace/ui/components/button"
 import { Label } from "@workspace/ui/components/label"
-import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import {
   Select,
   SelectContent,
@@ -19,12 +14,6 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select"
 import { Switch } from "@workspace/ui/components/switch"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@workspace/ui/components/tooltip"
 import { cn } from "@workspace/ui/lib/utils"
 import { api } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
@@ -48,23 +37,24 @@ const PANEL_FILTER_KEYS = [
 const ACTIVE_FILTER_CLASS =
   "border-primary/65 bg-primary/5! hover:bg-primary/10! text-foreground!"
 
+const CONTROL_WIDTH = "w-[11rem]"
+
 type SourceFilter = "" | "github" | "twitter" | "url"
 
-function Field({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
+function SelectPrefix({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-w-0 space-y-1.5">
-      <Label className="text-[11px] font-medium text-muted-foreground">
-        {label}
-      </Label>
-      <div className="min-w-0">{children}</div>
-    </div>
+    <span className="shrink-0 text-muted-foreground/55">{children}</span>
   )
+}
+
+function Field({
+  children,
+  className,
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
+  return <div className={cn("shrink-0", className)}>{children}</div>
 }
 
 export function countPanelFilters(searchParams: URLSearchParams): number {
@@ -78,13 +68,7 @@ export function countPanelFilters(searchParams: URLSearchParams): number {
   return n
 }
 
-export function FilterPanelBody({
-  className,
-  onCollapse,
-}: {
-  className?: string
-  onCollapse?: () => void
-}) {
+export function FilterPanelBody({ className }: { className?: string }) {
   const { t } = useTranslation("bookmarks")
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -95,12 +79,7 @@ export function FilterPanelBody({
   const site = searchParams.get("site") || ""
   const healthStatus = searchParams.get("health_status") || ""
   const hasAccountParam = searchParams.get("has_account")
-  const hasAccount =
-    hasAccountParam === "true"
-      ? "true"
-      : hasAccountParam === "false"
-        ? "false"
-        : ""
+  const hasAccount = hasAccountParam === "true"
   const sortParam = searchParams.get("sort")
   const sort: "recent" | "updated" | "stars" | "name" =
     sortParam === "stars" || sortParam === "name" || sortParam === "updated"
@@ -171,15 +150,6 @@ export function FilterPanelBody({
       { value: "archived", label: t("health.archived") },
       { value: "empty", label: t("health.empty") },
       { value: "unavailable", label: t("health.unavailable") },
-    ],
-    [t]
-  )
-
-  const hasAccountItems = React.useMemo(
-    () => [
-      { value: null, label: t("list.hasAccountAll") },
-      { value: "true", label: t("list.hasAccountYes") },
-      { value: "false", label: t("list.hasAccountNo") },
     ],
     [t]
   )
@@ -270,165 +240,161 @@ export function FilterPanelBody({
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 min-w-0 flex-col overflow-hidden",
+        "flex min-w-0 flex-nowrap items-center gap-3 overflow-x-auto pb-0.5",
         className
       )}
     >
-      <div className="flex h-12 shrink-0 items-center justify-between gap-2 pr-2 pl-4">
-        <span className="flex items-center gap-1.5 text-sm font-semibold tracking-wide text-muted-foreground">
-          <FunnelIcon className="size-4 shrink-0" weight="duotone" />
-          {t("list.filterTitle")}
-        </span>
-        {onCollapse ? (
-          <TooltipProvider delay={200}>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    className="size-7 shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    onClick={onCollapse}
-                    aria-label={t("list.filterCollapseAria")}
-                  >
-                    <CaretRightIcon className="size-4" weight="bold" />
-                  </Button>
-                }
-              />
-              <TooltipContent side="bottom">
-                {t("list.filterCollapseAria")}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : null}
-      </div>
-
-      <ScrollArea className="min-h-0 min-w-0 flex-1" contentClassName="px-3">
-        <div className="w-full min-w-0 space-y-4 pt-1 pb-3">
-          <Field label={t("list.sourceLabel")}>
-            <Select
-              items={sourceOptions.map((opt) => ({
-                value: opt.value || null,
-                label: opt.label,
-              }))}
-              value={sourceType || null}
-              onValueChange={(val) =>
-                setSourceType((val || "") as SourceFilter)
-              }
+      <Field className={CONTROL_WIDTH}>
+          <Select
+            items={sourceOptions.map((opt) => ({
+              value: opt.value || null,
+              label: opt.label,
+            }))}
+            value={sourceType || null}
+            onValueChange={(val) => setSourceType((val || "") as SourceFilter)}
+          >
+            <SelectTrigger
+              size="sm"
+              className={cn(
+                "h-8 w-full text-xs",
+                sourceType && ACTIVE_FILTER_CLASS
+              )}
             >
-              <SelectTrigger
-                size="sm"
-                className={cn(
-                  "h-8 w-full text-xs",
-                  sourceType && ACTIVE_FILTER_CLASS
-                )}
-              >
-                <SelectValue placeholder={t("list.sourceAll")} />
-              </SelectTrigger>
-              <SelectContent>
-                {sourceOptions.map((opt) => (
-                  <SelectItem
-                    key={opt.value || "all"}
-                    value={opt.value || null}
-                  >
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+              <SelectPrefix>{t("list.sourceLabel")}</SelectPrefix>
+              <SelectValue placeholder={t("list.sourceAll")} />
+            </SelectTrigger>
+            <SelectContent>
+              {sourceOptions.map((opt) => (
+                <SelectItem key={opt.value || "all"} value={opt.value || null}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
 
-          <Field label={t("list.tagLabel")}>
+        <Field className={CONTROL_WIDTH}>
+          <FacetSelect
+            items={tagFacetItems}
+            value={tag || null}
+            onValueChange={(val) => updateParam("tag", val)}
+            isLoading={tagsLoading}
+            fullWidth
+            size="sm"
+            variant="tag"
+            prefixLabel={t("list.tagLabel")}
+            allLabel={t("list.tagAll")}
+            searchPlaceholder={t("list.tagSearch")}
+            loadingLabel={t("list.tagLoading")}
+            noMatchLabel={t("list.tagNoMatch")}
+          />
+        </Field>
+
+        {showOwner ? (
+          <Field className={CONTROL_WIDTH}>
             <FacetSelect
-              items={tagFacetItems}
-              value={tag || null}
-              onValueChange={(val) => updateParam("tag", val)}
-              isLoading={tagsLoading}
+              items={owners}
+              value={owner || null}
+              onValueChange={(val) => {
+                patchParams((next) => {
+                  if (val) {
+                    next.set("owner", val)
+                    next.delete("site")
+                  } else {
+                    next.delete("owner")
+                  }
+                })
+              }}
+              isLoading={ownersLoading}
               fullWidth
               size="sm"
-              variant="tag"
-              allLabel={t("list.tagAll")}
-              searchPlaceholder={t("list.tagSearch")}
-              loadingLabel={t("list.tagLoading")}
-              noMatchLabel={t("list.tagNoMatch")}
+              variant="owner"
+              prefixLabel={t("list.ownerLabel")}
+              allLabel={t("list.ownerAll")}
+              searchPlaceholder={t("list.ownerSearch")}
+              loadingLabel={t("list.ownerLoading")}
+              noMatchLabel={t("list.ownerNoMatch")}
             />
           </Field>
+        ) : null}
 
-          {showOwner ? (
-            <Field label={t("list.ownerLabel")}>
-              <FacetSelect
-                items={owners}
-                value={owner || null}
-                onValueChange={(val) => {
-                  patchParams((next) => {
-                    if (val) {
-                      next.set("owner", val)
-                      next.delete("site")
-                    } else {
-                      next.delete("owner")
-                    }
-                  })
-                }}
-                isLoading={ownersLoading}
-                fullWidth
+        {showWebFilters ? (
+          <Field className={CONTROL_WIDTH}>
+            <FacetSelect
+              items={sites}
+              value={site || null}
+              onValueChange={(val) => {
+                patchParams((next) => {
+                  if (val) {
+                    next.set("site", val)
+                    next.delete("owner")
+                  } else {
+                    next.delete("site")
+                  }
+                })
+              }}
+              isLoading={sitesLoading}
+              fullWidth
+              size="sm"
+              variant="site"
+              prefixLabel={t("list.siteLabel")}
+              allLabel={t("list.siteAll")}
+              searchPlaceholder={t("list.siteSearch")}
+              loadingLabel={t("list.siteLoading")}
+              noMatchLabel={t("list.siteNoMatch")}
+            />
+          </Field>
+        ) : null}
+
+        {showAccountFilter ? (
+          <Field className="w-auto">
+            <div
+              className={cn(
+                "flex h-8 min-w-0 items-center gap-2 rounded-md border border-input bg-transparent px-2.5 shadow-xs transition-[color,box-shadow]",
+                hasAccount && ACTIVE_FILTER_CLASS
+              )}
+            >
+              <Label
+                id="filter-has-account-label"
+                htmlFor="filter-has-account"
+                className="cursor-pointer whitespace-nowrap text-xs font-normal text-muted-foreground"
+              >
+                {t("list.hasAccountHint")}
+              </Label>
+              <Switch
+                id="filter-has-account"
                 size="sm"
-                variant="owner"
-                allLabel={t("list.ownerAll")}
-                searchPlaceholder={t("list.ownerSearch")}
-                loadingLabel={t("list.ownerLoading")}
-                noMatchLabel={t("list.ownerNoMatch")}
-              />
-            </Field>
-          ) : null}
-
-          {showWebFilters ? (
-            <Field label={t("list.siteLabel")}>
-              <FacetSelect
-                items={sites}
-                value={site || null}
-                onValueChange={(val) => {
-                  patchParams((next) => {
-                    if (val) {
-                      next.set("site", val)
-                      next.delete("owner")
-                    } else {
-                      next.delete("site")
-                    }
-                  })
-                }}
-                isLoading={sitesLoading}
-                fullWidth
-                size="sm"
-                variant="site"
-                allLabel={t("list.siteAll")}
-                searchPlaceholder={t("list.siteSearch")}
-                loadingLabel={t("list.siteLoading")}
-                noMatchLabel={t("list.siteNoMatch")}
-              />
-            </Field>
-          ) : null}
-
-          {showAccountFilter ? (
-            <Field label={t("list.hasAccountLabel")}>
-              <Select
-                items={hasAccountItems}
-                value={hasAccount || null}
-                onValueChange={(val) =>
-                  updateParam("has_account", val || null)
+                className="shrink-0"
+                checked={hasAccount}
+                onCheckedChange={(checked) =>
+                  updateParam("has_account", checked ? "true" : null)
                 }
+                aria-labelledby="filter-has-account-label"
+              />
+            </div>
+          </Field>
+        ) : null}
+
+        {showGithubFilters ? (
+          <>
+            <Field className={CONTROL_WIDTH}>
+              <Select
+                items={languageItems}
+                value={language || null}
+                onValueChange={(val) => updateParam("language", val || null)}
               >
                 <SelectTrigger
                   size="sm"
                   className={cn(
                     "h-8 w-full text-xs",
-                    hasAccount && ACTIVE_FILTER_CLASS
+                    language && ACTIVE_FILTER_CLASS
                   )}
                 >
-                  <SelectValue placeholder={t("list.hasAccountAll")} />
+                  <SelectPrefix>{t("list.languageLabel")}</SelectPrefix>
+                  <SelectValue placeholder={t("list.languageAll")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {hasAccountItems.map((item) => (
+                  {languageItems.map((item) => (
                     <SelectItem key={String(item.value)} value={item.value}>
                       {item.label}
                     </SelectItem>
@@ -436,137 +402,107 @@ export function FilterPanelBody({
                 </SelectContent>
               </Select>
             </Field>
-          ) : null}
 
-          {showGithubFilters ? (
-            <>
-              <Field label={t("list.languageLabel")}>
-                <Select
-                  items={languageItems}
-                  value={language || null}
-                  onValueChange={(val) => updateParam("language", val || null)}
-                >
-                  <SelectTrigger
-                    size="sm"
-                    className={cn(
-                      "h-8 w-full text-xs",
-                      language && ACTIVE_FILTER_CLASS
-                    )}
-                  >
-                    <SelectValue placeholder={t("list.languageAll")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languageItems.map((item) => (
-                      <SelectItem key={String(item.value)} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <Field label={t("list.healthLabel")}>
-                <Select
-                  items={healthItems}
-                  value={healthStatus || null}
-                  onValueChange={(val) =>
-                    updateParam("health_status", val || null)
-                  }
-                >
-                  <SelectTrigger
-                    size="sm"
-                    className={cn(
-                      "h-8 w-full text-xs",
-                      healthStatus && ACTIVE_FILTER_CLASS
-                    )}
-                  >
-                    <SelectValue placeholder={t("list.healthPlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {healthItems.map((item) => (
-                      <SelectItem key={String(item.value)} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            </>
-          ) : null}
-
-          <Field label={t("list.sortLabel")}>
-            <Select
-              items={sortItems}
-              value={
-                showStarsSort || sort === "recent" || sort === "name"
-                  ? sort
-                  : "recent"
-              }
-              onValueChange={(val) =>
-                updateParam("sort", !val || val === "recent" ? null : val)
-              }
-            >
-              <SelectTrigger
-                size="sm"
-                className={cn(
-                  "h-8 w-full text-xs",
-                  sort !== "recent" && ACTIVE_FILTER_CLASS
-                )}
+            <Field className={CONTROL_WIDTH}>
+              <Select
+                items={healthItems}
+                value={healthStatus || null}
+                onValueChange={(val) =>
+                  updateParam("health_status", val || null)
+                }
               >
-                <SelectValue placeholder={t("list.sortRecent")} />
-              </SelectTrigger>
-              <SelectContent>
-                {sortItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+                <SelectTrigger
+                  size="sm"
+                  className={cn(
+                    "h-8 w-full text-xs",
+                    healthStatus && ACTIVE_FILTER_CLASS
+                  )}
+                >
+                  <SelectPrefix>{t("list.healthLabel")}</SelectPrefix>
+                  <SelectValue placeholder={t("list.healthPlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {healthItems.map((item) => (
+                    <SelectItem key={String(item.value)} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </>
+        ) : null}
 
-          <Field label={t("list.archivedLabel")}>
-            <div
+        <Field className="w-auto">
+          <div
+            className={cn(
+              "flex h-8 min-w-0 items-center gap-2 rounded-md border border-input bg-transparent px-2.5 shadow-xs transition-[color,box-shadow]",
+              archived && ACTIVE_FILTER_CLASS
+            )}
+          >
+            <Label
+              id="filter-archived-label"
+              htmlFor="filter-archived"
+              className="cursor-pointer whitespace-nowrap text-xs font-normal text-muted-foreground"
+            >
+              {t("list.includeArchived")}
+            </Label>
+            <Switch
+              id="filter-archived"
+              size="sm"
+              className="shrink-0"
+              checked={archived}
+              onCheckedChange={(checked) =>
+                updateParam("archived", checked ? "true" : null)
+              }
+              aria-labelledby="filter-archived-label"
+            />
+          </div>
+        </Field>
+
+        <Field className={CONTROL_WIDTH}>
+          <Select
+            items={sortItems}
+            value={
+              showStarsSort || sort === "recent" || sort === "name"
+                ? sort
+                : "recent"
+            }
+            onValueChange={(val) =>
+              updateParam("sort", !val || val === "recent" ? null : val)
+            }
+          >
+            <SelectTrigger
+              size="sm"
               className={cn(
-                "flex h-8 w-full min-w-0 items-center gap-2 rounded-md border border-input bg-transparent px-2.5 text-xs shadow-xs transition-[color,box-shadow]",
-                archived && ACTIVE_FILTER_CLASS
+                "h-8 w-full text-xs",
+                sort !== "recent" && ACTIVE_FILTER_CLASS
               )}
             >
-              <Label
-                id="filter-archived-label"
-                htmlFor="filter-archived"
-                className="min-w-0 flex-1 cursor-pointer truncate text-xs font-normal text-muted-foreground"
-              >
-                {t("list.includeArchived")}
-              </Label>
-              <Switch
-                id="filter-archived"
-                size="sm"
-                className="shrink-0"
-                checked={archived}
-                onCheckedChange={(checked) =>
-                  updateParam("archived", checked ? "true" : null)
-                }
-                aria-labelledby="filter-archived-label"
-              />
-            </div>
-          </Field>
-        </div>
-      </ScrollArea>
+              <SelectPrefix>{t("list.sortLabel")}</SelectPrefix>
+              <SelectValue placeholder={t("list.sortRecent")} />
+            </SelectTrigger>
+            <SelectContent>
+              {sortItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
 
       {hasPanelFilters ? (
-        <div className="shrink-0 border-t border-border/50 p-3">
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            className="h-8 w-full gap-1.5 text-xs"
-            onClick={clearPanelFilters}
-          >
-            <ArrowCounterClockwiseIcon className="size-3.5" weight="bold" />
-            {t("list.filterClear")}
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          className="h-8 shrink-0 gap-1.5 text-xs"
+          onClick={clearPanelFilters}
+        >
+          <ArrowCounterClockwiseIcon className="size-3.5" weight="bold" />
+          {t("list.filterClear")}
+        </Button>
       ) : null}
     </div>
   )
