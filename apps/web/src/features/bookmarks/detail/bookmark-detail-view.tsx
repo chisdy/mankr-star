@@ -77,10 +77,13 @@ export function BookmarkDetailView({
   const filterByTag = (tag: string) => {
     if (location.pathname === "/") {
       const next = withTagFilter(searchParams, tag)
-      navigate({ search: toReadableSearch(next) })
+      navigate(
+        { search: toReadableSearch(next) },
+        { flushSync: true },
+      )
       return
     }
-    navigate(tagFilterHref(tag))
+    navigate(tagFilterHref(tag), { flushSync: true })
   }
 
   return (

@@ -46,7 +46,7 @@ export function FolderBreadcrumb({ className }: { className?: string }) {
     else next.delete("folder_id")
     next.delete(BOOKMARK_PAGE_PARAM)
     const search = toReadableSearch(next)
-    navigate(search ? `/${search}` : "/")
+    navigate(search ? `/${search}` : "/", { flushSync: true })
   }
 
   return (

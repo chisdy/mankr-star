@@ -15,6 +15,7 @@ import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import { Sheet, SheetContent, SheetTitle } from "@workspace/ui/components/sheet"
+import { cn } from "@workspace/ui/lib/utils"
 import { AppSidebar } from "@/components/app-sidebar"
 import { GithubImportBanner } from "@/components/github-import-banner"
 import { AddBookmarkDialog } from "@/features/bookmarks/add-bookmark-dialog"
@@ -115,7 +116,7 @@ function AppShellContent() {
     newParams.delete(BOOKMARK_PAGE_PARAM)
     const search = toReadableSearch(newParams)
     if (window.location.pathname !== "/") {
-      navigate(`/${search}`)
+      navigate(`/${search}`, { flushSync: true })
       return
     }
     setSearchParams(newParams)
@@ -208,9 +209,15 @@ function AppShellContent() {
               aria-pressed={kbOpen}
               aria-label={t("kb:toggleAria")}
               title={t("kb:toggleAria")}
-              className="shrink-0 text-muted-foreground aria-pressed:text-foreground"
+              className="shrink-0 text-muted-foreground aria-pressed:text-foreground transition-colors duration-200"
             >
-              <SparkleIcon className="size-4.5" weight="duotone" />
+              <SparkleIcon
+                className={cn(
+                  "size-4.5 transition-transform duration-300 ease-in-out",
+                  kbOpen && "scale-110"
+                )}
+                weight="duotone"
+              />
             </Button>
           </div>
         </header>

@@ -24,7 +24,9 @@
     "delete": "Delete",
     "emptyManage": "No folders yet. Click above to create one.",
     "emptyGuest": "No folders yet.",
-    "resizeAria": "Resize folder panel"
+    "resizeAria": "Resize folder panel",
+    "collapse": "Collapse folder panel",
+    "expand": "Expand folder panel"
   },
   "form": {
     "createdToast": "Folder created",

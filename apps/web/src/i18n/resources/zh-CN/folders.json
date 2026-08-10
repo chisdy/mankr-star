@@ -24,7 +24,9 @@
     "delete": "删除",
     "emptyManage": "暂无文件夹，点击上方新建。",
     "emptyGuest": "暂无文件夹。",
-    "resizeAria": "调整文件夹面板宽度"
+    "resizeAria": "调整文件夹面板宽度",
+    "collapse": "折叠文件夹面板",
+    "expand": "展开文件夹面板"
   },
   "form": {
     "createdToast": "已创建文件夹",

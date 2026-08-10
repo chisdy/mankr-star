@@ -39,7 +39,8 @@ export function useReadableSearchParams(): [URLSearchParams, SetURLSearchParams]
           ? nextInit(new URLSearchParams(searchParams))
           : nextInit,
       )
-      navigate(toReadableSearch(next), navigateOpts)
+      // 默认 flushSync：筛选/搜索切换时同拍提交 URL，列表才能立刻进入 isPending 骨架
+      navigate(toReadableSearch(next), { flushSync: true, ...navigateOpts })
     },
     [navigate, searchParams],
   )

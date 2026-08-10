@@ -22,6 +22,10 @@ import {
   nextPageParam,
   totalPageCount,
 } from "./bookmark-pagination"
+import {
+  paramsFromBookmarksListKey,
+  sameFiltersIgnoringPage,
+} from "./bookmark-query-params"
 
 const AI_POLL_INTERVAL_MS = 2000
 
@@ -89,7 +93,15 @@ export function useBookmarkPages({
     queryKey: queryKeys.bookmarks.list(pagedParams),
     queryFn: () => api.getBookmarks(pagedParams),
     enabled: enabled && !isInfinite,
-    placeholderData: (prev) => prev,
+    // 仅同筛选翻页保留旧页；筛选变了不占位，立刻 isPending → 骨架
+    placeholderData: (prev, previousQuery) => {
+      if (!prev || !previousQuery) return undefined
+      const prevParams = paramsFromBookmarksListKey(previousQuery.queryKey)
+      if (prevParams && sameFiltersIgnoringPage(prevParams, pagedParams)) {
+        return prev
+      }
+      return undefined
+    },
     // 传统模式一页一查，整页重取的代价是固定的
     refetchInterval: (query) =>
       hasPendingAi(query.state.data?.items) ? AI_POLL_INTERVAL_MS : false,

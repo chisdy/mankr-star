@@ -36,31 +36,37 @@ export function KbChatPanel({
     enabled: resizable && open,
   })
 
-  if (!open) return null
+  const currentWidth = open ? (resizable ? panelWidth : 360) : 0
 
   return (
     <aside
       ref={panelRef}
-      style={resizable ? { width: panelWidth } : undefined}
+      style={{ width: currentWidth }}
       data-resizing={isResizing ? "" : undefined}
+      data-state={open ? "open" : "closed"}
+      aria-hidden={!open}
       className={cn(
-        "relative flex h-full min-h-0 min-w-0 shrink-0 flex-col overflow-hidden border-l border-border/50 bg-card/50",
-        isResizing && "will-change-[width] select-none",
-        !resizable && "w-[360px]",
+        "relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-l bg-card/50",
+        open
+          ? "border-border/50 opacity-100"
+          : "border-l-transparent opacity-0 pointer-events-none invisible",
+        !isResizing && "transition-[width,opacity,border-color] duration-300 ease-in-out",
+        isResizing && "will-change-[width] select-none transition-none",
         className,
       )}
     >
       <div
         className={cn(
-          "flex h-full min-h-0 flex-col overflow-hidden",
+          "flex h-full min-h-0 shrink-0 flex-col overflow-hidden",
           isResizing && "pointer-events-none",
         )}
+        style={{ width: resizable ? panelWidth : 360 }}
       >
         {/* 桌面端不给收起按钮：顶栏的对话图标本身就是开关 */}
         <KbChatBody />
       </div>
 
-      {resizable ? (
+      {resizable && open ? (
         <div
           role="separator"
           aria-orientation="vertical"

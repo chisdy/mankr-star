@@ -4,6 +4,7 @@ import { toReadableSearch } from "@/lib/search-params"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import {
+  CaretLeftIcon,
   CaretRightIcon,
   DotsThreeVerticalIcon,
   FolderIcon,
@@ -24,6 +25,12 @@ import {
 } from "@workspace/ui/components/dropdown-menu"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import { Skeleton } from "@workspace/ui/components/skeleton"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip"
 import { cn } from "@workspace/ui/lib/utils"
 import {
   Files,
@@ -271,6 +278,38 @@ const FOLDER_PANEL_MIN_WIDTH = 240
 const FOLDER_PANEL_MAX_WIDTH = 360
 const FOLDER_PANEL_DEFAULT_WIDTH = 240
 const FOLDER_PANEL_WIDTH_KEY = "mankr_folder_panel_width"
+const FOLDER_PANEL_COLLAPSED_KEY = "mankr_folder_panel_collapsed"
+const FOLDER_PANEL_COLLAPSED_WIDTH = 56
+
+function readStoredCollapsed(storageKey: string, fallback = false) {
+  if (typeof window === "undefined") return fallback
+  return localStorage.getItem(storageKey) === "true"
+}
+
+function FolderRailTooltip({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactElement
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger render={children} />
+      <TooltipContent side="right" sideOffset={8}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+const railIconButtonClass = ({ active }: { active: boolean }) =>
+  cn(
+    "flex size-10 shrink-0 items-center justify-center rounded-md transition-colors",
+    active
+      ? "bg-accent text-accent-foreground"
+      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+  )
 
 export function FolderTreePanel({
   className,
@@ -287,6 +326,7 @@ export function FolderTreePanel({
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const selectedId = searchParams.get("folder_id") || ""
+  const collapsible = resizable
 
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [editingFolder, setEditingFolder] = React.useState<FolderType | null>(
@@ -298,6 +338,9 @@ export function FolderTreePanel({
   const [deleteOpen, setDeleteOpen] = React.useState(false)
   const [deletingFolder, setDeletingFolder] = React.useState<FolderType | null>(
     null
+  )
+  const [collapsed, setCollapsed] = React.useState(() =>
+    collapsible ? readStoredCollapsed(FOLDER_PANEL_COLLAPSED_KEY) : false
   )
 
   const {
@@ -344,14 +387,26 @@ export function FolderTreePanel({
     setOpenIds((prev) => Array.from(new Set([...prev, ...defaultOpen])))
   }, [defaultOpen])
 
+  const setCollapsedPersisted = (next: boolean) => {
+    setCollapsed(next)
+    if (collapsible) {
+      localStorage.setItem(FOLDER_PANEL_COLLAPSED_KEY, String(next))
+    }
+  }
+
   const selectFolder = (id: string | null) => {
     const next = new URLSearchParams(searchParams)
     if (id) next.set("folder_id", id)
     else next.delete("folder_id")
     next.delete(BOOKMARK_PAGE_PARAM)
     const search = toReadableSearch(next)
-    navigate(search ? `/${search}` : "/")
+    navigate(search ? `/${search}` : "/", { flushSync: true })
     onNavigate?.()
+  }
+
+  const selectAndExpand = (id: string | null) => {
+    selectFolder(id)
+    if (collapsed) setCollapsedPersisted(false)
   }
 
   const openCreate = (parentId: string | null = null) => {
@@ -371,29 +426,45 @@ export function FolderTreePanel({
     setDeleteOpen(true)
   }
 
-  return (
-    <aside
-      ref={panelRef}
-      style={resizable ? { width: panelWidth } : undefined}
-      data-resizing={isResizing ? "" : undefined}
+  const isCollapsed = collapsible && collapsed
+  const isRootActive = (folderId: string) =>
+    selectedId === folderId || defaultOpen.includes(folderId)
+
+  const panelBody = (
+    <div
       className={cn(
-        "relative flex h-full min-h-0 shrink-0 flex-col border-r border-border/50 bg-card/50",
-        isResizing && "will-change-[width] select-none",
-        !resizable && "w-56",
-        className
+        "flex h-full min-h-0 flex-col overflow-hidden",
+        isResizing && "pointer-events-none"
       )}
     >
       <div
         className={cn(
-          "flex h-full min-h-0 flex-col overflow-hidden",
-          isResizing && "pointer-events-none"
+          "flex h-12 shrink-0 items-center gap-2 transition-all duration-300 ease-in-out",
+          isCollapsed
+            ? "justify-center px-1"
+            : "justify-between pr-2 pl-4"
         )}
       >
-        <div className="flex h-12 shrink-0 items-center justify-between gap-2 pr-2 pl-4">
-          <span className="text-sm font-semibold tracking-wide text-muted-foreground">
+        {!isCollapsed ? (
+          <span className="truncate text-sm font-semibold tracking-wide text-muted-foreground transition-opacity duration-200">
             {t("panel.title")}
           </span>
-          {canManage ? (
+        ) : null}
+        {canManage ? (
+          isCollapsed ? (
+            <FolderRailTooltip label={t("panel.newFolderAria")}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="size-10 text-muted-foreground hover:text-foreground"
+                aria-label={t("panel.newFolderAria")}
+                onClick={() => openCreate(null)}
+              >
+                <PlusIcon className="size-4" />
+              </Button>
+            </FolderRailTooltip>
+          ) : (
             <Button
               type="button"
               variant="ghost"
@@ -404,10 +475,28 @@ export function FolderTreePanel({
             >
               <PlusIcon className="size-4" />
             </Button>
-          ) : null}
-        </div>
+          )
+        ) : null}
+      </div>
 
-        <div className="shrink-0 px-2 pt-2">
+      <div
+        className={cn(
+          "shrink-0 pt-2",
+          isCollapsed ? "flex justify-center px-1" : "px-2"
+        )}
+      >
+        {isCollapsed ? (
+          <FolderRailTooltip label={t("panel.allBookmarks")}>
+            <button
+              type="button"
+              onClick={() => selectAndExpand(null)}
+              aria-label={t("panel.allBookmarks")}
+              className={railIconButtonClass({ active: !selectedId })}
+            >
+              <FolderOpenIcon className="size-4 shrink-0" />
+            </button>
+          </FolderRailTooltip>
+        ) : (
           <button
             type="button"
             onClick={() => selectFolder(null)}
@@ -428,45 +517,150 @@ export function FolderTreePanel({
               </span>
             )}
           </button>
-        </div>
+        )}
+      </div>
 
-        <ScrollArea className="min-h-0 flex-1" contentClassName="px-1 py-1">
-          {isLoading ? (
+      <ScrollArea className="min-h-0 flex-1" contentClassName="px-1 py-1">
+        {isLoading ? (
+          isCollapsed ? (
+            <div className="flex flex-col items-center gap-2 py-2">
+              <Skeleton className="size-10 rounded-md" />
+              <Skeleton className="size-10 rounded-md" />
+              <Skeleton className="size-10 rounded-md" />
+            </div>
+          ) : (
             <div className="space-y-2 p-2">
               <Skeleton className="h-7 w-full" />
               <Skeleton className="h-7 w-4/5" />
               <Skeleton className="h-7 w-3/5" />
             </div>
-          ) : rootFolders.length === 0 ? (
+          )
+        ) : rootFolders.length === 0 ? (
+          isCollapsed ? (
+            <div className="flex justify-center py-6">
+              <FolderIcon className="size-5 text-muted-foreground" />
+            </div>
+          ) : (
             <div className="px-3 py-6 text-center">
               <FolderIcon className="mx-auto size-6 text-muted-foreground" />
               <p className="mt-2 text-xs text-muted-foreground">
                 {canManage ? t("panel.emptyManage") : t("panel.emptyGuest")}
               </p>
             </div>
-          ) : (
-            <Files open={openIds} onOpenChange={setOpenIds} className="p-1">
-              {rootFolders.map((folder) => (
-                <FolderTreeNode
-                  key={folder.id}
-                  folder={folder}
-                  folders={folders}
-                  selectedId={selectedId}
-                  openIds={openIds}
-                  onOpenChange={setOpenIds}
-                  onSelect={selectFolder}
-                  onEdit={openEdit}
-                  onCreateChild={(parent) => openCreate(parent.id)}
-                  onDelete={openDelete}
-                  canManage={canManage}
-                />
-              ))}
-            </Files>
-          )}
-        </ScrollArea>
-      </div>
+          )
+        ) : isCollapsed ? (
+          <div className="flex flex-col items-center gap-1 py-1">
+            {rootFolders.map((folder) => {
+              const active = isRootActive(folder.id)
+              return (
+                <FolderRailTooltip key={folder.id} label={folder.name}>
+                  <button
+                    type="button"
+                    onClick={() => selectAndExpand(folder.id)}
+                    aria-label={folder.name}
+                    className={railIconButtonClass({ active })}
+                  >
+                    {folder.color ? (
+                      <FolderIcon
+                        className="size-4"
+                        weight="fill"
+                        style={{ color: folder.color }}
+                      />
+                    ) : (
+                      <FolderIcon className="size-4" />
+                    )}
+                  </button>
+                </FolderRailTooltip>
+              )
+            })}
+          </div>
+        ) : (
+          <Files open={openIds} onOpenChange={setOpenIds} className="p-1">
+            {rootFolders.map((folder) => (
+              <FolderTreeNode
+                key={folder.id}
+                folder={folder}
+                folders={folders}
+                selectedId={selectedId}
+                openIds={openIds}
+                onOpenChange={setOpenIds}
+                onSelect={selectFolder}
+                onEdit={openEdit}
+                onCreateChild={(parent) => openCreate(parent.id)}
+                onDelete={openDelete}
+                canManage={canManage}
+              />
+            ))}
+          </Files>
+        )}
+      </ScrollArea>
 
-      {resizable && (
+      {collapsible ? (
+        <div
+          className={cn(
+            "flex shrink-0 items-center border-t border-border/50 py-2 transition-all duration-300 ease-in-out",
+            isCollapsed ? "justify-center px-1" : "justify-end px-2"
+          )}
+        >
+          <FolderRailTooltip
+            label={isCollapsed ? t("panel.expand") : t("panel.collapse")}
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className={cn(
+                "text-muted-foreground hover:text-foreground transition-all duration-300",
+                isCollapsed ? "size-10" : "size-8"
+              )}
+              aria-expanded={!isCollapsed}
+              aria-label={
+                isCollapsed ? t("panel.expand") : t("panel.collapse")
+              }
+              onClick={() => setCollapsedPersisted(!collapsed)}
+            >
+              <CaretLeftIcon
+                className={cn(
+                  "size-4 transition-transform duration-300 ease-in-out",
+                  isCollapsed && "rotate-180"
+                )}
+              />
+            </Button>
+          </FolderRailTooltip>
+        </div>
+      ) : null}
+    </div>
+  )
+
+  return (
+    <aside
+      ref={panelRef}
+      style={
+        resizable
+          ? {
+              width: isCollapsed
+                ? FOLDER_PANEL_COLLAPSED_WIDTH
+                : panelWidth,
+            }
+          : undefined
+      }
+      data-resizing={isResizing ? "" : undefined}
+      data-collapsed={isCollapsed ? "" : undefined}
+      className={cn(
+        "relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-r border-border/50 bg-card/50",
+        !isResizing && "transition-[width] duration-300 ease-in-out",
+        isResizing && "will-change-[width] select-none transition-none",
+        !resizable && "w-56",
+        className
+      )}
+    >
+      {collapsible ? (
+        <TooltipProvider delay={300}>{panelBody}</TooltipProvider>
+      ) : (
+        panelBody
+      )}
+
+      {resizable && !isCollapsed ? (
         <div
           role="separator"
           aria-orientation="vertical"
@@ -493,7 +687,7 @@ export function FolderTreePanel({
             )}
           />
         </div>
-      )}
+      ) : null}
 
       <FolderFormDialog
         open={dialogOpen}
