@@ -22,7 +22,8 @@
     "hidePassword": "Hide password",
     "openNavMenu": "Open navigation menu",
     "toggleTheme": "Toggle theme",
-    "switchLanguage": "Switch language"
+    "switchLanguage": "Switch language",
+    "clearSearch": "Clear search"
   },
   "language": {
     "label": "Language",

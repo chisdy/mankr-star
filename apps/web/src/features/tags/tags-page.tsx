@@ -9,14 +9,13 @@ import {
   CaretRightIcon,
   DotsThreeVerticalIcon,
   HashIcon,
-  MagnifyingGlassIcon,
   GitMergeIcon,
   PencilSimpleIcon,
   TrashIcon,
 } from "@phosphor-icons/react"
 
 import { Button } from "@workspace/ui/components/button"
-import { Input } from "@workspace/ui/components/input"
+import { SearchInput } from "@workspace/ui/components/search-input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -398,16 +397,15 @@ export function TagsPage() {
 
       {!isLoading && !isError && tags.length > 0 ? (
         <div className="flex items-center gap-3">
-          <div className="relative min-w-0 flex-1">
-            <MagnifyingGlassIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              value={filter}
-              onChange={(e) => handleFilterChange(e.target.value)}
-              placeholder={t("searchPlaceholder")}
-              className="h-9 border-muted bg-muted/40 pr-3 pl-8 text-sm"
-            />
-          </div>
+          <SearchInput
+            value={filter}
+            onChange={(e) => handleFilterChange(e.target.value)}
+            onClear={() => handleFilterChange("")}
+            clearAriaLabel={t("common:accessibility.clearSearch")}
+            placeholder={t("searchPlaceholder")}
+            containerClassName="min-w-0 flex-1"
+            className="h-9 border-muted bg-muted/40 text-sm"
+          />
           <Select
             items={SORT_ITEMS.map((item) => ({
               value: item.value,

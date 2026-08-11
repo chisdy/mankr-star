@@ -5,11 +5,10 @@ import {
   CaretDownIcon,
   GlobeIcon,
   HashIcon,
-  MagnifyingGlassIcon,
   UserIcon,
 } from "@phosphor-icons/react"
 
-import { Input } from "@workspace/ui/components/input"
+import { SearchInput } from "@workspace/ui/components/search-input"
 import { cn } from "@workspace/ui/lib/utils"
 
 export type FacetOption = {
@@ -70,6 +69,7 @@ export function FacetSelect({
   variant = "owner",
   showAllOption = true,
 }: FacetSelectProps) {
+  const { t } = useTranslation("common")
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState("")
   const [pos, setPos] = React.useState<PanelPos | null>(null)
@@ -194,14 +194,15 @@ export function FacetSelect({
               contentClassName,
             )}
           >
-            <div className="relative shrink-0 border-b border-border/60 p-1.5">
-              <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
+            <div className="shrink-0 border-b border-border/60 p-1.5">
+              <SearchInput
                 ref={searchRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onClear={() => setQuery("")}
+                clearAriaLabel={t("accessibility.clearSearch")}
                 placeholder={searchPlaceholder}
-                className="h-8 border-0 bg-transparent pr-2.5 pl-8 shadow-none focus-visible:ring-0"
+                className="h-8 border-0 bg-transparent shadow-none focus-visible:ring-0"
                 aria-label={searchPlaceholder}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") e.preventDefault()

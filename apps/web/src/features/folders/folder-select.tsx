@@ -1,13 +1,9 @@
 import * as React from "react"
 import { useTranslation } from "react-i18next"
-import {
-  CaretDownIcon,
-  FolderIcon,
-  MagnifyingGlassIcon,
-} from "@phosphor-icons/react"
+import { CaretDownIcon, FolderIcon } from "@phosphor-icons/react"
 
 import { Button } from "@workspace/ui/components/button"
-import { Input } from "@workspace/ui/components/input"
+import { SearchInput } from "@workspace/ui/components/search-input"
 import { cn } from "@workspace/ui/lib/utils"
 import { filterFoldersByName, folderPathLabel } from "@/lib/folder-utils"
 import type { Folder } from "@/lib/types"
@@ -150,14 +146,15 @@ export function FolderSelect({
             contentClassName,
           )}
         >
-          <div className="relative shrink-0 border-b border-border/60 p-1.5">
-            <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
+          <div className="shrink-0 border-b border-border/60 p-1.5">
+            <SearchInput
               ref={searchRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery("")}
+              clearAriaLabel={t("common:accessibility.clearSearch")}
               placeholder={t("select.searchPlaceholder")}
-              className="h-8 border-0 bg-transparent pr-2.5 pl-8 shadow-none focus-visible:ring-0"
+              className="h-8 border-0 bg-transparent shadow-none focus-visible:ring-0"
               aria-label={t("select.searchAria")}
               onKeyDown={(e) => {
                 // 避免在 Dialog 内按 Enter 误提交外层表单

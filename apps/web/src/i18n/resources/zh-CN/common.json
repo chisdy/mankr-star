@@ -22,7 +22,8 @@
     "hidePassword": "隐藏密码",
     "openNavMenu": "打开导航菜单",
     "toggleTheme": "切换主题",
-    "switchLanguage": "切换语言"
+    "switchLanguage": "切换语言",
+    "clearSearch": "清除搜索"
   },
   "language": {
     "label": "语言",

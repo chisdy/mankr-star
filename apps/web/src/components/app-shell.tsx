@@ -5,14 +5,12 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   PlusIcon,
-  MagnifyingGlassIcon,
   ListIcon,
   SparkleIcon,
-  XIcon,
 } from "@phosphor-icons/react"
 
 import { Button } from "@workspace/ui/components/button"
-import { Input } from "@workspace/ui/components/input"
+import { SearchInput } from "@workspace/ui/components/search-input"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import { Sheet, SheetContent, SheetTitle } from "@workspace/ui/components/sheet"
 import { cn } from "@workspace/ui/lib/utils"
@@ -171,26 +169,16 @@ function AppShellContent() {
           <div className="flex shrink-0 items-center gap-2">
             <form
               onSubmit={handleSearchSubmit}
-              className="relative w-40 sm:w-52 md:w-64 lg:w-80"
+              className="w-40 sm:w-52 md:w-64 lg:w-80"
             >
-              <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
+              <SearchInput
                 placeholder={t("searchPlaceholder")}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="h-8 w-full border-muted bg-muted/40 pr-8 pl-8 text-xs md:text-sm [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+                onClear={handleSearchClear}
+                clearAriaLabel={t("clearSearch")}
+                className="h-8 w-full border-muted bg-muted/40 text-xs md:text-sm"
               />
-              {searchInput ? (
-                <button
-                  type="button"
-                  onClick={handleSearchClear}
-                  aria-label={t("clearSearch")}
-                  className="absolute top-1/2 right-1.5 flex size-5 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <XIcon className="size-3.5" />
-                </button>
-              ) : null}
             </form>
 
             <Button
