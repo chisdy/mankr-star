@@ -1,13 +1,15 @@
 import { bookmarkTags, bookmarks, folders, tags } from "@mankr/db"
 import {
+  DEFAULT_FACET_PAGE_SIZE,
   SOURCE_CAPABILITIES,
-  SOURCE_TYPES,
   batchBookmarksSchema,
   canonicalizeUrl,
   computeHealthStatus,
   createBookmarkSchema,
   detectSourceType,
   listBookmarksQuerySchema,
+  listOwnersQuerySchema,
+  listSitesQuerySchema,
   parseTwitterStatusInput,
   updateBookmarkSchema,
   urlExternalId,
@@ -17,6 +19,7 @@ import {
   and,
   asc,
   count,
+  countDistinct,
   desc,
   eq,
   inArray,
@@ -408,13 +411,22 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
 
 bookmarkRoutes.get("/bookmarks/owners", async (c) => {
   const db = c.get("db")
-  const q = c.req.query("q")?.trim()
-  const sourceTypeRaw = c.req.query("sourceType")?.trim()
-  const sourceType =
-    sourceTypeRaw &&
-    (SOURCE_TYPES as readonly string[]).includes(sourceTypeRaw)
-      ? (sourceTypeRaw as SourceType)
-      : "github"
+  const query = listOwnersQuerySchema.safeParse(c.req.query())
+  if (!query.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: query.error.flatten(),
+      },
+      400,
+    )
+  }
+
+  const { q, page, pageSize = DEFAULT_FACET_PAGE_SIZE } = query.data
+  // 只有显式带 page 才分页，缺省保持全量
+  const paginated = page !== undefined
+  const sourceType: SourceType = query.data.sourceType ?? "github"
 
   const conditions = [
     isNull(bookmarks.deletedAt),
@@ -427,7 +439,7 @@ bookmarkRoutes.get("/bookmarks/owners", async (c) => {
 
   const usageCount = count(bookmarks.id).as("usage_count")
 
-  const rows = await db
+  const listQuery = db
     .select({
       name: bookmarks.owner,
       usage_count: usageCount,
@@ -437,19 +449,49 @@ bookmarkRoutes.get("/bookmarks/owners", async (c) => {
     .groupBy(bookmarks.owner)
     .orderBy(asc(bookmarks.owner))
 
+  const rows = paginated
+    ? await listQuery.limit(pageSize).offset((page - 1) * pageSize)
+    : await listQuery
+
+  const items = rows
+    .filter((r): r is { name: string; usage_count: number } => Boolean(r.name))
+    .map((r) => ({
+      name: r.name,
+      usage_count: Number(r.usage_count),
+    }))
+
+  if (!paginated) return c.json({ items, total: items.length })
+
+  // 总数是分组数而非收藏行数
+  const [totalRow] = await db
+    .select({ value: countDistinct(bookmarks.owner) })
+    .from(bookmarks)
+    .where(and(...conditions))
+
   return c.json({
-    items: rows
-      .filter((r): r is { name: string; usage_count: number } => Boolean(r.name))
-      .map((r) => ({
-        name: r.name,
-        usage_count: Number(r.usage_count),
-      })),
+    items,
+    page,
+    pageSize,
+    total: Number(totalRow?.value ?? 0),
   })
 })
 
 bookmarkRoutes.get("/bookmarks/sites", async (c) => {
   const db = c.get("db")
-  const q = c.req.query("q")?.trim()
+  const query = listSitesQuerySchema.safeParse(c.req.query())
+  if (!query.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: query.error.flatten(),
+      },
+      400,
+    )
+  }
+
+  const { q, page, pageSize = DEFAULT_FACET_PAGE_SIZE } = query.data
+  const paginated = page !== undefined
 
   const siteLabel = sql<string>`COALESCE(${bookmarks.siteName}, ${bookmarks.owner})`
 
@@ -466,7 +508,7 @@ bookmarkRoutes.get("/bookmarks/sites", async (c) => {
 
   const usageCount = count(bookmarks.id).as("usage_count")
 
-  const rows = await db
+  const listQuery = db
     .select({
       name: siteLabel.as("name"),
       usage_count: usageCount,
@@ -476,13 +518,29 @@ bookmarkRoutes.get("/bookmarks/sites", async (c) => {
     .groupBy(siteLabel)
     .orderBy(asc(siteLabel))
 
+  const rows = paginated
+    ? await listQuery.limit(pageSize).offset((page - 1) * pageSize)
+    : await listQuery
+
+  const items = rows
+    .filter((r): r is { name: string; usage_count: number } => Boolean(r.name))
+    .map((r) => ({
+      name: r.name,
+      usage_count: Number(r.usage_count),
+    }))
+
+  if (!paginated) return c.json({ items, total: items.length })
+
+  const [totalRow] = await db
+    .select({ value: countDistinct(siteLabel) })
+    .from(bookmarks)
+    .where(and(...conditions))
+
   return c.json({
-    items: rows
-      .filter((r): r is { name: string; usage_count: number } => Boolean(r.name))
-      .map((r) => ({
-        name: r.name,
-        usage_count: Number(r.usage_count),
-      })),
+    items,
+    page,
+    pageSize,
+    total: Number(totalRow?.value ?? 0),
   })
 })
 

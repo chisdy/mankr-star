@@ -23,6 +23,7 @@ import {
   KB_CHAT_MODEL_IDS,
   KB_CHAT_REQUEST_MAX_MESSAGES,
   KB_CHAT_TOP_K,
+  MAX_FACET_PAGE_SIZE,
   MAX_TRACKING_DAYS,
   MIN_TRACKING_DAYS,
   PASSWORD_MIN_LENGTH,
@@ -141,6 +142,35 @@ export const listBookmarksQuerySchema = z.object({
   order: z.enum(["asc", "desc"]).default("desc"),
 })
 export type ListBookmarksQuery = z.infer<typeof listBookmarksQuerySchema>
+
+/**
+ * Facet 下拉（标签 / 开发者 / 站点）列表查询。
+ * page 刻意不设默认值：缺省时路由返回全量，既有全量调用方不受影响；
+ * 只有显式带 page 才切到分页分支。
+ */
+const facetQueryShape = {
+  q: z.string().trim().optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_FACET_PAGE_SIZE)
+    .optional(),
+}
+
+export const listTagsQuerySchema = z.object(facetQueryShape)
+export type ListTagsQuery = z.infer<typeof listTagsQuerySchema>
+
+export const listOwnersQuerySchema = z.object({
+  ...facetQueryShape,
+  /** 未知取值回退为 undefined，由路由套用默认来源，沿用旧的宽松行为 */
+  sourceType: z.enum(SOURCE_TYPES).optional().catch(undefined),
+})
+export type ListOwnersQuery = z.infer<typeof listOwnersQuerySchema>
+
+export const listSitesQuerySchema = z.object(facetQueryShape)
+export type ListSitesQuery = z.infer<typeof listSitesQuerySchema>
 
 export const createFolderSchema = z.object({
   name: z.string().min(1).max(64),

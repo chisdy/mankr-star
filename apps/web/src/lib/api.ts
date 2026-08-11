@@ -19,6 +19,8 @@ import type {
   CloudflareSettings,
   DeepSeekSettings,
   ExportData,
+  FacetPage,
+  FacetPageParams,
   FeedQueryParams,
   FeedResponse,
   FeedStatsResponse,
@@ -262,6 +264,73 @@ function toFeedQuery(params?: FeedQueryParams): string {
   search.set("page", String(params?.page ?? 1))
   search.set("pageSize", String(params?.pageSize ?? 20))
   return `?${search.toString()}`
+}
+
+/** page 必传：服务端以此判定走分页分支而非全量 */
+function toFacetQuery(
+  params: FacetPageParams,
+  extra?: Record<string, string | undefined>,
+): string {
+  const search = new URLSearchParams()
+  if (params.q?.trim()) search.set("q", params.q.trim())
+  search.set("page", String(params.page))
+  search.set("pageSize", String(params.pageSize))
+  for (const [key, value] of Object.entries(extra ?? {})) {
+    if (value) search.set(key, value)
+  }
+  return `?${search.toString()}`
+}
+
+function filterByName<T extends { name: string }>(items: T[], q?: string): T[] {
+  const needle = q?.trim().toLowerCase()
+  if (!needle) return items
+  return items.filter((item) => item.name.toLowerCase().includes(needle))
+}
+
+function sliceFacetPage<T>(items: T[], params: FacetPageParams): FacetPage<T> {
+  const { page, pageSize } = params
+  return {
+    items: items.slice((page - 1) * pageSize, page * pageSize),
+    page,
+    pageSize,
+    total: items.length,
+  }
+}
+
+function countsToFacetItems(
+  counts: Map<string, number>,
+): Array<{ name: string; usage_count: number }> {
+  return Array.from(counts.entries())
+    .map(([name, usage_count]) => ({ name, usage_count }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+function mockOwners(
+  q?: string,
+  sourceType?: "github" | "twitter" | "url",
+): BookmarkOwner[] {
+  const filterType = sourceType ?? "github"
+  const needle = q?.trim().toLowerCase()
+  const counts = new Map<string, number>()
+  for (const b of mockStore().bookmarks) {
+    if (b.deleted_at || !b.owner || b.source_type !== filterType) continue
+    if (needle && !b.owner.toLowerCase().includes(needle)) continue
+    counts.set(b.owner, (counts.get(b.owner) ?? 0) + 1)
+  }
+  return countsToFacetItems(counts)
+}
+
+function mockSites(q?: string): BookmarkSite[] {
+  const needle = q?.trim().toLowerCase()
+  const counts = new Map<string, number>()
+  for (const b of mockStore().bookmarks) {
+    if (b.deleted_at || b.source_type !== "url") continue
+    const label = b.site_name || b.owner
+    if (!label) continue
+    if (needle && !label.toLowerCase().includes(needle)) continue
+    counts.set(label, (counts.get(label) ?? 0) + 1)
+  }
+  return countsToFacetItems(counts)
 }
 
 // ---------------------------------------------------------------------------
@@ -1249,6 +1318,33 @@ export const api = {
     }
   },
 
+  /** 分页版标签列表，供 facet 下拉无限滚动使用；getTags() 仍返回全量数组 */
+  async getTagsPage(params: FacetPageParams): Promise<FacetPage<Tag>> {
+    try {
+      const res = await request<{
+        items: Array<{ id: string; name: string; usage_count?: number }>
+        page: number
+        pageSize: number
+        total: number
+      }>(`/api/tags${toFacetQuery(params)}`)
+      return {
+        items: res.items.map((t) => ({
+          id: t.id,
+          name: t.name,
+          count: t.usage_count ?? 0,
+        })),
+        page: res.page,
+        pageSize: res.pageSize,
+        total: res.total,
+      }
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        return sliceFacetPage(filterByName(mockStore().tags, params.q), params)
+      }
+      throw err
+    }
+  },
+
   async updateTag(id: string, data: { name: string }): Promise<Tag> {
     const name = data.name.trim()
     try {
@@ -1514,19 +1610,38 @@ export const api = {
         usage_count: o.usage_count ?? 0,
       }))
     } catch (err) {
+      if (shouldFallbackToMock(err)) return mockOwners(q, sourceType)
+      throw err
+    }
+  },
+
+  /** 分页版开发者列表；getOwners() 仍返回全量数组 */
+  async getOwnersPage(
+    params: FacetPageParams & { sourceType?: "github" | "twitter" | "url" },
+  ): Promise<FacetPage<BookmarkOwner>> {
+    try {
+      const res = await request<{
+        items: Array<{ name: string; usage_count?: number }>
+        page: number
+        pageSize: number
+        total: number
+      }>(
+        `/api/bookmarks/owners${toFacetQuery(params, {
+          sourceType: params.sourceType,
+        })}`,
+      )
+      return {
+        items: res.items.map((o) => ({
+          name: o.name,
+          usage_count: o.usage_count ?? 0,
+        })),
+        page: res.page,
+        pageSize: res.pageSize,
+        total: res.total,
+      }
+    } catch (err) {
       if (shouldFallbackToMock(err)) {
-        const filterType = sourceType ?? "github"
-        const counts = new Map<string, number>()
-        for (const b of mockStore().bookmarks) {
-          if (b.deleted_at || !b.owner || b.source_type !== filterType) continue
-          if (q?.trim() && !b.owner.toLowerCase().includes(q.trim().toLowerCase())) {
-            continue
-          }
-          counts.set(b.owner, (counts.get(b.owner) ?? 0) + 1)
-        }
-        return Array.from(counts.entries())
-          .map(([name, usage_count]) => ({ name, usage_count }))
-          .sort((a, b) => a.name.localeCompare(b.name))
+        return sliceFacetPage(mockOwners(params.q, params.sourceType), params)
       }
       throw err
     }
@@ -1543,20 +1658,32 @@ export const api = {
         usage_count: o.usage_count ?? 0,
       }))
     } catch (err) {
+      if (shouldFallbackToMock(err)) return mockSites(q)
+      throw err
+    }
+  },
+
+  /** 分页版站点列表；getSites() 仍返回全量数组 */
+  async getSitesPage(params: FacetPageParams): Promise<FacetPage<BookmarkSite>> {
+    try {
+      const res = await request<{
+        items: Array<{ name: string; usage_count?: number }>
+        page: number
+        pageSize: number
+        total: number
+      }>(`/api/bookmarks/sites${toFacetQuery(params)}`)
+      return {
+        items: res.items.map((o) => ({
+          name: o.name,
+          usage_count: o.usage_count ?? 0,
+        })),
+        page: res.page,
+        pageSize: res.pageSize,
+        total: res.total,
+      }
+    } catch (err) {
       if (shouldFallbackToMock(err)) {
-        const counts = new Map<string, number>()
-        for (const b of mockStore().bookmarks) {
-          if (b.deleted_at || b.source_type !== "url") continue
-          const label = b.site_name || b.owner
-          if (!label) continue
-          if (q?.trim() && !label.toLowerCase().includes(q.trim().toLowerCase())) {
-            continue
-          }
-          counts.set(label, (counts.get(label) ?? 0) + 1)
-        }
-        return Array.from(counts.entries())
-          .map(([name, usage_count]) => ({ name, usage_count }))
-          .sort((a, b) => a.name.localeCompare(b.name))
+        return sliceFacetPage(mockSites(params.q), params)
       }
       throw err
     }

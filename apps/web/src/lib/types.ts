@@ -248,6 +248,20 @@ export interface BookmarkSite {
   usage_count?: number
 }
 
+/** Facet 下拉（标签 / 开发者 / 站点）显式分页时的响应 */
+export interface FacetPage<T> {
+  items: T[]
+  page: number
+  pageSize: number
+  total: number
+}
+
+export interface FacetPageParams {
+  q?: string
+  page: number
+  pageSize: number
+}
+
 export interface BookmarksResponse {
   items: Bookmark[]
   total: number

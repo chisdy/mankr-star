@@ -224,6 +224,10 @@ export const DEEPSEEK_PRICE_USD_PER_1M: Record<
 export const AI_STATUSES = ["pending", "done", "fallback", "failed"] as const
 export type AiStatus = (typeof AI_STATUSES)[number]
 
+/** Facet 下拉（标签/开发者/站点）显式分页时的每页条数缺省值 */
+export const DEFAULT_FACET_PAGE_SIZE = 50
+export const MAX_FACET_PAGE_SIZE = 100
+
 export const SOURCE_TYPES = ["github", "twitter", "url"] as const
 export type SourceType = (typeof SOURCE_TYPES)[number]
 

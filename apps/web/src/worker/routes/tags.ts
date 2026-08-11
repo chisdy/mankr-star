@@ -1,6 +1,13 @@
 import { bookmarkTags, bookmarks, tags } from "@mankr/db"
-import { batchTagsSchema, mergeTagsPreviewSchema, mergeTagsSchema, updateTagSchema } from "@mankr/shared"
-import { and, asc, count, desc, eq, inArray, isNull, ne, or } from "drizzle-orm"
+import {
+  DEFAULT_FACET_PAGE_SIZE,
+  batchTagsSchema,
+  listTagsQuerySchema,
+  mergeTagsPreviewSchema,
+  mergeTagsSchema,
+  updateTagSchema,
+} from "@mankr/shared"
+import { and, asc, count, desc, eq, inArray, isNull, like, ne, or } from "drizzle-orm"
 import { Hono } from "hono"
 import type { AppEnv } from "../env"
 import { mergeTagIntoTarget, previewMergeTags, runTagBatch, usageCountForTag } from "../lib/tag-batch"
@@ -14,11 +21,30 @@ tagRoutes.use("/tags/*", authByMethod())
 
 tagRoutes.get("/tags", async (c) => {
   const db = c.get("db")
+  const query = listTagsQuerySchema.safeParse(c.req.query())
+  if (!query.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: query.error.flatten(),
+      },
+      400,
+    )
+  }
+
+  const { q, page, pageSize = DEFAULT_FACET_PAGE_SIZE } = query.data
+  // 只有显式带 page 才分页；缺省仍返回全量，兼容标签管理页等调用方
+  const paginated = page !== undefined
+
+  const filter = q
+    ? or(like(tags.name, `%${q}%`), like(tags.slug, `%${q}%`))
+    : undefined
 
   // count(bookmarks.id)：软删/归档收藏在 join 条件外，id 为 null，不计入
   const usageCount = count(bookmarks.id).as("usage_count")
 
-  const rows = await db
+  const listQuery = db
     .select({
       id: tags.id,
       name: tags.name,
@@ -36,17 +62,35 @@ tagRoutes.get("/tags", async (c) => {
         isNull(bookmarks.archivedAt),
       ),
     )
+    .where(filter)
     .groupBy(tags.id)
     .orderBy(desc(usageCount), asc(tags.name))
 
+  const rows = paginated
+    ? await listQuery.limit(pageSize).offset((page - 1) * pageSize)
+    : await listQuery
+
+  const items = rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    usage_count: Number(r.usage_count),
+    created_at: r.created_at,
+  }))
+
+  if (!paginated) return c.json({ items, total: items.length })
+
+  // 分组数 = 匹配的标签数，直接数 tags 表，避免把 join 行数当总数
+  const [totalRow] = await db
+    .select({ value: count() })
+    .from(tags)
+    .where(filter)
+
   return c.json({
-    items: rows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      slug: r.slug,
-      usage_count: Number(r.usage_count),
-      created_at: r.created_at,
-    })),
+    items,
+    page,
+    pageSize,
+    total: Number(totalRow?.value ?? 0),
   })
 })
 

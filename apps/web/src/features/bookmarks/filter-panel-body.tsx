@@ -1,6 +1,5 @@
 import * as React from "react"
 import { useReadableSearchParams } from "@/lib/search-params"
-import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react"
 import type { BookmarkPricingFilter } from "@mankr/shared"
@@ -21,6 +20,7 @@ import { queryKeys } from "@/lib/query-keys"
 import { BOOKMARK_PAGE_PARAM } from "./bookmark-pagination"
 import { FacetSelect } from "./owner-select"
 import { parsePricingFilterParam } from "./pricing-filter"
+import { useFacetInfinite } from "./use-facet-infinite"
 
 const PANEL_FILTER_KEYS = [
   "source_type",
@@ -106,30 +106,31 @@ export function FilterPanelBody({ className }: { className?: string }) {
   const ownersSourceType: "github" | "twitter" =
     sourceType === "twitter" ? "twitter" : "github"
 
-  const { data: tags = [], isLoading: tagsLoading } = useQuery({
-    queryKey: queryKeys.tags.all,
-    queryFn: () => api.getTags(),
+  const tagFacet = useFacetInfinite({
+    keyFor: (q) => queryKeys.tags.infinite(q),
+    fetchPage: (params) => api.getTagsPage(params),
   })
 
-  const { data: owners = [], isLoading: ownersLoading } = useQuery({
-    queryKey: queryKeys.bookmarks.owners(ownersSourceType),
-    queryFn: () => api.getOwners({ sourceType: ownersSourceType }),
+  const ownerFacet = useFacetInfinite({
+    keyFor: (q) => queryKeys.bookmarks.ownersInfinite(ownersSourceType, q),
+    fetchPage: (params) =>
+      api.getOwnersPage({ ...params, sourceType: ownersSourceType }),
     enabled: showOwner,
   })
 
-  const { data: sites = [], isLoading: sitesLoading } = useQuery({
-    queryKey: queryKeys.bookmarks.sites,
-    queryFn: () => api.getSites(),
+  const siteFacet = useFacetInfinite({
+    keyFor: (q) => queryKeys.bookmarks.sitesInfinite(q),
+    fetchPage: (params) => api.getSitesPage(params),
     enabled: showWebFilters,
   })
 
   const tagFacetItems = React.useMemo(
     () =>
-      tags.map((tagItem) => ({
+      tagFacet.items.map((tagItem) => ({
         name: tagItem.name,
         usage_count: tagItem.count,
       })),
-    [tags]
+    [tagFacet.items]
   )
 
   const popularLanguages = [
@@ -294,7 +295,15 @@ export function FilterPanelBody({ className }: { className?: string }) {
           items={tagFacetItems}
           value={tag || null}
           onValueChange={(val) => updateParam("tag", val)}
-          isLoading={tagsLoading}
+          isLoading={tagFacet.isLoading}
+          virtualized
+          pagination={{
+            hasNextPage: tagFacet.hasNextPage,
+            isFetchingNextPage: tagFacet.isFetchingNextPage,
+            loadMoreError: tagFacet.loadMoreError,
+            onLoadMore: tagFacet.fetchNextPage,
+            onSearchChange: tagFacet.setSearch,
+          }}
           fullWidth
           size="sm"
           variant="tag"
@@ -309,7 +318,7 @@ export function FilterPanelBody({ className }: { className?: string }) {
       {showOwner ? (
         <Field className={CONTROL_WIDTH}>
           <FacetSelect
-            items={owners}
+            items={ownerFacet.items}
             value={owner || null}
             onValueChange={(val) => {
               patchParams((next) => {
@@ -321,7 +330,15 @@ export function FilterPanelBody({ className }: { className?: string }) {
                 }
               })
             }}
-            isLoading={ownersLoading}
+            isLoading={ownerFacet.isLoading}
+            virtualized
+            pagination={{
+              hasNextPage: ownerFacet.hasNextPage,
+              isFetchingNextPage: ownerFacet.isFetchingNextPage,
+              loadMoreError: ownerFacet.loadMoreError,
+              onLoadMore: ownerFacet.fetchNextPage,
+              onSearchChange: ownerFacet.setSearch,
+            }}
             fullWidth
             size="sm"
             variant="owner"
@@ -337,7 +354,7 @@ export function FilterPanelBody({ className }: { className?: string }) {
       {showWebFilters ? (
         <Field className={CONTROL_WIDTH}>
           <FacetSelect
-            items={sites}
+            items={siteFacet.items}
             value={site || null}
             onValueChange={(val) => {
               patchParams((next) => {
@@ -349,7 +366,15 @@ export function FilterPanelBody({ className }: { className?: string }) {
                 }
               })
             }}
-            isLoading={sitesLoading}
+            isLoading={siteFacet.isLoading}
+            virtualized
+            pagination={{
+              hasNextPage: siteFacet.hasNextPage,
+              isFetchingNextPage: siteFacet.isFetchingNextPage,
+              loadMoreError: siteFacet.loadMoreError,
+              onLoadMore: siteFacet.fetchNextPage,
+              onSearchChange: siteFacet.setSearch,
+            }}
             fullWidth
             size="sm"
             variant="site"

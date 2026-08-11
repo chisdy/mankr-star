@@ -944,6 +944,220 @@ describe("GET /api/bookmarks/sites", () => {
   })
 })
 
+interface FacetList {
+  items: Array<{ name: string; usage_count?: number }>
+  page?: number
+  pageSize?: number
+  total: number
+}
+
+/** 建一条收藏并把标签整体替换为给定集合 */
+async function seedTags(names: string[]) {
+  const created = await createBookmark("facebook/react")
+  await client.patch(`/api/bookmarks/${created.body.id}`, { tagNames: names })
+  return created.body.id
+}
+
+describe("GET /api/tags 分页与搜索", () => {
+  it("未传 page 时返回全量，pageSize 单独出现不生效", async () => {
+    await seedTags(["alpha-one", "alpha-two", "beta"])
+
+    const all = await client.json<FacetList>("/api/tags")
+    expect(all.status).toBe(200)
+    expect(all.body.items.length).toBeGreaterThanOrEqual(3)
+    expect(all.body.total).toBe(all.body.items.length)
+
+    // pageSize 不是分页开关，缺 page 时应被忽略
+    const onlyPageSize = await client.json<FacetList>("/api/tags?pageSize=1")
+    expect(onlyPageSize.body.items.length).toBe(all.body.items.length)
+  })
+
+  it("显式传 page 时按页切片，total 为匹配的标签总数", async () => {
+    await seedTags(["alpha-one", "alpha-two", "beta"])
+
+    const all = await client.json<FacetList>("/api/tags")
+    const names = all.body.items.map((t) => t.name)
+
+    const first = await client.json<FacetList>("/api/tags?page=1&pageSize=2")
+    expect(first.status).toBe(200)
+    expect(first.body.page).toBe(1)
+    expect(first.body.pageSize).toBe(2)
+    expect(first.body.total).toBe(names.length)
+    expect(first.body.items.map((t) => t.name)).toEqual(names.slice(0, 2))
+
+    const second = await client.json<FacetList>("/api/tags?page=2&pageSize=2")
+    expect(second.body.items.map((t) => t.name)).toEqual(names.slice(2, 4))
+  })
+
+  it("末页之后返回空列表但保留 total", async () => {
+    await seedTags(["alpha-one", "alpha-two", "beta"])
+    const all = await client.json<FacetList>("/api/tags")
+
+    const beyond = await client.json<FacetList>("/api/tags?page=99&pageSize=20")
+    expect(beyond.status).toBe(200)
+    expect(beyond.body.items).toEqual([])
+    expect(beyond.body.total).toBe(all.body.items.length)
+  })
+
+  it("q 按名称模糊匹配，可与分页组合", async () => {
+    await seedTags(["alpha-one", "alpha-two", "beta"])
+
+    const filtered = await client.json<FacetList>("/api/tags?q=alpha")
+    expect(filtered.status).toBe(200)
+    expect(filtered.body.items.map((t) => t.name).sort()).toEqual([
+      "alpha-one",
+      "alpha-two",
+    ])
+
+    const paged = await client.json<FacetList>(
+      "/api/tags?q=alpha&page=1&pageSize=1",
+    )
+    expect(paged.body.total).toBe(2)
+    expect(paged.body.items).toHaveLength(1)
+
+    const miss = await client.json<FacetList>("/api/tags?q=zzz&page=1")
+    expect(miss.body.items).toEqual([])
+    expect(miss.body.total).toBe(0)
+  })
+
+  it("pageSize 超过上限返回 400", async () => {
+    const { status, body } = await client.json<{ code: string }>(
+      "/api/tags?page=1&pageSize=101",
+    )
+    expect(status).toBe(400)
+    expect(body.code).toBe("VALIDATION_ERROR")
+  })
+})
+
+describe("GET /api/bookmarks/owners 分页", () => {
+  beforeEach(() => {
+    outbound.json(`${GITHUB}vercel/next.js`, githubRepoPayload("vercel/next.js"))
+  })
+
+  it("未传 page 时返回全量并带 total", async () => {
+    await createBookmark("facebook/react")
+    await createBookmark("astral-sh/uv")
+    await createBookmark("vercel/next.js")
+
+    const all = await client.json<FacetList>("/api/bookmarks/owners")
+    expect(all.status).toBe(200)
+    expect(all.body.items.map((o) => o.name)).toEqual([
+      "astral-sh",
+      "facebook",
+      "vercel",
+    ])
+    expect(all.body.total).toBe(3)
+  })
+
+  it("显式传 page 时按页切片，total 为开发者数而非收藏数", async () => {
+    await createBookmark("facebook/react")
+    await createBookmark("astral-sh/uv")
+    await createBookmark("vercel/next.js")
+
+    const first = await client.json<FacetList>(
+      "/api/bookmarks/owners?page=1&pageSize=2",
+    )
+    expect(first.status).toBe(200)
+    expect(first.body.page).toBe(1)
+    expect(first.body.pageSize).toBe(2)
+    expect(first.body.total).toBe(3)
+    expect(first.body.items.map((o) => o.name)).toEqual([
+      "astral-sh",
+      "facebook",
+    ])
+
+    const second = await client.json<FacetList>(
+      "/api/bookmarks/owners?page=2&pageSize=2",
+    )
+    expect(second.body.items.map((o) => o.name)).toEqual(["vercel"])
+    expect(second.body.total).toBe(3)
+  })
+
+  it("q 与分页组合", async () => {
+    await createBookmark("facebook/react")
+    await createBookmark("astral-sh/uv")
+
+    const { status, body } = await client.json<FacetList>(
+      "/api/bookmarks/owners?q=face&page=1&pageSize=10",
+    )
+    expect(status).toBe(200)
+    expect(body.items.map((o) => o.name)).toEqual(["facebook"])
+    expect(body.total).toBe(1)
+  })
+
+  it("未知 sourceType 回退默认来源而非报错", async () => {
+    await createBookmark("facebook/react")
+
+    const { status, body } = await client.json<FacetList>(
+      "/api/bookmarks/owners?sourceType=nope",
+    )
+    expect(status).toBe(200)
+    expect(body.items.map((o) => o.name)).toEqual(["facebook"])
+  })
+})
+
+describe("GET /api/bookmarks/sites 分页", () => {
+  async function seedSites() {
+    for (const [url, siteName] of [
+      ["https://example.com/a", "Example Docs"],
+      ["https://other.test/b", "Other Site"],
+      ["https://third.test/c", "Third Site"],
+    ] as const) {
+      outbound.text(
+        url,
+        `<!doctype html><html><head>
+          <meta property="og:title" content="${siteName}" />
+          <meta property="og:site_name" content="${siteName}" />
+        </head><body><main><p>x</p></main></body></html>`,
+      )
+      await createBookmark(url)
+    }
+  }
+
+  it("未传 page 时返回全量并带 total", async () => {
+    await seedSites()
+
+    const all = await client.json<FacetList>("/api/bookmarks/sites")
+    expect(all.status).toBe(200)
+    expect(all.body.items.map((s) => s.name)).toEqual([
+      "Example Docs",
+      "Other Site",
+      "Third Site",
+    ])
+    expect(all.body.total).toBe(3)
+  })
+
+  it("显式传 page 时按页切片，total 为站点数", async () => {
+    await seedSites()
+
+    const first = await client.json<FacetList>(
+      "/api/bookmarks/sites?page=1&pageSize=2",
+    )
+    expect(first.status).toBe(200)
+    expect(first.body.total).toBe(3)
+    expect(first.body.items.map((s) => s.name)).toEqual([
+      "Example Docs",
+      "Other Site",
+    ])
+
+    const second = await client.json<FacetList>(
+      "/api/bookmarks/sites?page=2&pageSize=2",
+    )
+    expect(second.body.items.map((s) => s.name)).toEqual(["Third Site"])
+  })
+
+  it("q 与分页组合", async () => {
+    await seedSites()
+
+    const { status, body } = await client.json<FacetList>(
+      "/api/bookmarks/sites?q=Other&page=1&pageSize=10",
+    )
+    expect(status).toBe(200)
+    expect(body.items.map((s) => s.name)).toEqual(["Other Site"])
+    expect(body.total).toBe(1)
+  })
+})
+
 describe("GET /api/feed", () => {
   it("无事件时返回空分页信封", async () => {
     const { status, body } = await client.json<{

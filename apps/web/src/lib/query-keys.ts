@@ -13,15 +13,18 @@ export const queryKeys = {
       ["bookmarks", "infinite", params] as const,
     detail: (id: string) => ["bookmarks", "detail", id] as const,
     /** 挂在 bookmarks 前缀下，invalidate bookmarks.all 时一并刷新 */
-    owners: (sourceType?: string) =>
-      ["bookmarks", "owners", sourceType ?? "github"] as const,
-    sites: ["bookmarks", "sites"] as const,
+    ownersInfinite: (sourceType?: string, q?: string) =>
+      ["bookmarks", "owners", sourceType ?? "github", "infinite", q ?? ""] as const,
+    sitesInfinite: (q?: string) =>
+      ["bookmarks", "sites", "infinite", q ?? ""] as const,
   },
   folders: {
     all: ["folders"] as const,
   },
   tags: {
     all: ["tags"] as const,
+    /** 前缀仍是 tags，invalidate tags.all 时 facet 分页缓存一并失效 */
+    infinite: (q?: string) => ["tags", "infinite", q ?? ""] as const,
   },
   feed: {
     all: ["feed"] as const,
