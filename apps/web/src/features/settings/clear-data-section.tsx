@@ -44,7 +44,7 @@ export function ClearDataSection() {
   }, [open])
 
   return (
-    <section className="space-y-4 border-t border-border pt-6">
+    <section id="danger" className="scroll-mt-16 space-y-4 border-t border-border pt-6 lg:scroll-mt-6">
       <div>
         <h2 className="text-sm font-semibold tracking-tight text-destructive flex items-center gap-1.5">
           <WarningCircleIcon className="size-4" />

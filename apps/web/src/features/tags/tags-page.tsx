@@ -59,11 +59,13 @@ const PAGE_PARAM = "page"
 /** 与宫格列数对齐：2/3/4 列都能整除 */
 const TAGS_PAGE_SIZE = 48
 
-const SORT_ITEMS: Array<{ value: TagSort; labelKey: "sortCount" | "sortName" }> =
-  [
-    { value: "count", labelKey: "sortCount" },
-    { value: "name", labelKey: "sortName" },
-  ]
+const SORT_ITEMS: Array<{
+  value: TagSort
+  labelKey: "sortCount" | "sortName"
+}> = [
+  { value: "count", labelKey: "sortCount" },
+  { value: "name", labelKey: "sortName" },
+]
 
 function sortTags(tags: Tag[], sort: TagSort): Tag[] {
   const list = [...tags]
@@ -265,7 +267,12 @@ export function TagsPage() {
 
   const requestedPage = parsePageParam(searchParams.get(PAGE_PARAM))
 
-  const { data: tags = [], isLoading, isError, error } = useQuery({
+  const {
+    data: tags = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: queryKeys.tags.all,
     queryFn: () => api.getTags(),
   })
@@ -321,11 +328,13 @@ export function TagsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-12">
-      <div className="border-b border-border pb-4">
+      <div className="pb-2">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           {t("title")}
         </h1>
-        <p className="mt-0.5 text-xs text-muted-foreground">{t("description")}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {t("description")}
+        </p>
       </div>
 
       {!isLoading && !isError && tags.length > 0 ? (
@@ -376,11 +385,15 @@ export function TagsPage() {
                       onClick={() => setClearEmptyOpen(true)}
                     >
                       <BroomIcon className="size-3.5" />
-                      <span className="font-mono tabular-nums">{emptyCount}</span>
+                      <span className="font-mono tabular-nums">
+                        {emptyCount}
+                      </span>
                     </Button>
                   }
                 />
-                <TooltipContent side="top">{t("clearEmpty.label")}</TooltipContent>
+                <TooltipContent side="top">
+                  {t("clearEmpty.label")}
+                </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           ) : null}
@@ -416,11 +429,17 @@ export function TagsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {pageCount > 1 ? (
-            <p className="text-xs text-muted-foreground">
-              {t("pagination.pageStatus", { page, pageCount })}
-            </p>
-          ) : null}
+          <p className="text-xs text-muted-foreground">
+            <span className="font-mono tabular-nums">
+              {t("total", { count: total })}
+            </span>
+            {pageCount > 1 ? (
+              <>
+                <span className="mx-1.5 text-border">·</span>
+                {t("pagination.pageStatus", { page, pageCount })}
+              </>
+            ) : null}
+          </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
             {pageItems.map((tag) => (
               <TagCard

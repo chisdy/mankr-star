@@ -26,6 +26,14 @@ describe("defaultSettingValue", () => {
     expect(defaultSettingValue("browsing")).toEqual({
       publicBrowsingEnabled: false,
     })
+    expect(defaultSettingValue("cloudflare")).toEqual({
+      accountId: "",
+      apiTokenEncrypted: null,
+      apiTokenLast4: null,
+    })
+    expect(defaultSettingValue("analytics")).toEqual({
+      measurementId: null,
+    })
   })
 })
 
@@ -34,6 +42,27 @@ describe("parseSettingValue", () => {
     expect(parseSettingValue("bookmarks", { paginationMode: "manual" })).toEqual(
       { paginationMode: "manual", pageSize: DEFAULT_BOOKMARK_PAGE_SIZE },
     )
+  })
+
+  it("analytics Measurement ID 空串与非法格式归一为 null", () => {
+    expect(parseSettingValue("analytics", { measurementId: "" })).toEqual({
+      measurementId: null,
+    })
+    expect(parseSettingValue("analytics", { measurementId: "  " })).toEqual({
+      measurementId: null,
+    })
+    expect(
+      parseSettingValue("analytics", { measurementId: "<script>alert(1)</script>" }),
+    ).toEqual({ measurementId: null })
+    expect(
+      parseSettingValue("analytics", { measurementId: "UA-123456-1" }),
+    ).toEqual({ measurementId: null })
+  })
+
+  it("analytics 接受合法 G- ID 并规范化为大写", () => {
+    expect(
+      parseSettingValue("analytics", { measurementId: "g-abc123xyz" }),
+    ).toEqual({ measurementId: "G-ABC123XYZ" })
   })
 
   it("坏字段只回退自己，不牵连同领域的其他字段", () => {

@@ -7,7 +7,7 @@
   },
   "header": {
     "title": "Insights",
-    "description": "Library composition, health, and DeepSeek usage"
+    "description": "Library composition, health, DeepSeek usage, and Cloudflare Free quota"
   },
   "states": {
     "loadError": "Failed to load insights. Check network or backend.",
@@ -81,5 +81,23 @@
       "kb_chat": "Library chat",
       "kb_compress": "Chat context compression"
     }
+  },
+  "cloudflare": {
+    "title": "Cloudflare Free quota",
+    "description": "Account-wide Workers / D1 usage for today vs Free limits",
+    "scopeAccount": "Account",
+    "unconfiguredPrefix": "Analytics credentials not configured. Go to",
+    "settingsLink": "Settings",
+    "unconfiguredSuffix": "and add Account ID plus a read-only API Token.",
+    "loadError": "Failed to load Cloudflare usage.",
+    "stale": "Latest fetch failed; showing cached data (may be stale)",
+    "workersRequests": "Workers requests (today)",
+    "d1RowsRead": "D1 rows read (today)",
+    "d1RowsWritten": "D1 rows written (today)",
+    "d1Storage": "D1 storage",
+    "remaining": "remaining {{value}}",
+    "footnote": "{{asOf}} · {{cached}} · Resets 00:00 UTC · Analytics may lag",
+    "cached": "cached",
+    "live": "live"
   }
 }

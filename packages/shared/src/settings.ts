@@ -28,8 +28,13 @@ export const SETTING_KEYS = [
   "tracking",
   "browsing",
   "bookmarks",
+  "cloudflare",
+  "analytics",
 ] as const
 export type SettingKey = (typeof SETTING_KEYS)[number]
+
+/** Google Analytics Measurement ID，例如 G-XXXXXXXXXX */
+export const GOOGLE_ANALYTICS_MEASUREMENT_ID_RE = /^G-[A-Z0-9]+$/i
 
 /**
  * 领域内逐字段降级。
@@ -110,6 +115,39 @@ export const bookmarksSettingsValueSchema = z.object({
 })
 export type BookmarksSettingsValue = z.infer<typeof bookmarksSettingsValueSchema>
 
+/** Cloudflare Analytics 凭证（Account ID 明文 + API Token 密文） */
+export const cloudflareSettingsValueSchema = z.object({
+  accountId: z.string().catch("").default(""),
+  apiTokenEncrypted: encryptedSecret.default(null),
+  apiTokenLast4: z.string().nullable().catch(null).default(null),
+})
+export type CloudflareSettingsValue = z.infer<
+  typeof cloudflareSettingsValueSchema
+>
+
+/**
+ * Google Analytics Measurement ID。
+ * 空串 / 非法格式回退 null，避免脏值把整个领域打回默认时丢配置语义。
+ */
+const measurementIdField = z
+  .union([z.string(), z.null()])
+  .catch(null)
+  .transform((value) => {
+    if (value == null) return null
+    const trimmed = value.trim()
+    if (!trimmed) return null
+    if (!GOOGLE_ANALYTICS_MEASUREMENT_ID_RE.test(trimmed)) return null
+    return trimmed.toUpperCase()
+  })
+  .default(null)
+
+export const analyticsSettingsValueSchema = z.object({
+  measurementId: measurementIdField,
+})
+export type AnalyticsSettingsValue = z.infer<
+  typeof analyticsSettingsValueSchema
+>
+
 export const SETTINGS_SCHEMAS = {
   ai: aiSettingsValueSchema,
   search: searchSettingsValueSchema,
@@ -117,6 +155,8 @@ export const SETTINGS_SCHEMAS = {
   tracking: trackingSettingsValueSchema,
   browsing: browsingSettingsValueSchema,
   bookmarks: bookmarksSettingsValueSchema,
+  cloudflare: cloudflareSettingsValueSchema,
+  analytics: analyticsSettingsValueSchema,
 } as const
 
 export type SettingsValueMap = {
@@ -126,6 +166,15 @@ export type SettingsValueMap = {
   tracking: TrackingSettingsValue
   browsing: BrowsingSettingsValue
   bookmarks: BookmarksSettingsValue
+  cloudflare: CloudflareSettingsValue
+  analytics: AnalyticsSettingsValue
+}
+
+/** 已配置：Account ID 非空且 Token 已加密保存 */
+export function isCloudflareConfigured(
+  value: CloudflareSettingsValue,
+): boolean {
+  return Boolean(value.accountId.trim() && value.apiTokenEncrypted)
 }
 
 export function defaultSettingValue<K extends SettingKey>(

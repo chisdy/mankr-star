@@ -25,7 +25,7 @@ authRoutes.get("/auth/status", async (c) => {
   const authenticated = Boolean(sessionUser)
 
   // 一次取全部领域：这个接口每次进页面都会调，别为两个领域走两趟
-  const { bookmarks, browsing } = await readAllSettings(db)
+  const { analytics, bookmarks, browsing } = await readAllSettings(db)
 
   const [{ value: userCount }] = await db.select({ value: count() }).from(users)
   const initialized = userCount > 0
@@ -36,6 +36,7 @@ authRoutes.get("/auth/status", async (c) => {
     authenticated,
     bookmark_pagination_mode: bookmarks.paginationMode,
     bookmark_page_size: bookmarks.pageSize,
+    google_analytics_measurement_id: analytics.measurementId,
   })
 })
 

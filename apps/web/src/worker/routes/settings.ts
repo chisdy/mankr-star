@@ -17,10 +17,13 @@ import {
   anysearchSettingsSchema,
   bookmarkPaginationSettingsSchema,
   changePasswordSchema,
+  cloudflareSettingsSchema,
   deepseekSettingsSchema,
   githubPatSettingsSchema,
+  isCloudflareConfigured,
   recomputeActivityHealth,
   trackingSettingsSchema,
+  updateAnalyticsSettingsSchema,
   updatePublicBrowsingSchema,
   type HealthStatus,
 } from "@mankr/shared"
@@ -29,6 +32,7 @@ import { Hono } from "hono"
 import type { Context } from "hono"
 import type { AppEnv } from "../env"
 import { getAnySearchKey, testAnySearchConnection } from "../lib/anysearch"
+import { testCloudflareAnalyticsAccess, clearCloudflareQuotaCache } from "../lib/cloudflare-analytics"
 import { decryptSecret, encryptSecret, last4 } from "../lib/crypto"
 import { recordAiUsage } from "../lib/ai-usage"
 import { testDeepSeekConnection } from "../lib/deepseek"
@@ -279,6 +283,129 @@ settingsRoutes.post("/settings/anysearch/test", async (c) => {
   return c.json({ ok: true })
 })
 
+settingsRoutes.put("/settings/cloudflare", (c) => upsertCloudflare(c))
+settingsRoutes.patch("/settings/cloudflare", (c) => upsertCloudflare(c))
+
+settingsRoutes.delete("/settings/cloudflare", async (c) => {
+  const ip = getClientIp(c.req.raw)
+  const rl = rateLimit(`cloudflare-settings:${ip}`, 20, 60_000)
+  if (!rl.ok) {
+    return c.json({ error: "请求过于频繁", code: "RATE_LIMITED" }, 429)
+  }
+
+  const db = c.get("db")
+  const previous = await readSetting(db, "cloudflare")
+  await writeSetting(db, "cloudflare", {
+    accountId: "",
+    apiTokenEncrypted: null,
+    apiTokenLast4: null,
+  })
+  clearCloudflareQuotaCache(previous.accountId)
+
+  return c.json({
+    cloudflare_configured: false,
+    cloudflare_account_id: null,
+    cloudflare_token_last4: null,
+  })
+})
+
+async function upsertCloudflare(c: Context<AppEnv>) {
+  const ip = getClientIp(c.req.raw)
+  const rl = rateLimit(`cloudflare-settings:${ip}`, 20, 60_000)
+  if (!rl.ok) {
+    return c.json({ error: "请求过于频繁", code: "RATE_LIMITED" }, 429)
+  }
+
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: "无效的 JSON", code: "BAD_REQUEST" }, 400)
+  }
+
+  const parsed = cloudflareSettingsSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: parsed.error.flatten(),
+      },
+      400,
+    )
+  }
+
+  const db = c.get("db")
+  const previous = await readSetting(db, "cloudflare")
+  const encKey = c.env.AI_KEY_ENCRYPTION_KEY || c.env.PAT_ENCRYPTION_KEY
+
+  const patch: {
+    accountId?: string
+    apiTokenEncrypted?: string | null
+    apiTokenLast4?: string | null
+  } = {}
+
+  if (parsed.data.accountId !== undefined) {
+    patch.accountId = parsed.data.accountId.trim()
+  }
+
+  if (parsed.data.clearToken) {
+    patch.apiTokenEncrypted = null
+    patch.apiTokenLast4 = null
+  } else if (parsed.data.apiToken) {
+    patch.apiTokenEncrypted = await encryptSecret(parsed.data.apiToken, encKey)
+    patch.apiTokenLast4 = last4(parsed.data.apiToken)
+  }
+
+  const cloudflare = await writeSetting(db, "cloudflare", patch)
+  clearCloudflareQuotaCache(previous.accountId)
+  clearCloudflareQuotaCache(cloudflare.accountId)
+
+  return c.json({
+    cloudflare_configured: isCloudflareConfigured(cloudflare),
+    cloudflare_account_id: cloudflare.accountId.trim() || null,
+    cloudflare_token_last4: cloudflare.apiTokenLast4,
+  })
+}
+
+settingsRoutes.post("/settings/cloudflare/test", async (c) => {
+  const ip = getClientIp(c.req.raw)
+  const rl = rateLimit(`cloudflare-test:${ip}`, 10, 60_000)
+  if (!rl.ok) {
+    return c.json({ error: "请求过于频繁", code: "RATE_LIMITED" }, 429)
+  }
+
+  const db = c.get("db")
+  const cloudflare = await readSetting(db, "cloudflare")
+  if (!isCloudflareConfigured(cloudflare)) {
+    return c.json(
+      {
+        ok: false,
+        error: "尚未配置 Cloudflare Account ID 与 API Token",
+        code: "NOT_CONFIGURED",
+      },
+      400,
+    )
+  }
+
+  const encKey = c.env.AI_KEY_ENCRYPTION_KEY || c.env.PAT_ENCRYPTION_KEY
+  let apiToken: string
+  try {
+    apiToken = await decryptSecret(cloudflare.apiTokenEncrypted!, encKey)
+  } catch {
+    return c.json({ ok: false, error: "解密 Token 失败" }, 500)
+  }
+
+  const result = await testCloudflareAnalyticsAccess(
+    cloudflare.accountId,
+    apiToken,
+  )
+  if (!result.ok) {
+    return c.json({ ok: false, error: result.error }, 502)
+  }
+  return c.json({ ok: true })
+})
+
 settingsRoutes.put("/settings/github-pat", (c) => upsertGithubPat(c))
 settingsRoutes.patch("/settings/github-pat", (c) => upsertGithubPat(c))
 
@@ -486,6 +613,37 @@ settingsRoutes.put("/settings/public-browsing", async (c) => {
   })
 
   return c.json({ public_browsing_enabled: parsed.data.enabled })
+})
+
+/** 实例级 Google Analytics Measurement ID；公开下发到 /auth/status */
+settingsRoutes.put("/settings/analytics", async (c) => {
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: "无效的 JSON", code: "BAD_REQUEST" }, 400)
+  }
+
+  const parsed = updateAnalyticsSettingsSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: parsed.error.flatten(),
+      },
+      400,
+    )
+  }
+
+  const db = c.get("db")
+  const saved = await writeSetting(db, "analytics", {
+    measurementId: parsed.data.measurement_id,
+  })
+
+  return c.json({
+    google_analytics_measurement_id: saved.measurementId,
+  })
 })
 
 /** 实例级收藏分页方式与每页数量；登录用户与公开访客共用同一值 */

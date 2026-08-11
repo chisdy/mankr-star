@@ -10,9 +10,9 @@
 | 组织 | 树形文件夹、标签、全文检索（FTS）、筛选与归档 |
 | AI | 用户自备 DeepSeek Key；异步摘要 / 文件夹 / 标签；无 Key 时规则降级 |
 | 同步 | Cron 每 6 小时拉取 GitHub 更新，写入 Feed 事件与健康状态 |
-| 洞察 | 来源 / 语言 / 健康分布、AI 用量、同步问题 |
+| 洞察 | 来源 / 语言 / 健康分布、AI 用量、Cloudflare Free 额度、同步问题 |
 | KB Chat | 基于收藏库检索 + 可选 AnySearch 联网；SSE 流式回答 |
-| 设置 | DeepSeek / AnySearch / GitHub PAT、跟踪阈值与动态订阅、公开浏览、JSON / Markdown 导出 |
+| 设置 | DeepSeek / AnySearch / Cloudflare Analytics / GitHub PAT、跟踪阈值与动态订阅、公开浏览、JSON / Markdown 导出 |
 | PWA | 可安装到桌面/主屏；Service Worker 只缓存应用外壳与构建产物，`/api` 不走缓存 |
 | 浏览器扩展 | `apps/extension`（MV3）：一键把当前标签页带到收藏弹窗，见 [扩展说明](apps/extension/README.md) |
 
@@ -49,6 +49,9 @@ pnpm --filter web dev
 - **DeepSeek API Key**：AI 分类 / KB Chat（必配才有完整 AI）
 - **GitHub PAT**：提高 GitHub API 限额、导入 Stars、跟踪更新
 - **AnySearch Key**（可选）：KB 联网检索
+- **Cloudflare Account ID + Analytics Token**（可选）：洞察页查看 Workers / D1 Free 账户级剩余额度（需 Account Analytics 只读权限）
+
+额度仪表盘路径：**设置** 配置凭证后，打开 **洞察**（`/insights`）顶部的「Cloudflare Free 额度」卡片。
 
 Worker 环境变量见 `apps/web/wrangler.jsonc`（`APP_NAME` 等）。本地开发用 Wrangler 绑定 D1。
 

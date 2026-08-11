@@ -1,6 +1,7 @@
 import {
   DEFAULT_BOOKMARK_PAGE_SIZE,
   DEFAULT_BOOKMARK_PAGINATION_MODE,
+  GOOGLE_ANALYTICS_MEASUREMENT_ID_RE,
   slugify,
   type KbConversationDetail,
   type KbConversationSummary,
@@ -15,6 +16,7 @@ import type {
   BookmarkSite,
   BookmarksQueryParams,
   BookmarksResponse,
+  CloudflareSettings,
   DeepSeekSettings,
   ExportData,
   FeedQueryParams,
@@ -31,6 +33,7 @@ import type {
   TrackingSettings,
   UpdateEvent,
   User,
+  CloudflareQuotaResponse,
 } from "./types"
 import { collectSubtreeFolderIds } from "./folder-utils"
 
@@ -385,6 +388,9 @@ function getInitialMockData(): MockDataStore {
       anysearch_configured: false,
       anysearch_last4: null,
       github_pat_configured: false,
+      cloudflare_configured: false,
+      cloudflare_account_id: null,
+      cloudflare_token_last4: null,
       public_browsing_enabled: false,
       bookmark_pagination_mode: DEFAULT_BOOKMARK_PAGINATION_MODE,
       bookmark_page_size: DEFAULT_BOOKMARK_PAGE_SIZE,
@@ -449,6 +455,7 @@ export const api = {
             DEFAULT_BOOKMARK_PAGINATION_MODE,
           bookmark_page_size:
             store.user?.bookmark_page_size ?? DEFAULT_BOOKMARK_PAGE_SIZE,
+          google_analytics_measurement_id: null,
         }
       }
       throw err
@@ -1438,6 +1445,22 @@ export const api = {
     }
   },
 
+  async getCloudflareQuota(opts?: {
+    refresh?: boolean
+  }): Promise<CloudflareQuotaResponse> {
+    const qs = opts?.refresh ? "?refresh=1" : ""
+    try {
+      return await request<CloudflareQuotaResponse>(
+        `/api/insights/cloudflare-quota${qs}`,
+      )
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        return { configured: false }
+      }
+      throw err
+    }
+  },
+
   // Settings -----------------------------------------------------------
   async updateDeepSeekSettings(data: {
     api_key?: string
@@ -1580,6 +1603,99 @@ export const api = {
     }
   },
 
+  async updateCloudflareSettings(data: {
+    account_id?: string
+    api_token?: string
+  }): Promise<CloudflareSettings> {
+    try {
+      const res = await request<{
+        cloudflare_configured: boolean
+        cloudflare_account_id: string | null
+        cloudflare_token_last4: string | null
+      }>("/api/settings/cloudflare", {
+        method: "PUT",
+        body: JSON.stringify({
+          ...(data.account_id !== undefined
+            ? { accountId: data.account_id }
+            : {}),
+          ...(data.api_token ? { apiToken: data.api_token } : {}),
+        }),
+      })
+      return {
+        configured: res.cloudflare_configured,
+        account_id: res.cloudflare_account_id,
+        token_last4: res.cloudflare_token_last4,
+      }
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        if (store.user) {
+          if (data.account_id !== undefined) {
+            store.user.cloudflare_account_id = data.account_id.trim() || null
+          }
+          if (data.api_token) {
+            store.user.cloudflare_token_last4 = data.api_token.slice(-4)
+          }
+          store.user.cloudflare_configured = Boolean(
+            store.user.cloudflare_account_id &&
+              (store.user.cloudflare_token_last4 || data.api_token),
+          )
+          saveMockStore()
+        }
+        return {
+          configured: !!store.user?.cloudflare_configured,
+          account_id: store.user?.cloudflare_account_id ?? null,
+          token_last4: store.user?.cloudflare_token_last4 ?? null,
+        }
+      }
+      throw err
+    }
+  },
+
+  async clearCloudflareSettings(): Promise<void> {
+    try {
+      await request("/api/settings/cloudflare", { method: "DELETE" })
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        if (store.user) {
+          store.user.cloudflare_configured = false
+          store.user.cloudflare_account_id = null
+          store.user.cloudflare_token_last4 = null
+          saveMockStore()
+        }
+        return
+      }
+      throw err
+    }
+  },
+
+  async testCloudflareConnection(): Promise<{
+    success: boolean
+    message: string
+  }> {
+    try {
+      const res = await request<{ ok: boolean; error?: string }>(
+        "/api/settings/cloudflare/test",
+        { method: "POST" },
+      )
+      return {
+        success: res.ok,
+        message: res.ok
+          ? "Account readable (Analytics probe only)."
+          : res.error || "Cloudflare Analytics 测试失败",
+      }
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        return {
+          success: false,
+          message: "后端未就绪，无法测试 Cloudflare 连接。",
+        }
+      }
+      throw err
+    }
+  },
+
   async updateGithubPat(data: {
     pat?: string
   }): Promise<{ configured: boolean; last4?: string }> {
@@ -1696,6 +1812,37 @@ export const api = {
           saveMockStore()
         }
         return { public_browsing_enabled: data.enabled }
+      }
+      throw err
+    }
+  },
+
+  async updateAnalyticsSettings(data: {
+    measurement_id: string | null
+  }): Promise<{ google_analytics_measurement_id: string | null }> {
+    try {
+      return await request<{ google_analytics_measurement_id: string | null }>(
+        "/api/settings/analytics",
+        {
+          method: "PUT",
+          body: JSON.stringify({ measurement_id: data.measurement_id }),
+        },
+      )
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const raw = data.measurement_id
+        if (raw == null || !String(raw).trim()) {
+          return { google_analytics_measurement_id: null }
+        }
+        const trimmed = String(raw).trim()
+        if (!GOOGLE_ANALYTICS_MEASUREMENT_ID_RE.test(trimmed)) {
+          throw new ApiError("Measurement ID 格式无效，应为 G-XXXXXXXXXX", 400, {
+            code: "VALIDATION_ERROR",
+          })
+        }
+        return {
+          google_analytics_measurement_id: trimmed.toUpperCase(),
+        }
       }
       throw err
     }

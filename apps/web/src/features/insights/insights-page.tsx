@@ -30,7 +30,12 @@ import { DailyTokenChart } from "@/features/insights/charts/daily-token-chart"
 import { DonutChart } from "@/features/insights/charts/donut-chart"
 import { LanguageDistribution } from "@/features/insights/charts/language-distribution"
 import { HealthDistribution } from "@/features/insights/charts/health-distribution"
-import { CHART_PALETTE, formatCost, formatNumber } from "@/features/insights/format"
+import { CloudflareQuotaSection } from "@/features/insights/cloudflare-quota-section"
+import {
+  CHART_PALETTE,
+  formatCost,
+  formatNumber,
+} from "@/features/insights/format"
 import { api } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 import type { InsightsRange, InsightsResponse } from "@/lib/types"
@@ -63,7 +68,10 @@ function MetricCard({
   footer: ReactNode
 }) {
   return (
-    <Card size="sm" className="border-border/70 transition-colors hover:border-border">
+    <Card
+      size="sm"
+      className="border-border/70 transition-colors hover:border-border"
+    >
       <CardContent className="space-y-3">
         <div className="flex items-start justify-between">
           <div>
@@ -80,10 +88,7 @@ function MetricCard({
   )
 }
 
-function localizeFolderName(
-  name: string,
-  t: (key: string) => string,
-): string {
+function localizeFolderName(name: string, t: (key: string) => string): string {
   if (name === "未分类") return t("common:uncategorized")
   if (name === "未知" || name === "未知文件夹") return t("common:unknown")
   return name
@@ -114,7 +119,7 @@ export function InsightsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-12">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <ChartBarIcon className="size-5 text-primary" />
@@ -222,7 +227,7 @@ export function InsightsPage() {
               label={t("metrics.estimatedCost")}
               value={formatCost(
                 data.ai.estimated_cost_usd,
-                t("format.costNone"),
+                t("format.costNone")
               )}
               icon={<CoinsIcon className="size-5" />}
               iconClass="bg-primary/10 text-primary"
@@ -506,7 +511,9 @@ export function InsightsPage() {
             </Card>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between border-t border-border/60 pt-4 text-xs text-muted-foreground">
+          <CloudflareQuotaSection />
+
+          <div className="flex flex-wrap items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <ActivityIcon className="size-3.5 text-primary" />
               <span>
@@ -525,7 +532,7 @@ export function InsightsPage() {
               <Link
                 to="/?ai_status=pending"
                 title={t("sections.aiPendingHint")}
-                className="rounded px-1 -mx-1 transition-colors hover:bg-muted/60 hover:text-foreground hover:underline underline-offset-2"
+                className="-mx-1 rounded px-1 underline-offset-2 transition-colors hover:bg-muted/60 hover:text-foreground hover:underline"
               >
                 {t("sections.aiPending", {
                   count: data.library.ai_status.pending ?? 0,
@@ -534,7 +541,7 @@ export function InsightsPage() {
               <Link
                 to="/?ai_status=failed"
                 title={t("sections.aiFailedHint")}
-                className="rounded px-1 -mx-1 transition-colors hover:bg-muted/60 hover:text-foreground hover:underline underline-offset-2"
+                className="-mx-1 rounded px-1 underline-offset-2 transition-colors hover:bg-muted/60 hover:text-foreground hover:underline"
               >
                 {t("sections.aiFailed", {
                   count: data.library.ai_status.failed ?? 0,

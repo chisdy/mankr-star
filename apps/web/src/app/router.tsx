@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, Outlet, useLocation } from "react-router
 
 import { AppShell } from "@/components/app-shell"
 import { BrandLogo } from "@/components/brand-logo"
+import { RootLayout } from "@/app/root-layout"
 import { LoginPage } from "@/features/auth/login-page"
 import { RegisterPage } from "@/features/auth/register-page"
 import { BookmarksPage } from "@/features/bookmarks/bookmarks-page"
@@ -93,36 +94,41 @@ function RedirectIfAuth() {
 
 export const router = createBrowserRouter([
   {
-    element: <RedirectIfAuth />,
-    children: [
-      { path: "/login", element: <LoginPage /> },
-      { path: "/register", element: <RegisterPage /> },
-    ],
-  },
-  {
-    element: <AppAccessGate />,
+    element: <RootLayout />,
     children: [
       {
-        element: <AppShell />,
+        element: <RedirectIfAuth />,
         children: [
-          { path: "/", element: <BookmarksPage /> },
-          { path: "/folders", element: <Navigate to="/" replace /> },
-          { path: "/tags", element: <TagsPage /> },
-          { path: "/feed", element: <FeedPage /> },
-          { path: "/bookmarks/:id", element: <BookmarkDetailPage /> },
+          { path: "/login", element: <LoginPage /> },
+          { path: "/register", element: <RegisterPage /> },
+        ],
+      },
+      {
+        element: <AppAccessGate />,
+        children: [
           {
-            element: <RequireAuth />,
+            element: <AppShell />,
             children: [
-              { path: "/insights", element: <InsightsPage /> },
-              { path: "/settings", element: <SettingsPage /> },
+              { path: "/", element: <BookmarksPage /> },
+              { path: "/folders", element: <Navigate to="/" replace /> },
+              { path: "/tags", element: <TagsPage /> },
+              { path: "/feed", element: <FeedPage /> },
+              { path: "/bookmarks/:id", element: <BookmarkDetailPage /> },
+              {
+                element: <RequireAuth />,
+                children: [
+                  { path: "/insights", element: <InsightsPage /> },
+                  { path: "/settings", element: <SettingsPage /> },
+                ],
+              },
             ],
           },
         ],
       },
+      {
+        path: "*",
+        element: <Navigate to="/" replace />,
+      },
     ],
-  },
-  {
-    path: "*",
-    element: <Navigate to="/" replace />,
   },
 ])

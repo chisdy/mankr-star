@@ -7,9 +7,15 @@ import type {
   BookmarkPaginationMode,
   BookmarkPricing,
   BookmarkPricingFilter,
+  CloudflareQuotaResponse,
 } from "@mankr/shared"
 
-export type { BookmarkPaginationMode, BookmarkPricing, BookmarkPricingFilter }
+export type {
+  BookmarkPaginationMode,
+  BookmarkPricing,
+  BookmarkPricingFilter,
+  CloudflareQuotaResponse,
+}
 
 export interface User {
   id: string
@@ -22,6 +28,9 @@ export interface User {
   anysearch_last4?: string | null
   github_pat_configured?: boolean
   github_pat_last4?: string | null
+  cloudflare_configured?: boolean
+  cloudflare_account_id?: string | null
+  cloudflare_token_last4?: string | null
   hot_within_days?: number
   stale_after_days?: number
   /** 动态订阅开关；关闭后 Cron 同步不再写入对应类型的事件 */
@@ -44,6 +53,8 @@ export interface InstanceStatus {
   /** 实例级收藏分页偏好；公开访客与登录用户读取同一值 */
   bookmark_pagination_mode: BookmarkPaginationMode
   bookmark_page_size: number
+  /** Google Analytics Measurement ID；未配置为 null */
+  google_analytics_measurement_id: string | null
 }
 
 /** 收藏分页设置；写入时用 Partial 允许只改其中一项，读到的总是完整值 */
@@ -248,6 +259,12 @@ export interface DeepSeekSettings {
 export interface AnySearchSettings {
   configured: boolean
   last4?: string | null
+}
+
+export interface CloudflareSettings {
+  configured: boolean
+  account_id?: string | null
+  token_last4?: string | null
 }
 
 /** 更新跟踪：活跃阈值 + 动态订阅开关 */

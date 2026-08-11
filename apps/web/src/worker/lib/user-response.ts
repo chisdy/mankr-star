@@ -1,4 +1,8 @@
-import { DEFAULT_DEEPSEEK_MODEL, type SettingsValueMap } from "@mankr/shared"
+import {
+  DEFAULT_DEEPSEEK_MODEL,
+  isCloudflareConfigured,
+  type SettingsValueMap,
+} from "@mankr/shared"
 
 type UserRow = {
   id: string
@@ -22,6 +26,9 @@ export function serializeUser(user: UserRow, s: SettingsValueMap) {
     anysearch_configured: Boolean(s.search.anysearchApiKeyEncrypted),
     anysearch_last4: s.search.anysearchKeyLast4,
     github_pat_configured: Boolean(s.github.patEncrypted),
+    cloudflare_configured: isCloudflareConfigured(s.cloudflare),
+    cloudflare_account_id: s.cloudflare.accountId.trim() || null,
+    cloudflare_token_last4: s.cloudflare.apiTokenLast4,
     hot_within_days: s.tracking.hotWithinDays,
     stale_after_days: s.tracking.staleAfterDays,
     event_push: s.tracking.eventPush,

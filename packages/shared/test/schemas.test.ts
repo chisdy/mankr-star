@@ -4,6 +4,7 @@ import {
   createBookmarkSchema,
   createFolderSchema,
   anysearchSettingsSchema,
+  cloudflareSettingsSchema,
   deepseekSettingsSchema,
   deleteFolderSchema,
   kbChatRequestSchema,
@@ -12,6 +13,7 @@ import {
   registerSchema,
   updateBookmarkSchema,
   updateTagSchema,
+  updateAnalyticsSettingsSchema,
 } from "../src/schemas"
 import {
   DEFAULT_DEEPSEEK_MODEL,
@@ -285,6 +287,24 @@ describe("anysearchSettingsSchema", () => {
   })
 })
 
+describe("cloudflareSettingsSchema", () => {
+  it("支持 accountId、apiToken、clearToken", () => {
+    expect(
+      cloudflareSettingsSchema.safeParse({ accountId: "abc123" }).success,
+    ).toBe(true)
+    expect(
+      cloudflareSettingsSchema.safeParse({ apiToken: "cf-token" }).success,
+    ).toBe(true)
+    expect(
+      cloudflareSettingsSchema.safeParse({ clearToken: true }).success,
+    ).toBe(true)
+  })
+
+  it("三项都缺时失败", () => {
+    expect(cloudflareSettingsSchema.safeParse({}).success).toBe(false)
+  })
+})
+
 describe("kbChatRequestSchema", () => {
   it("webSearch 默认 false", () => {
     const res = kbChatRequestSchema.safeParse({
@@ -444,5 +464,42 @@ describe("createFolderSchema parentId", () => {
     expect(
       createFolderSchema.safeParse({ name: "一级", parentId: null }).success,
     ).toBe(true)
+  })
+})
+
+describe("updateAnalyticsSettingsSchema", () => {
+  it("接受合法 G- ID 并规范化为大写", () => {
+    const res = updateAnalyticsSettingsSchema.safeParse({
+      measurement_id: "g-abc123xyz",
+    })
+    expect(res.success).toBe(true)
+    if (res.success) expect(res.data.measurement_id).toBe("G-ABC123XYZ")
+  })
+
+  it("空串与 null 清空为 null", () => {
+    expect(
+      updateAnalyticsSettingsSchema.safeParse({ measurement_id: "" }).success,
+    ).toBe(true)
+    expect(
+      updateAnalyticsSettingsSchema.safeParse({ measurement_id: "  " }).data
+        ?.measurement_id,
+    ).toBeNull()
+    expect(
+      updateAnalyticsSettingsSchema.safeParse({ measurement_id: null }).data
+        ?.measurement_id,
+    ).toBeNull()
+  })
+
+  it("拒绝非法 Measurement ID", () => {
+    expect(
+      updateAnalyticsSettingsSchema.safeParse({
+        measurement_id: "UA-123456-1",
+      }).success,
+    ).toBe(false)
+    expect(
+      updateAnalyticsSettingsSchema.safeParse({
+        measurement_id: "<script>",
+      }).success,
+    ).toBe(false)
   })
 })

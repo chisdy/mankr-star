@@ -31,9 +31,12 @@ import { formatApiError } from "@/lib/api-error"
 import { queryKeys } from "@/lib/query-keys"
 import { useTheme } from "@/components/theme-provider"
 import { LocaleSwitcher } from "@/components/locale-switcher"
+import { SectionNav, type SectionNavItem } from "@/components/section-nav"
 import { BookmarkListSection } from "./bookmark-list-section"
 import { ClearDataSection } from "./clear-data-section"
+import { CloudflareSettingsSection } from "./cloudflare-settings-section"
 import { GithubImportSection } from "./github-import-section"
+import { GoogleAnalyticsSection } from "./google-analytics-section"
 
 /** 动态订阅开关；顺序与动态流筛选一致 */
 const EVENT_PREFS = [
@@ -42,6 +45,25 @@ const EVENT_PREFS = [
   { key: "event_stars_delta", labelKey: "tracking.eventStarsDelta" },
   { key: "event_meta_change", labelKey: "tracking.eventMetaChange" },
 ] as const
+
+const SECTION_NAV_KEYS = [
+  { id: "account", labelKey: "nav.account" },
+  { id: "deepseek", labelKey: "nav.deepseek" },
+  { id: "anysearch", labelKey: "nav.anysearch" },
+  { id: "cloudflare", labelKey: "nav.cloudflare" },
+  { id: "github", labelKey: "nav.github" },
+  { id: "import", labelKey: "nav.import" },
+  { id: "tracking", labelKey: "nav.tracking" },
+  { id: "bookmark-list", labelKey: "nav.bookmarkList" },
+  { id: "visibility", labelKey: "nav.visibility" },
+  { id: "analytics", labelKey: "nav.analytics" },
+  { id: "export", labelKey: "nav.export" },
+  { id: "danger", labelKey: "nav.danger" },
+  { id: "appearance", labelKey: "nav.appearance" },
+] as const
+
+const SECTION_CLASS =
+  "scroll-mt-16 space-y-4 border-t border-border pt-6 lg:scroll-mt-6"
 
 export function SettingsPage() {
   const { t } = useTranslation(["settings", "common", "errors"])
@@ -292,18 +314,24 @@ export function SettingsPage() {
     },
   })
 
+  const navItems: SectionNavItem[] = SECTION_NAV_KEYS.map(({ id, labelKey }) => ({
+    id,
+    label: t(labelKey),
+  }))
+
   return (
-    <div className="space-y-8 max-w-3xl mx-auto pb-16 text-foreground">
-      {/* Header */}
-      <div className="border-b border-border pb-4">
+    <div className="pb-16 text-foreground">
+      <div className="mb-6 border-b border-border pb-4 lg:mx-auto lg:max-w-[calc(12.5rem+2.5rem+48rem)]">
         <h1 className="text-xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <p className="mt-0.5 text-xs text-muted-foreground">
           {t("description")}
         </p>
       </div>
 
+      <SectionNav items={navItems} ariaLabel={t("nav.ariaLabel")}>
+        <div className="space-y-8">
       {/* Section 1: Account */}
-      <section className="space-y-4">
+      <section id="account" className="scroll-mt-16 space-y-4 lg:scroll-mt-6">
         <h2 className="text-sm font-semibold tracking-tight text-foreground">
           {t("account.section")}
         </h2>
@@ -398,7 +426,7 @@ export function SettingsPage() {
       </section>
 
       {/* Section 2: DeepSeek AI */}
-      <section className="space-y-4 border-t border-border pt-6">
+      <section id="deepseek" className={SECTION_CLASS}>
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
@@ -529,7 +557,7 @@ export function SettingsPage() {
       </section>
 
       {/* Section 3: AnySearch 联网搜索 */}
-      <section className="space-y-4 border-t border-border pt-6">
+      <section id="anysearch" className={SECTION_CLASS}>
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
             <span>{t("anysearch.section")}</span>
@@ -638,8 +666,10 @@ export function SettingsPage() {
         </form>
       </section>
 
-      {/* Section 4: GitHub PAT */}
-      <section className="space-y-4 border-t border-border pt-6">
+      <CloudflareSettingsSection />
+
+      {/* Section 5: GitHub PAT */}
+      <section id="github" className={SECTION_CLASS}>
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
             <span>{t("github.section")}</span>
@@ -719,7 +749,7 @@ export function SettingsPage() {
       <GithubImportSection user={user} />
 
       {/* Section 6: Update tracking */}
-      <section className="space-y-4 border-t border-border pt-6">
+      <section id="tracking" className={SECTION_CLASS}>
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">
             {t("tracking.section")}
@@ -812,7 +842,7 @@ export function SettingsPage() {
       <BookmarkListSection user={user} />
 
       {/* Section 8: Visibility */}
-      <section className="space-y-4 border-t border-border pt-6">
+      <section id="visibility" className={SECTION_CLASS}>
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">
             {t("visibility.section")}
@@ -840,8 +870,10 @@ export function SettingsPage() {
         </div>
       </section>
 
-      {/* Section 9: Data Export */}
-      <section className="space-y-4 border-t border-border pt-6">
+      <GoogleAnalyticsSection />
+
+      {/* Section: Data Export */}
+      <section id="export" className={SECTION_CLASS}>
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">
             {t("export.section")}
@@ -894,7 +926,7 @@ export function SettingsPage() {
       <ClearDataSection />
 
       {/* Section 11: Appearance / Theme */}
-      <section className="space-y-4 border-t border-border pt-6">
+      <section id="appearance" className={SECTION_CLASS}>
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">
             {t("appearance.section")}
@@ -955,6 +987,8 @@ export function SettingsPage() {
           <LocaleSwitcher variant="cards" />
         </div>
       </section>
+        </div>
+      </SectionNav>
     </div>
   )
 }

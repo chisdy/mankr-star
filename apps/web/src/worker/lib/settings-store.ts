@@ -36,6 +36,8 @@ export async function readAllSettings(db: Db): Promise<SettingsValueMap> {
     tracking: parseSettingJson("tracking", byKey.get("tracking")),
     browsing: parseSettingJson("browsing", byKey.get("browsing")),
     bookmarks: parseSettingJson("bookmarks", byKey.get("bookmarks")),
+    cloudflare: parseSettingJson("cloudflare", byKey.get("cloudflare")),
+    analytics: parseSettingJson("analytics", byKey.get("analytics")),
   }
 }
 

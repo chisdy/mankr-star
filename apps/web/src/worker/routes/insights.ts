@@ -11,6 +11,7 @@ import {
   DEEPSEEK_PRICE_USD_PER_1M,
   DEFAULT_INSIGHTS_RANGE,
   HEALTH_STATUS_LABELS,
+  isCloudflareConfigured,
   type DeepSeekModel,
   type InsightsRange,
   insightsQuerySchema,
@@ -18,11 +19,17 @@ import {
 import { and, asc, count, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm"
 import { Hono } from "hono"
 import type { AppEnv } from "../env"
+import { fetchCloudflareFreeQuota } from "../lib/cloudflare-analytics"
+import { decryptSecret } from "../lib/crypto"
+import { rateLimit } from "../lib/rate-limit"
+import { readSetting } from "../lib/settings-store"
+import { getClientIp } from "../lib/utils"
 import { requireAuth } from "../middleware/auth"
 
 export const insightsRoutes = new Hono<AppEnv>()
 
 insightsRoutes.use("/insights", requireAuth)
+insightsRoutes.use("/insights/*", requireAuth)
 
 function rangeStartIso(range: InsightsRange): string | null {
   if (range === "all") return null
@@ -382,4 +389,56 @@ insightsRoutes.get("/insights", async (c) => {
       estimated_cost_usd: estimateCostUsd(by_model),
     },
   })
+})
+
+insightsRoutes.get("/insights/cloudflare-quota", async (c) => {
+  const ip = getClientIp(c.req.raw)
+  const rl = rateLimit(`cloudflare-quota:${ip}`, 30, 60_000)
+  if (!rl.ok) {
+    return c.json({ error: "请求过于频繁", code: "RATE_LIMITED" }, 429)
+  }
+
+  const db = c.get("db")
+  const cloudflare = await readSetting(db, "cloudflare")
+  if (!isCloudflareConfigured(cloudflare)) {
+    return c.json({ configured: false as const })
+  }
+
+  const encKey = c.env.AI_KEY_ENCRYPTION_KEY || c.env.PAT_ENCRYPTION_KEY
+  let apiToken: string
+  try {
+    apiToken = await decryptSecret(cloudflare.apiTokenEncrypted!, encKey)
+  } catch {
+    return c.json(
+      { error: "解密 Token 失败", code: "DECRYPT_FAILED" },
+      500,
+    )
+  }
+
+  const forceRefresh = c.req.query("refresh") === "1"
+  const result = await fetchCloudflareFreeQuota({
+    accountId: cloudflare.accountId,
+    apiToken,
+    forceRefresh,
+  })
+
+  if (result.ok) {
+    return c.json(result.payload)
+  }
+
+  // 有陈旧缓存时降级返回，仍标记 stale
+  if (result.stale) {
+    return c.json(result.stale)
+  }
+
+  return c.json(
+    {
+      error: result.error || "拉取 Cloudflare 用量失败",
+      code:
+        result.status === 401
+          ? "CLOUDFLARE_UNAUTHORIZED"
+          : "CLOUDFLARE_QUOTA_FAILED",
+    },
+    502,
+  )
 })

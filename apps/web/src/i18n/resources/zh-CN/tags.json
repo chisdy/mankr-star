@@ -1,6 +1,7 @@
 {
   "title": "标签",
   "description": "浏览全部标签，点击即可筛选对应收藏",
+  "total": "共 {{count}} 个标签",
   "searchPlaceholder": "搜索标签…",
   "sortLabel": "排序",
   "sortCount": "按数量",

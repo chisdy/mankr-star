@@ -3,6 +3,7 @@ import {
   BOOKMARK_PAGINATION_MODES,
   DEFAULT_BOOKMARK_PAGE_SIZE,
   DEFAULT_BOOKMARK_PAGINATION_MODE,
+  GOOGLE_ANALYTICS_MEASUREMENT_ID_RE,
 } from "./settings"
 import {
   AI_STATUSES,
@@ -224,6 +225,21 @@ export const anysearchSettingsSchema = z.object({
 })
 export type AnysearchSettingsInput = z.infer<typeof anysearchSettingsSchema>
 
+export const cloudflareSettingsSchema = z
+  .object({
+    accountId: z.string().min(1).optional(),
+    apiToken: z.string().min(1).optional(),
+    clearToken: z.boolean().optional(),
+  })
+  .refine(
+    (data) =>
+      data.accountId !== undefined ||
+      data.apiToken !== undefined ||
+      data.clearToken === true,
+    { message: "请提供 accountId、apiToken 或 clearToken" },
+  )
+export type CloudflareSettingsInput = z.infer<typeof cloudflareSettingsSchema>
+
 export const githubPatSettingsSchema = z.object({
   pat: z.string().min(1).optional(),
   clear: z.boolean().optional(),
@@ -303,6 +319,9 @@ export const meResponseSchema = z.object({
   anysearch_configured: z.boolean(),
   anysearch_last4: z.string().nullable(),
   github_pat_configured: z.boolean(),
+  cloudflare_configured: z.boolean(),
+  cloudflare_account_id: z.string().nullable(),
+  cloudflare_token_last4: z.string().nullable(),
   hot_within_days: z.number().int(),
   stale_after_days: z.number().int(),
   event_push: z.boolean(),
@@ -316,11 +335,73 @@ export const meResponseSchema = z.object({
 })
 export type MeResponse = z.infer<typeof meResponseSchema>
 
+/** 单条 Free 额度用量 */
+export const cloudflareQuotaMetricSchema = z.object({
+  used: z.number(),
+  limit: z.number(),
+  remaining: z.number(),
+  ratio: z.number(),
+})
+export type CloudflareQuotaMetric = z.infer<typeof cloudflareQuotaMetricSchema>
+
+export const cloudflareQuotaResponseSchema = z.discriminatedUnion(
+  "configured",
+  [
+    z.object({ configured: z.literal(false) }),
+    z.object({
+      configured: z.literal(true),
+      as_of: z.string(),
+      period: z.object({
+        kind: z.literal("utc_day"),
+        start: z.string(),
+        end: z.string(),
+      }),
+      plan: z.literal("workers_free"),
+      scope: z.literal("account"),
+      cached: z.boolean(),
+      stale: z.boolean().optional(),
+      workers: z.object({
+        requests: cloudflareQuotaMetricSchema,
+      }),
+      d1: z.object({
+        rows_read: cloudflareQuotaMetricSchema,
+        rows_written: cloudflareQuotaMetricSchema,
+        storage_bytes: cloudflareQuotaMetricSchema,
+      }),
+    }),
+  ],
+)
+export type CloudflareQuotaResponse = z.infer<
+  typeof cloudflareQuotaResponseSchema
+>
+
 export const updatePublicBrowsingSchema = z.object({
   enabled: z.boolean(),
 })
 export type UpdatePublicBrowsingInput = z.infer<
   typeof updatePublicBrowsingSchema
+>
+
+/** 写入 Google Analytics Measurement ID；空串 / null 表示清空 */
+export const updateAnalyticsSettingsSchema = z.object({
+  measurement_id: z
+    .union([z.string(), z.null()])
+    .transform((value, ctx) => {
+      if (value == null) return null
+      const trimmed = value.trim()
+      if (!trimmed) return null
+      if (!GOOGLE_ANALYTICS_MEASUREMENT_ID_RE.test(trimmed)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Measurement ID 格式无效，应为 G-XXXXXXXXXX",
+        })
+        return z.NEVER
+      }
+      return trimmed.toUpperCase()
+    }),
+})
+export type UpdateAnalyticsSettingsInput = z.infer<
+  typeof updateAnalyticsSettingsSchema
 >
 
 export const instanceStatusSchema = z.object({
@@ -332,6 +413,8 @@ export const instanceStatusSchema = z.object({
     .enum(BOOKMARK_PAGINATION_MODES)
     .default(DEFAULT_BOOKMARK_PAGINATION_MODE),
   bookmark_page_size: z.number().int().default(DEFAULT_BOOKMARK_PAGE_SIZE),
+  /** 未配置时为 null；Measurement ID 非敏感，可公开下发 */
+  google_analytics_measurement_id: z.string().nullable().default(null),
 })
 export type InstanceStatus = z.infer<typeof instanceStatusSchema>
 

@@ -388,3 +388,19 @@ export const DEFAULT_HOT_WITHIN_DAYS = 30
 export const DEFAULT_STALE_AFTER_DAYS = 180
 export const MIN_TRACKING_DAYS = 1
 export const MAX_TRACKING_DAYS = 3650
+
+/**
+ * Cloudflare Workers Free / D1 Free 账户级日限额（UTC 日重置）。
+ * @see https://developers.cloudflare.com/workers/platform/pricing/
+ * @see https://developers.cloudflare.com/d1/platform/pricing/
+ */
+export const CF_FREE_WORKERS_REQUESTS_PER_DAY = 100_000
+export const CF_FREE_D1_ROWS_READ_PER_DAY = 5_000_000
+export const CF_FREE_D1_ROWS_WRITTEN_PER_DAY = 100_000
+/** Free 账户 D1 总存储上限（字节）= 5 GiB */
+export const CF_FREE_D1_STORAGE_BYTES = 5 * 1024 * 1024 * 1024
+/** 洞察页额度 GraphQL 结果内存缓存 TTL */
+export const CF_QUOTA_CACHE_TTL_MS = 10 * 60 * 1000
+/** 额度进度条颜色阈值 */
+export const CF_QUOTA_WARN_RATIO = 0.7
+export const CF_QUOTA_CRITICAL_RATIO = 0.9

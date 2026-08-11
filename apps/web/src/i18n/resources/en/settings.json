@@ -1,6 +1,6 @@
 {
   "title": "Settings",
-  "description": "Account, DeepSeek AI, GitHub PAT, and preferences",
+  "description": "Account, DeepSeek AI, Cloudflare usage, GitHub PAT, and preferences",
   "toasts": {
     "deepseekSaved": "DeepSeek AI settings saved",
     "deepseekSaveFailed": "Failed to save settings",
@@ -10,6 +10,9 @@
     "anysearchSaved": "AnySearch API Key saved",
     "anysearchCleared": "AnySearch API Key cleared",
     "anysearchTestSuccess": "AnySearch connection test succeeded!",
+    "cloudflareSaved": "Cloudflare Analytics settings saved",
+    "cloudflareCleared": "Cloudflare credentials cleared",
+    "cloudflareTestSuccess": "Account readable (probes Analytics access only, not full dataset permissions)",
     "patSaved": "GitHub PAT saved",
     "patSaveFailed": "Failed to save PAT",
     "patCleared": "GitHub PAT cleared",
@@ -18,6 +21,8 @@
     "publicBrowsingEnabled": "Public browsing enabled",
     "publicBrowsingDisabled": "Public browsing disabled",
     "publicBrowsingSaveFailed": "Failed to save public browsing setting",
+    "analyticsSaved": "Google Analytics settings saved",
+    "analyticsCleared": "Google Analytics measurement ID cleared",
     "passwordChanged": "Password updated",
     "passwordChangeFailed": "Failed to change password",
     "exportSuccess": "Export succeeded",
@@ -76,8 +81,27 @@
     "clear": "Clear Key",
     "clearConfirm": "Clear the AnySearch API Key? Library chat will lose web search."
   },
+  "cloudflare": {
+    "section": "4. Cloudflare usage",
+    "configuredBadge": "Configured (****{{last4}})",
+    "unconfiguredBadge": "Not configured",
+    "description": "Powers Free-tier Workers / D1 remaining quota on the Insights page. Create an API Token with Account Analytics read access. The token is stored with AES-GCM encryption and never returned in plain text.",
+    "accountIdLabel": "Account ID",
+    "accountIdPlaceholder": "Cloudflare Account ID",
+    "tokenLabel": "API Token",
+    "tokenPlaceholder": "Paste read-only Analytics API Token",
+    "savedTokenPlaceholder": "Saved token (****{{last4}}), leave blank to keep",
+    "hint": "Limits are account-wide and reset at 00:00 UTC. After configuring, open Insights to view remaining quota.",
+    "insightsLink": "Open Insights",
+    "save": "Save settings",
+    "test": "Test Account access",
+    "clear": "Clear credentials",
+    "clearConfirm": "Clear the Cloudflare Account ID and API Token?",
+    "needBoth": "Provide an Account ID, or a Token when an Account ID is already saved",
+    "testHint": "Only confirms the Token can read this Account; it does not prove access to every Analytics dataset"
+  },
   "github": {
-    "section": "4. GitHub PAT",
+    "section": "5. GitHub PAT",
     "configuredBadge": "Configured (****{{last4}})",
     "unconfiguredBadge": "Not configured",
     "description": "Optional. A PAT raises GitHub REST API rate limits for stars and sync.",
@@ -88,7 +112,7 @@
     "clearConfirm": "Clear the GitHub PAT? Stars import and sync will fall back to unauthenticated rate limits."
   },
   "import": {
-    "section": "5. Import GitHub Stars",
+    "section": "6. Import GitHub Stars",
     "description": "Batch-import your starred GitHub repos as bookmarks. Import runs in the background one-by-one (including AI), and continues if you leave this page. Requires a GitHub PAT configured above.",
     "button": "Import stars",
     "cancel": "Cancel import",
@@ -98,7 +122,7 @@
     "patRequired": "Please configure a GitHub PAT above before importing."
   },
   "tracking": {
-    "section": "6. Update tracking",
+    "section": "7. Update tracking",
     "description": "The system syncs GitHub activity and pending jobs about every 10 minutes. Adjust hot / stale day thresholds; saving recalculates locally from existing push times without extra GitHub calls. Per-bookmark tracking can be disabled in detail view.",
     "hotWithinDays": "Hot (pushed within days)",
     "staleAfterDays": "Stale (no push for days)",
@@ -111,7 +135,7 @@
     "eventMetaChange": "Metadata changes (description, language, rename)"
   },
   "bookmarkList": {
-    "section": "7. Bookmark list",
+    "section": "8. Bookmark list",
     "description": "Instance-level setting: how the bookmarks page loads more items. Signed-in users and public visitors share the same configuration.",
     "modeLabel": "Pagination mode",
     "modeAuto": "Auto-load on scroll",
@@ -124,13 +148,26 @@
     "save": "Save pagination settings"
   },
   "visibility": {
-    "section": "8. Visibility",
+    "section": "9. Visibility",
     "description": "Control whether signed-out visitors can read-only browse bookmarks and feed.",
     "publicBrowsing": "Public browsing",
     "publicBrowsingDescription": "When enabled, anyone with the link can read bookmarks and feed; when disabled, sign-in is required. Adding bookmarks and creating folders still require sign-in. Private notes stay hidden from guests."
   },
+  "analytics": {
+    "section": "10. Google Analytics",
+    "description": "Enter a Google Analytics Measurement ID to inject tracking site-wide.",
+    "measurementIdLabel": "Measurement ID",
+    "measurementIdPlaceholder": "G-XXXXXXXXXX",
+    "hint": "Copy the G- Measurement ID from Google Analytics — do not paste the full script snippet.",
+    "invalidMeasurementId": "Invalid Measurement ID. Expected format: G-XXXXXXXXXX",
+    "configuredBadge": "{{id}}",
+    "unconfiguredBadge": "Not configured",
+    "save": "Save",
+    "clear": "Clear",
+    "clearConfirm": "Clear the Google Analytics measurement ID?"
+  },
   "export": {
-    "section": "9. Backup & export",
+    "section": "11. Backup & export",
     "description": "Export all bookmarks, folders, and tags as JSON. Site accounts and passwords are excluded.",
     "title": "Export full library JSON",
     "detail": "Includes private notes, AI summaries, tags, and timestamps — not site accounts or passwords",
@@ -140,7 +177,7 @@
     "mdButton": "Export Markdown"
   },
   "danger": {
-    "section": "10. Danger zone",
+    "section": "12. Danger zone",
     "description": "Irreversible actions. Proceed with care.",
     "clearTitle": "Clear all data",
     "foldersNote": "Removes all bookmarks, folders, tags, feed history, and chat archives. Your account and settings are kept, and preset folders return automatically after you sign back in.",
@@ -151,7 +188,7 @@
     "confirmButton": "Clear all data"
   },
   "appearance": {
-    "section": "11. Appearance",
+    "section": "13. Appearance",
     "description": "Theme and interface language",
     "themeDescription": "Light / dark theme",
     "system": "System",
@@ -159,5 +196,21 @@
     "dark": "Dark",
     "language": "Language",
     "languageDescription": "Choose English or Simplified Chinese"
+  },
+  "nav": {
+    "ariaLabel": "Settings section navigation",
+    "account": "Account",
+    "deepseek": "DeepSeek",
+    "anysearch": "Web search",
+    "cloudflare": "Cloudflare",
+    "github": "GitHub PAT",
+    "import": "Import Stars",
+    "tracking": "Tracking",
+    "bookmarkList": "Bookmark list",
+    "visibility": "Visibility",
+    "analytics": "Analytics",
+    "export": "Export",
+    "danger": "Danger zone",
+    "appearance": "Appearance"
   }
 }

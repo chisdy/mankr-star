@@ -36,9 +36,11 @@ export const queryKeys = {
   insights: {
     all: ["insights"] as const,
     range: (range: string) => ["insights", range] as const,
+    cloudflareQuota: ["insights", "cloudflare-quota"] as const,
   },
   settings: {
     deepseek: ["settings", "deepseek"] as const,
+    cloudflare: ["settings", "cloudflare"] as const,
   },
   import: {
     githubActive: ["import", "github", "active"] as const,

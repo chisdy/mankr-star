@@ -94,6 +94,8 @@ export function patchAuthStatus(
         prev?.bookmark_pagination_mode ?? DEFAULT_BOOKMARK_PAGINATION_MODE,
       bookmark_page_size:
         prev?.bookmark_page_size ?? DEFAULT_BOOKMARK_PAGE_SIZE,
+      google_analytics_measurement_id:
+        prev?.google_analytics_measurement_id ?? null,
       ...patch,
     }),
   )

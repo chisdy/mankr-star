@@ -1,6 +1,7 @@
 {
   "title": "Tags",
   "description": "Browse all tags. Click one to filter bookmarks.",
+  "total": "{{count}} tags",
   "searchPlaceholder": "Search tags…",
   "sortLabel": "Sort",
   "sortCount": "By count",

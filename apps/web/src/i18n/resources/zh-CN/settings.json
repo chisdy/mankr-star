@@ -1,6 +1,6 @@
 {
   "title": "设置",
-  "description": "账号管理、DeepSeek AI 配置、GitHub PAT 与数据偏好",
+  "description": "账号管理、DeepSeek AI、Cloudflare 用量、GitHub PAT 与数据偏好",
   "toasts": {
     "deepseekSaved": "已保存 DeepSeek AI 配置",
     "deepseekSaveFailed": "配置保存失败",
@@ -10,6 +10,9 @@
     "anysearchSaved": "已保存 AnySearch API Key",
     "anysearchCleared": "已清除 AnySearch API Key",
     "anysearchTestSuccess": "AnySearch 连接测试成功！",
+    "cloudflareSaved": "已保存 Cloudflare Analytics 配置",
+    "cloudflareCleared": "已清除 Cloudflare 凭证",
+    "cloudflareTestSuccess": "Account 可读（仅探测 Analytics 访问，非完整配额权限校验）",
     "patSaved": "已保存 GitHub PAT",
     "patSaveFailed": "PAT 保存失败",
     "patCleared": "已清除 GitHub PAT",
@@ -18,6 +21,8 @@
     "publicBrowsingEnabled": "已开启公开浏览",
     "publicBrowsingDisabled": "已关闭公开浏览",
     "publicBrowsingSaveFailed": "公开浏览设置保存失败",
+    "analyticsSaved": "已保存 Google 统计配置",
+    "analyticsCleared": "已清除 Google 统计代码",
     "passwordChanged": "密码修改成功",
     "passwordChangeFailed": "密码修改失败",
     "exportSuccess": "数据导出成功",
@@ -76,8 +81,27 @@
     "clear": "清除 Key",
     "clearConfirm": "确定要清除 AnySearch API Key 吗？清除后收藏库对话将无法联网。"
   },
+  "cloudflare": {
+    "section": "4. Cloudflare 用量",
+    "configuredBadge": "已配置 (****{{last4}})",
+    "unconfiguredBadge": "未配置",
+    "description": "用于洞察页展示 Workers / D1 Free 账户级剩余额度。请创建具备 Account Analytics 只读权限的 API Token；Token 采用 AES-GCM 加密存储，接口不回显明文。",
+    "accountIdLabel": "Account ID",
+    "accountIdPlaceholder": "Cloudflare Account ID",
+    "tokenLabel": "API Token",
+    "tokenPlaceholder": "粘贴只读 Analytics API Token",
+    "savedTokenPlaceholder": "已保存 Token (****{{last4}})，若不修改请留空",
+    "hint": "限额为账户级，按 UTC 日重置。配置后可在洞察页查看剩余额度。",
+    "insightsLink": "打开洞察页",
+    "save": "保存配置",
+    "test": "测试 Account 可读",
+    "clear": "清除凭证",
+    "clearConfirm": "确定要清除 Cloudflare Account ID 与 API Token 吗？",
+    "needBoth": "请同时填写 Account ID，或在已有 Account ID 时填写 Token",
+    "testHint": "仅确认 Token 能读取该 Account，不保证具备全部 Analytics 数据集权限"
+  },
   "github": {
-    "section": "4. GitHub PAT",
+    "section": "5. GitHub PAT",
     "configuredBadge": "已配置 (****{{last4}})",
     "unconfiguredBadge": "未配置",
     "description": "可选。配置 PAT 可提高 GitHub REST API 请求限额（提升星数与更新同步速度）。",
@@ -88,7 +112,7 @@
     "clearConfirm": "确定要清除 GitHub PAT 吗？清除后星标导入与同步将回落到未认证的请求限额。"
   },
   "import": {
-    "section": "5. 导入 GitHub Stars",
+    "section": "6. 导入 GitHub Stars",
     "description": "批量将你在 GitHub 上标星的仓库导入为收藏。导入在后台逐条完成（含 AI 归类），离开本页不会中断。需先在上方配置 GitHub PAT。",
     "button": "导入星标",
     "cancel": "取消导入",
@@ -98,7 +122,7 @@
     "patRequired": "请先在上方配置 GitHub PAT 后再导入。"
   },
   "tracking": {
-    "section": "6. 更新跟踪",
+    "section": "7. 更新跟踪",
     "description": "系统约每 10 分钟同步一次 GitHub 近况与待处理任务。可调整「近期活跃」与「疑似停更」判定天数；保存后会按已有推送时间本地重算，不额外请求 GitHub。单条收藏可在详情中关闭跟踪。",
     "hotWithinDays": "近期活跃（天内有推送）",
     "staleAfterDays": "疑似停更（超过多少天无推送）",
@@ -111,7 +135,7 @@
     "eventMetaChange": "元信息变更（简介、语言、改名）"
   },
   "bookmarkList": {
-    "section": "7. 收藏列表",
+    "section": "8. 收藏列表",
     "description": "实例级设置：决定收藏页如何加载更多内容，登录用户与公开访客看到的是同一套配置。",
     "modeLabel": "分页方式",
     "modeAuto": "滚动到底自动加载",
@@ -124,13 +148,26 @@
     "save": "保存分页设置"
   },
   "visibility": {
-    "section": "8. 可见性",
+    "section": "9. 可见性",
     "description": "控制未登录访客能否只读查看本实例的收藏与动态。",
     "publicBrowsing": "公开浏览",
     "publicBrowsingDescription": "开启后，任何人可通过本实例链接只读查看收藏与动态；关闭后必须登录才能访问。添加收藏、新建文件夹等操作仍需登录。私人笔记始终不对访客可见。"
   },
+  "analytics": {
+    "section": "10. Google 统计",
+    "description": "填写 Google Analytics Measurement ID，全站自动注入统计脚本。",
+    "measurementIdLabel": "Measurement ID",
+    "measurementIdPlaceholder": "G-XXXXXXXXXX",
+    "hint": "在 Google Analytics 后台复制以 G- 开头的 Measurement ID，勿粘贴完整脚本。",
+    "invalidMeasurementId": "Measurement ID 格式无效，应为 G-XXXXXXXXXX",
+    "configuredBadge": "{{id}}",
+    "unconfiguredBadge": "未配置",
+    "save": "保存",
+    "clear": "清除",
+    "clearConfirm": "确定清除 Google 统计代码？"
+  },
   "export": {
-    "section": "9. 数据备份与导出",
+    "section": "11. 数据备份与导出",
     "description": "导出全部收藏、分类与标签数据为 JSON 格式。不含站点账号与密码。",
     "title": "导出全库 JSON",
     "detail": "包含私有笔记、AI 摘要、标签与时间戳；不含站点账号与密码",
@@ -140,7 +177,7 @@
     "mdButton": "导出 Markdown"
   },
   "danger": {
-    "section": "10. 危险操作",
+    "section": "12. 危险操作",
     "description": "以下操作不可撤销，请谨慎操作。",
     "clearTitle": "清空全部数据",
     "foldersNote": "将删除全部收藏、文件夹、标签、动态历史与对话存档。账号与设置会保留，重新登录后预置文件夹会自动恢复。",
@@ -151,7 +188,7 @@
     "confirmButton": "清空全部数据"
   },
   "appearance": {
-    "section": "11. 外观与语言",
+    "section": "13. 外观与语言",
     "description": "主题与界面语言",
     "themeDescription": "自适应浅色 / 深色界面主题",
     "system": "跟随系统",
@@ -159,5 +196,21 @@
     "dark": "深色主题",
     "language": "语言",
     "languageDescription": "选择英文或简体中文"
+  },
+  "nav": {
+    "ariaLabel": "设置分区导航",
+    "account": "账号",
+    "deepseek": "DeepSeek",
+    "anysearch": "联网搜索",
+    "cloudflare": "Cloudflare",
+    "github": "GitHub PAT",
+    "import": "导入 Stars",
+    "tracking": "更新跟踪",
+    "bookmarkList": "收藏列表",
+    "visibility": "可见性",
+    "analytics": "Google 统计",
+    "export": "导出",
+    "danger": "危险操作",
+    "appearance": "外观"
   }
 }

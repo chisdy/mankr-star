@@ -7,7 +7,7 @@
   },
   "header": {
     "title": "洞察",
-    "description": "库构成、健康度与 DeepSeek 真实调用用量"
+    "description": "库构成、健康度、DeepSeek 用量与 Cloudflare Free 额度"
   },
   "states": {
     "loadError": "无法加载洞察数据，请检查网络或后端服务。",
@@ -81,5 +81,23 @@
       "kb_chat": "收藏库对话",
       "kb_compress": "对话上下文压缩"
     }
+  },
+  "cloudflare": {
+    "title": "Cloudflare Free 额度",
+    "description": "账户级 Workers / D1 当日用量；对照 Free 上限，避免静默超限",
+    "scopeAccount": "账户级",
+    "unconfiguredPrefix": "尚未配置 Analytics 凭证。前往",
+    "settingsLink": "设置",
+    "unconfiguredSuffix": "填写 Account ID 与只读 API Token。",
+    "loadError": "无法拉取 Cloudflare 用量。",
+    "stale": "最新拉取失败，正在显示缓存数据（可能已过期）",
+    "workersRequests": "Workers 请求（当日）",
+    "d1RowsRead": "D1 读行（当日）",
+    "d1RowsWritten": "D1 写行（当日）",
+    "d1Storage": "D1 存储",
+    "remaining": "剩余 {{value}}",
+    "footnote": "{{asOf}} · {{cached}} · UTC 日重置 · Analytics 可能有延迟",
+    "cached": "缓存",
+    "live": "实时"
   }
 }

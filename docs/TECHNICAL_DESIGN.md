@@ -235,7 +235,7 @@ mankr-star/
 | `/` | 收藏库列表（侧栏文件夹树筛选） | 登录 |
 | `/folders` | 重定向至 `/`（兼容旧链接） | 登录 |
 | `/feed` | 更新动态 | 登录 |
-| `/insights` | 库洞察（规模 / 构成 / DeepSeek 用量） | 登录 |
+| `/insights` | 库洞察（规模 / 构成 / DeepSeek 用量 / Cloudflare Free 额度） | 登录 |
 | `/settings` | 账号、登出、GitHub PAT、**DeepSeek API Key / 模型**、导出 | 登录 |
 | `/bookmarks/:id` | 详情（或抽屉） | 登录 |
 
@@ -276,6 +276,10 @@ mankr-star/
 | * | `/api/tags` | 标签列表/合并（P2） |
 | GET | `/api/feed` | 更新事件 |
 | GET | `/api/insights` | 库洞察与 AI 用量聚合（`?range=7d\|30d\|all`） |
+| GET | `/api/insights/cloudflare-quota` | Cloudflare Free 账户级额度（Workers 请求 / D1 读写下存储）；需在设置页配置 Account ID + Analytics Token |
+| PUT/PATCH | `/api/settings/cloudflare` | 保存 Cloudflare Account ID / API Token（加密） |
+| DELETE | `/api/settings/cloudflare` | 清除 Cloudflare 凭证 |
+| POST | `/api/settings/cloudflare/test` | 探测 Analytics 可读性 |
 | POST | `/api/bookmarks/import/github` | Stars 导入 |
 | PUT/PATCH | `/api/settings/deepseek` | 写入/更新 DeepSeek Key 与模型；清除 Key |
 | POST | `/api/settings/deepseek/test` | 测试连接（P1） |
@@ -486,8 +490,8 @@ Workers Builds（Git 自动部署）必配：
 | 资源 | 策略 |
 |------|------|
 | Workers 10 万请求/天 | 全站登录；静态资源走 Assets 缓存 |
-| D1 读/写日限额 | 列表分页、索引、避免 N+1；Cron 分片 |
-| D1 5 GB | events 滚动删除；禁止存整份巨型 README（改 R2 或截断） |
+| D1 读/写日限额 | 列表分页、索引、避免 N+1；Cron 分片；洞察页 `/insights` 展示账户级剩余额度 |
+| D1 5 GB | events 滚动删除；禁止存整份巨型 README（改 R2 或截断）；洞察页监控存储占比 |
 | DeepSeek API | 费用在用户 DeepSeek 账户；服务端异步调用 + 实例级日软配额 + 无 Key/失败时规则 fallback |
 | Cron ≤5 | 合并调度 |
 | GitHub API | 用户 PAT；ETag / `If-Modified-Since`；分片 |

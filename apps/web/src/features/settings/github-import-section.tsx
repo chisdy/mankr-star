@@ -110,7 +110,7 @@ export function GithubImportSection({ user }: { user: User | undefined }) {
   const showProgress = Boolean(job && (isActive || job.total > 0))
 
   return (
-    <section className="space-y-4 border-t border-border pt-6">
+    <section id="import" className="scroll-mt-16 space-y-4 border-t border-border pt-6 lg:scroll-mt-6">
       <div>
         <h2 className="text-sm font-semibold tracking-tight text-foreground">
           {t("import.section")}
