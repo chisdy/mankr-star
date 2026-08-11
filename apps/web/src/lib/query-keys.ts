@@ -42,6 +42,9 @@ export const queryKeys = {
     deepseek: ["settings", "deepseek"] as const,
     cloudflare: ["settings", "cloudflare"] as const,
   },
+  apiTokens: {
+    all: ["api-tokens"] as const,
+  },
   import: {
     githubActive: ["import", "github", "active"] as const,
   },

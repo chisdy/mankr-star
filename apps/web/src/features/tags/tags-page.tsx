@@ -10,6 +10,7 @@ import {
   DotsThreeVerticalIcon,
   HashIcon,
   MagnifyingGlassIcon,
+  GitMergeIcon,
   PencilSimpleIcon,
   TrashIcon,
 } from "@phosphor-icons/react"
@@ -37,8 +38,11 @@ import {
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip"
 import { cn } from "@workspace/ui/lib/utils"
+import { BookmarkSelectControl } from "@/features/bookmarks/bookmark-select-control"
+import { TagBatchBar } from "@/features/tags/tag-batch-bar"
 import { TagClearEmptyDialog } from "@/features/tags/tag-clear-empty-dialog"
 import { TagDeleteDialog } from "@/features/tags/tag-delete-dialog"
+import { TagMergeDialog } from "@/features/tags/tag-merge-dialog"
 import { TagRenameDialog } from "@/features/tags/tag-rename-dialog"
 import { useAuth, useRedirectGuestOnUnauthorized } from "@/hooks/use-auth"
 import { api } from "@/lib/api"
@@ -166,12 +170,18 @@ function TagsPaginator({
 function TagCard({
   tag,
   canManage,
+  selected,
+  onSelectedChange,
   onEdit,
+  onMerge,
   onDelete,
 }: {
   tag: Tag
   canManage: boolean
+  selected?: boolean
+  onSelectedChange?: (selected: boolean) => void
   onEdit: (tag: Tag) => void
+  onMerge: (tag: Tag) => void
   onDelete: (tag: Tag) => void
 }) {
   const { t } = useTranslation("tags")
@@ -183,14 +193,15 @@ function TagCard({
       className={cn(
         "group relative flex min-h-24 flex-col rounded-lg border border-border/60 bg-card transition-colors",
         "hover:border-border hover:bg-muted/40",
-        menuOpen && "border-border bg-muted/40"
+        menuOpen && "border-border bg-muted/40",
+        selected && "border-primary/60 bg-primary/5",
       )}
     >
       <Link
         to={`/?tag=${encodeURIComponent(tag.name)}`}
         className={cn(
           "flex min-h-24 flex-1 flex-col justify-between gap-3 p-4 active:scale-[0.98]",
-          canManage && "pr-10"
+          canManage && "pr-10",
         )}
       >
         <span className="flex min-w-0 items-start gap-1.5">
@@ -207,11 +218,20 @@ function TagCard({
       {canManage ? (
         <div
           className={cn(
-            "pointer-events-none absolute top-2 right-2 z-10 opacity-0 transition-opacity",
-            "group-hover:pointer-events-auto group-hover:opacity-100",
-            menuOpen && "pointer-events-auto opacity-100"
+            "absolute top-1.5 right-1.5 z-10 flex items-center gap-0.5",
+            "opacity-0 transition-opacity duration-150",
+            "group-hover:opacity-100 focus-within:opacity-100",
+            "motion-reduce:transition-none",
+            (menuOpen || selected) && "opacity-100",
           )}
         >
+          <BookmarkSelectControl
+            selected={selected}
+            ariaLabel={t("batch.selectAria", { tagName: tag.name })}
+            className="static opacity-100"
+            showBackdrop={false}
+            onSelectedChange={(next) => onSelectedChange?.(next)}
+          />
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger
               render={
@@ -238,6 +258,15 @@ function TagCard({
                 {t("menu.edit")}
               </DropdownMenuItem>
               <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onMerge(tag)
+                }}
+              >
+                <GitMergeIcon className="mr-2 size-4" />
+                {t("menu.merge")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 variant="destructive"
                 onClick={(e) => {
                   e.stopPropagation()
@@ -262,8 +291,24 @@ export function TagsPage() {
   const [filter, setFilter] = React.useState("")
   const [sort, setSort] = React.useState<TagSort>("count")
   const [renameTag, setRenameTag] = React.useState<Tag | null>(null)
+  const [mergeSources, setMergeSources] = React.useState<Tag[]>([])
   const [deleteTag, setDeleteTag] = React.useState<Tag | null>(null)
   const [clearEmptyOpen, setClearEmptyOpen] = React.useState(false)
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(
+    () => new Set(),
+  )
+
+  const handleSelectedChange = React.useCallback(
+    (id: string, selected: boolean) => {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        if (selected) next.add(id)
+        else next.delete(id)
+        return next
+      })
+    },
+    [],
+  )
 
   const requestedPage = parsePageParam(searchParams.get(PAGE_PARAM))
 
@@ -296,6 +341,20 @@ export function TagsPage() {
     (page - 1) * TAGS_PAGE_SIZE,
     page * TAGS_PAGE_SIZE
   )
+  const selectableIds = React.useMemo(
+    () => pageItems.map((tag) => tag.id),
+    [pageItems],
+  )
+
+  const openMergeForTags = React.useCallback((next: Tag[]) => {
+    setMergeSources(next)
+  }, [])
+
+  const openMergeForSelection = React.useCallback(() => {
+    const selected = tags.filter((tag) => selectedIds.has(tag.id))
+    if (selected.length === 0) return
+    setMergeSources(selected)
+  }, [selectedIds, tags])
 
   const goToPage = React.useCallback(
     (nextPage: number, replace = false) => {
@@ -446,7 +505,12 @@ export function TagsPage() {
                 key={tag.id}
                 tag={tag}
                 canManage={canManage}
+                selected={selectedIds.has(tag.id)}
+                onSelectedChange={(selected) =>
+                  handleSelectedChange(tag.id, selected)
+                }
                 onEdit={setRenameTag}
+                onMerge={(next) => openMergeForTags([next])}
                 onDelete={setDeleteTag}
               />
             ))}
@@ -459,12 +523,32 @@ export function TagsPage() {
         </div>
       )}
 
+      {canManage ? (
+        <TagBatchBar
+          selectedIds={Array.from(selectedIds)}
+          selectableIds={selectableIds}
+          totalTagCount={tags.length}
+          onSelectAll={() => setSelectedIds(new Set(selectableIds))}
+          onClear={() => setSelectedIds(new Set())}
+          onMerge={openMergeForSelection}
+        />
+      ) : null}
+
       <TagRenameDialog
         open={Boolean(renameTag)}
         onOpenChange={(open) => {
           if (!open) setRenameTag(null)
         }}
         tag={renameTag}
+      />
+      <TagMergeDialog
+        open={mergeSources.length > 0}
+        onOpenChange={(open) => {
+          if (!open) setMergeSources([])
+        }}
+        sources={mergeSources}
+        candidates={tags}
+        onMerged={() => setSelectedIds(new Set())}
       />
       <TagDeleteDialog
         open={Boolean(deleteTag)}

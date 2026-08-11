@@ -211,6 +211,40 @@
     "analytics": "Analytics",
     "export": "Export",
     "danger": "Danger zone",
-    "appearance": "Appearance"
+    "appearance": "Appearance",
+    "apiTokens": "API Token / MCP"
+  },
+  "apiTokens": {
+    "title": "API tokens",
+    "description": "Bearer tokens for MCP and automation. The plaintext is shown only once at creation. Point Cursor/Claude at /api/mcp with Authorization: Bearer …",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Cursor MCP",
+    "defaultName": "API Token",
+    "create": "Create token",
+    "createdToast": "Token created",
+    "createError": "Could not create token",
+    "copyOnce": "Copy now — you will not see the full token again:",
+    "copied": "Copied to clipboard",
+    "mcpHint": "MCP URL: {{url}}",
+    "empty": "No tokens yet",
+    "revoke": "Revoke",
+    "revokedToast": "Token revoked",
+    "revokeError": "Could not revoke token"
+  },
+  "embedding": {
+    "title": "Semantic search embeddings",
+    "description": "OpenAI-compatible /embeddings. When configured, list search defaults to hybrid and falls back to FTS on errors.",
+    "configured": "Configured",
+    "baseUrl": "Base URL",
+    "model": "Model",
+    "reuseAiKey": "Reuse DeepSeek key",
+    "reuseAiKeyHint": "Call the Base URL above with your saved DeepSeek key",
+    "apiKey": "Embedding API key",
+    "apiKeyPlaceholder": "sk-…",
+    "save": "Save embedding",
+    "test": "Test connection",
+    "savedToast": "Embedding settings saved",
+    "saveError": "Could not save",
+    "testError": "Test failed"
   }
 }

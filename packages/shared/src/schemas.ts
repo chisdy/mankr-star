@@ -135,6 +135,8 @@ export const listBookmarksQuerySchema = z.object({
       return v === "true" || v === "1"
     }),
   q: z.string().optional(),
+  /** keyword=仅 FTS；hybrid=FTS+向量（未配置 embedding 时等同 keyword） */
+  searchMode: z.enum(["keyword", "hybrid"]).optional().default("hybrid"),
   sort: z.enum(BOOKMARK_SORT_OPTIONS).default("created_at"),
   order: z.enum(["asc", "desc"]).default("desc"),
 })
@@ -169,6 +171,115 @@ export const updateTagSchema = z.object({
   name: z.string().trim().min(1).max(64),
 })
 export type UpdateTagInput = z.infer<typeof updateTagSchema>
+
+export const mergeTagsSchema = z
+  .object({
+    sourceId: z.string().uuid(),
+    targetId: z.string().uuid(),
+  })
+  .refine((v) => v.sourceId !== v.targetId, {
+    message: "源标签与目标标签不能相同",
+  })
+export type MergeTagsInput = z.infer<typeof mergeTagsSchema>
+
+export const mergeTagsPreviewSchema = z
+  .object({
+    sourceIds: z.array(z.string().uuid()).min(1).max(100),
+    targetId: z.string().uuid(),
+  })
+  .transform((v) => ({
+    ...v,
+    sourceIds: Array.from(new Set(v.sourceIds)),
+  }))
+  .refine((v) => !v.sourceIds.includes(v.targetId), {
+    message: "源标签与目标标签不能相同",
+  })
+export type MergeTagsPreviewInput = z.infer<typeof mergeTagsPreviewSchema>
+
+export const batchTagsSchema = z
+  .object({
+    ids: z.array(z.string().uuid()).min(1).max(100),
+    action: z.discriminatedUnion("type", [
+      z.object({
+        type: z.literal("merge"),
+        targetId: z.string().uuid(),
+      }),
+    ]),
+  })
+  .superRefine((v, ctx) => {
+    const uniqueIds = Array.from(new Set(v.ids))
+    if (uniqueIds.length < 1) {
+      ctx.addIssue({
+        code: "custom",
+        message: "至少需要一个源标签",
+        path: ["ids"],
+      })
+    }
+    if (v.action.type === "merge" && uniqueIds.includes(v.action.targetId)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "源标签与目标标签不能相同",
+        path: ["action", "targetId"],
+      })
+    }
+  })
+export type BatchTagsInput = z.infer<typeof batchTagsSchema>
+
+export const batchBookmarksSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(100),
+  action: z.discriminatedUnion("type", [
+    z.object({ type: z.literal("archive") }),
+    z.object({ type: z.literal("unarchive") }),
+    z.object({ type: z.literal("delete") }),
+    z.object({
+      type: z.literal("moveFolder"),
+      folderId: z.string().uuid().nullable(),
+    }),
+    z.object({
+      type: z.literal("addTags"),
+      tags: z.array(z.string().min(1).max(64)).min(1).max(20),
+    }),
+    z.object({
+      type: z.literal("setFeatured"),
+      featured: z.boolean(),
+    }),
+    z.object({
+      type: z.literal("setPricing"),
+      pricing: z.enum(BOOKMARK_PRICING_VALUES).nullable(),
+    }),
+    z.object({ type: z.literal("regenerateAi") }),
+  ]),
+})
+export type BatchBookmarksInput = z.infer<typeof batchBookmarksSchema>
+
+export const createApiTokenSchema = z.object({
+  name: z.string().trim().min(1).max(64),
+  scopes: z
+    .array(z.enum(["read", "write"]))
+    .min(1)
+    .max(2)
+    .default(["read", "write"]),
+})
+export type CreateApiTokenInput = z.infer<typeof createApiTokenSchema>
+
+export const embeddingSettingsSchema = z
+  .object({
+    baseUrl: z.string().url().optional(),
+    model: z.string().min(1).max(128).optional(),
+    apiKey: z.string().min(1).optional(),
+    clearKey: z.boolean().optional(),
+    reuseAiKey: z.boolean().optional(),
+  })
+  .refine(
+    (v) =>
+      v.baseUrl !== undefined ||
+      v.model !== undefined ||
+      v.apiKey !== undefined ||
+      v.clearKey === true ||
+      v.reuseAiKey !== undefined,
+    { message: "请提供至少一项 embedding 设置" },
+  )
+export type EmbeddingSettingsInput = z.infer<typeof embeddingSettingsSchema>
 
 export const suggestFolderSlugSchema = z.object({
   name: z.string().min(1).max(64),

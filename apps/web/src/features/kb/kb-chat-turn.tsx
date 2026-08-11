@@ -179,6 +179,7 @@ function KbAssistantTurn({
               sources={message.sources}
               idPrefix={idPrefix}
               streaming={streaming}
+              onOpenBookmark={openDetail}
             />
           </StreamingResponse>
         ) : null}

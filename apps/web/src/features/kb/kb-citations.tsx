@@ -30,6 +30,30 @@ function hostname(url: string): string | undefined {
   }
 }
 
+/** 新标签/新窗口交还给浏览器，只接管普通左键 */
+function isPlainLeftClick(event: React.MouseEvent<HTMLAnchorElement>) {
+  return (
+    !event.defaultPrevented &&
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  )
+}
+
+function bookmarkOpenHandler(
+  bookmarkId: string | undefined,
+  onOpenBookmark?: (bookmarkId: string) => void
+) {
+  if (!onOpenBookmark || !bookmarkId) return undefined
+  return (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isPlainLeftClick(event)) return
+    event.preventDefault()
+    onOpenBookmark(bookmarkId)
+  }
+}
+
 /**
  * KbChatSource → CitationItem。后端虽已过滤外链协议，前端仍兜底一次：
  * CitationList 会把 url 直接渲染成 <a href>，过不了校验的只留标题。
@@ -59,24 +83,7 @@ export function toCitationItems(
         ? {
             internalHref,
             externalLabel: options?.externalLabel,
-            onInternalClick:
-              onOpenBookmark && bookmarkId
-                ? (event: React.MouseEvent<HTMLAnchorElement>) => {
-                    // 新标签/新窗口交还给浏览器，只接管普通左键
-                    if (
-                      event.defaultPrevented ||
-                      event.button !== 0 ||
-                      event.metaKey ||
-                      event.ctrlKey ||
-                      event.shiftKey ||
-                      event.altKey
-                    ) {
-                      return
-                    }
-                    event.preventDefault()
-                    onOpenBookmark(bookmarkId)
-                  }
-                : undefined,
+            onInternalClick: bookmarkOpenHandler(bookmarkId, onOpenBookmark),
           }
         : {}),
     }
@@ -95,7 +102,8 @@ function buildCitationIndex(sources: readonly KbChatSource[]) {
 }
 
 /**
- * 渲染回答正文，把引用标记替换成指向来源列表的锚点。
+ * 渲染回答正文，把引用标记替换成可点击序号。
+ * 收藏引用直接打开详情弹窗；网页引用仍锚到来源列表。
  * 后端 system prompt 约定输出纯文本 + [#n] / [Wn]，所以不需要 markdown 渲染器。
  */
 export function KbAnswerText({
@@ -103,11 +111,13 @@ export function KbAnswerText({
   sources,
   idPrefix,
   streaming = false,
+  onOpenBookmark,
 }: {
   text: string
   sources?: readonly KbChatSource[]
   idPrefix: string
   streaming?: boolean
+  onOpenBookmark?: (bookmarkId: string) => void
 }) {
   const { t } = useTranslation("kb")
   const list = sources ?? []
@@ -128,14 +138,20 @@ export function KbAnswerText({
     // 编号对不上来源时保留原文，避免把模型写出的标记吞掉
     if (!source || target === undefined) continue
 
+    const internalHref = bookmarkInternalHref(source)
+    const bookmarkId =
+      source.type === "bookmark" ? source.id?.trim() : undefined
+
     if (at > cursor) nodes.push(text.slice(cursor, at))
     nodes.push(
       <Citation
         key={`${raw}-${at}`}
         citationId={sourceKey(source)}
-        index={target + 1}
+        index={ordinal}
         idPrefix={idPrefix}
-        label={t("sources.citationAria", { index: target + 1 })}
+        label={t("sources.citationAria", { index: ordinal })}
+        href={internalHref ?? undefined}
+        onClick={bookmarkOpenHandler(bookmarkId, onOpenBookmark)}
       />
     )
     cursor = at + raw.length

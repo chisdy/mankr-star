@@ -53,6 +53,16 @@ export const aiSettingsValueSchema = z.object({
     .min(1)
     .catch(DEFAULT_DEEPSEEK_MODEL)
     .default(DEFAULT_DEEPSEEK_MODEL),
+  /** OpenAI 兼容 embeddings base，如 https://api.openai.com/v1 */
+  embeddingBaseUrl: z.string().catch("").default(""),
+  embeddingModel: z
+    .string()
+    .catch("text-embedding-3-small")
+    .default("text-embedding-3-small"),
+  embeddingApiKeyEncrypted: encryptedSecret.default(null),
+  embeddingKeyLast4: z.string().nullable().catch(null).default(null),
+  /** true 时用 DeepSeek Key 调 embeddingBaseUrl */
+  embeddingReuseAiKey: z.boolean().catch(false).default(false),
 })
 export type AiSettingsValue = z.infer<typeof aiSettingsValueSchema>
 

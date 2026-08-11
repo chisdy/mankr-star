@@ -2,6 +2,7 @@ import { bookmarkTags, bookmarks, folders, tags } from "@mankr/db"
 import {
   SOURCE_CAPABILITIES,
   SOURCE_TYPES,
+  batchBookmarksSchema,
   canonicalizeUrl,
   computeHealthStatus,
   createBookmarkSchema,
@@ -40,6 +41,9 @@ import { fetchUrlPageMetadata } from "../lib/url-metadata"
 import { fetchTwitterMetadata } from "../lib/twitter"
 import { UrlFetchError } from "../lib/url-ssrf"
 import { decryptSecret, encryptSecret } from "../lib/crypto"
+import { queryBookmarkIdsByFts } from "../lib/bookmark-fts"
+import { runBookmarkBatch } from "../lib/bookmark-batch"
+import { scheduleBookmarkEmbedding } from "../lib/embeddings"
 import { rateLimit } from "../lib/rate-limit"
 import { readSetting } from "../lib/settings-store"
 import { getClientIp, nowIso } from "../lib/utils"
@@ -224,6 +228,7 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     pricing,
     featured,
     q,
+    searchMode,
     sort,
     order,
   } = query.data
@@ -287,20 +292,29 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
   }
 
   if (q) {
-    const pattern = `%${q}%`
-    const qClauses = [
-      like(bookmarks.title, pattern),
-      like(bookmarks.description, pattern),
-      like(bookmarks.summaryAi, pattern),
-      like(bookmarks.externalId, pattern),
-      like(bookmarks.siteName, pattern),
-      like(bookmarks.contentExcerpt, pattern),
-    ]
-    if (!isPublicRead) {
-      qClauses.push(like(bookmarks.notes, pattern))
+    let ftsIds = await queryBookmarkIdsByFts(db, {
+      q,
+      includeNotes: !isPublicRead,
+    })
+    if (
+      searchMode === "hybrid" &&
+      !isPublicRead
+    ) {
+      try {
+        const { queryBookmarkIdsHybrid } = await import("../lib/embeddings")
+        ftsIds = await queryBookmarkIdsHybrid(db, c.env, {
+          q,
+          includeNotes: !isPublicRead,
+          ftsIds,
+        })
+      } catch (err) {
+        console.error("[bookmarks] hybrid search failed", err)
+      }
     }
-    // 账号名 / 密码永不进入 q 匹配
-    conditions.push(or(...qClauses)!)
+    if (ftsIds.length === 0) {
+      return c.json({ items: [], page, pageSize, total: 0 })
+    }
+    conditions.push(inArray(bookmarks.id, ftsIds))
   }
 
   if (tag) {
@@ -664,6 +678,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
     }
 
     c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
+    scheduleBookmarkEmbedding(c.executionCtx.waitUntil.bind(c.executionCtx), db, c.env, id)
     const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
     return c.json(serializeBookmark(row!, [], null, undefined, { includeAccount: true }), 201)
   }
@@ -785,6 +800,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
     }
 
     c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
+    scheduleBookmarkEmbedding(c.executionCtx.waitUntil.bind(c.executionCtx), db, c.env, id)
     const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
     return c.json(serializeBookmark(row!, [], null, undefined, { includeAccount: true }), 201)
   }
@@ -913,9 +929,44 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
   }
 
   c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
+  scheduleBookmarkEmbedding(c.executionCtx.waitUntil.bind(c.executionCtx), db, c.env, id)
 
   const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
   return c.json(serializeBookmark(row!, [], null, undefined, { includeAccount: true }), 201)
+})
+
+bookmarkRoutes.post("/bookmarks/batch", async (c) => {
+  if (c.get("isPublicRead")) {
+    return c.json({ error: "未登录", code: "UNAUTHORIZED" }, 401)
+  }
+
+  const db = c.get("db")
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: "无效的 JSON", code: "BAD_REQUEST" }, 400)
+  }
+
+  const parsed = batchBookmarksSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: parsed.error.flatten(),
+      },
+      400,
+    )
+  }
+
+  const result = await runBookmarkBatch(
+    db,
+    c.env,
+    parsed.data,
+    c.executionCtx.waitUntil.bind(c.executionCtx),
+  )
+  return c.json(result.body, result.status)
 })
 
 bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
@@ -1024,6 +1075,20 @@ bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
 
   if (data.tagNames) {
     await syncBookmarkTags(db, id, data.tagNames)
+  }
+
+  const shouldReembed =
+    data.notes !== undefined ||
+    data.title !== undefined ||
+    data.description !== undefined ||
+    data.summaryAi !== undefined
+  if (shouldReembed) {
+    scheduleBookmarkEmbedding(
+      c.executionCtx.waitUntil.bind(c.executionCtx),
+      db,
+      c.env,
+      id,
+    )
   }
 
   const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
@@ -1162,7 +1227,10 @@ bookmarkRoutes.post("/bookmarks/:id/ai/regenerate", async (c) => {
     .where(eq(bookmarks.id, id))
 
   c.executionCtx.waitUntil(
-    runAiForBookmark(db, c.env, id, { overwriteFolder: true }),
+    runAiForBookmark(db, c.env, id, {
+      overwriteFolder: true,
+      overwriteCategory: true,
+    }),
   )
   return c.json({ ok: true, ai_status: "pending" })
 })
@@ -1323,7 +1391,10 @@ bookmarkRoutes.post("/bookmarks/:id/sync", async (c) => {
   }
 
   c.executionCtx.waitUntil(
-    runAiForBookmark(db, c.env, id, { overwriteFolder: true }),
+    runAiForBookmark(db, c.env, id, {
+      overwriteFolder: true,
+      overwriteCategory: true,
+    }),
   )
   return c.json({ ok: true, ai_status: "pending" })
 })

@@ -41,6 +41,9 @@ export type BookmarkResultsProps = {
   loadMoreError: boolean
   onPageChange: (page: number) => void
   onOpenDetail: (id: string) => void
+  selectable?: boolean
+  selectedIds?: Set<string>
+  onSelectedChange?: (id: string, selected: boolean) => void
 }
 
 export function BookmarkResults({
@@ -55,6 +58,9 @@ export function BookmarkResults({
   loadMoreError,
   onPageChange,
   onOpenDetail,
+  selectable,
+  selectedIds,
+  onSelectedChange,
 }: BookmarkResultsProps) {
   const isGrid = viewMode === "grid"
 
@@ -64,14 +70,20 @@ export function BookmarkResults({
         <BookmarkCard
           bookmark={bookmark}
           onClick={() => onOpenDetail(bookmark.id)}
+          selectable={selectable}
+          selected={selectedIds?.has(bookmark.id)}
+          onSelectedChange={onSelectedChange}
         />
       ) : (
         <BookmarkRow
           bookmark={bookmark}
           onClick={() => onOpenDetail(bookmark.id)}
+          selectable={selectable}
+          selected={selectedIds?.has(bookmark.id)}
+          onSelectedChange={onSelectedChange}
         />
       ),
-    [isGrid, onOpenDetail],
+    [isGrid, onOpenDetail, onSelectedChange, selectable, selectedIds],
   )
 
   if (mode === "pagination") {

@@ -66,6 +66,28 @@ export const sessions = sqliteTable(
   ],
 )
 
+/** 入站 API Token（MCP / 自动化）；明文仅创建时返回一次 */
+export const apiTokens = sqliteTable(
+  "api_tokens",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    tokenPrefix: text("token_prefix").notNull(),
+    /** JSON 数组：["read"] | ["read","write"] */
+    scopes: text("scopes").notNull().default('["read"]'),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    lastUsedAt: text("last_used_at"),
+    revokedAt: text("revoked_at"),
+  },
+  (t) => [
+    uniqueIndex("api_tokens_token_hash_uq").on(t.tokenHash),
+    index("api_tokens_prefix_idx").on(t.tokenPrefix),
+  ],
+)
+
 /** 文件夹树：depth 0..4（最多 5 级）；path 如 /id1/id2/ */
 export const folders = sqliteTable(
   "folders",
@@ -181,6 +203,24 @@ export const bookmarks = sqliteTable(
     index("bookmarks_pricing_idx").on(t.pricing),
     index("bookmarks_featured_idx").on(t.featured),
   ],
+)
+
+/** 收藏向量（base64 Float32 LE）；个人库规模下可在 Worker 内余弦检索 */
+export const bookmarkEmbeddings = sqliteTable(
+  "bookmark_embeddings",
+  {
+    bookmarkId: text("bookmark_id")
+      .primaryKey()
+      .references(() => bookmarks.id, { onDelete: "cascade" }),
+    model: text("model").notNull(),
+    dims: integer("dims").notNull(),
+    vector: text("vector").notNull(),
+    contentHash: text("content_hash").notNull(),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [index("bookmark_embeddings_model_idx").on(t.model)],
 )
 
 export const tags = sqliteTable(
@@ -400,6 +440,7 @@ export const kbMessages = sqliteTable(
 
 export type User = typeof users.$inferSelect
 export type Session = typeof sessions.$inferSelect
+export type ApiToken = typeof apiTokens.$inferSelect
 export type Folder = typeof folders.$inferSelect
 export type Bookmark = typeof bookmarks.$inferSelect
 export type Tag = typeof tags.$inferSelect

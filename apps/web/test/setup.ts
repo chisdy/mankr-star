@@ -13,6 +13,8 @@ const TABLES = [
   "tags",
   "folders",
   "sessions",
+  "api_tokens",
+  "bookmark_embeddings",
   "users",
   "settings",
 ] as const

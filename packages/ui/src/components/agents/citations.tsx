@@ -38,11 +38,17 @@ export interface CitationsProps {
 export interface CitationProps {
   citationId: string
   index: number
-  /** 必须与配对的 Citations idPrefix 一致 */
+  /** 必须与配对的 Citations idPrefix 一致；自定义 href 时仍用于兜底锚点 */
   idPrefix: string
   /** 无障碍标签，默认拼英文；传入以走 i18n */
   label?: string
   className?: string
+  /**
+   * 覆盖默认的 #来源列表锚点。收藏引用应指向站内详情，
+   * 避免来源区默认折叠时点序号「找不到」对应内容。
+   */
+  href?: string
+  onClick?: (event: MouseEvent<HTMLAnchorElement>) => void
 }
 
 export interface CitationListProps {
@@ -67,10 +73,13 @@ export function Citation({
   idPrefix,
   label,
   className,
+  href,
+  onClick,
 }: CitationProps) {
   return (
     <a
-      href={`#${citationTargetId(idPrefix, citationId)}`}
+      href={href ?? `#${citationTargetId(idPrefix, citationId)}`}
+      onClick={onClick}
       aria-label={label ?? `View citation ${index}`}
       className={cn(
         "mx-0.5 inline-flex min-w-4 -translate-y-0.5 items-center justify-center rounded-md bg-muted/60 px-1 py-0.5 text-[10px] leading-none font-semibold text-muted-foreground no-underline outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",

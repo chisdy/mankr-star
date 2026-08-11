@@ -28,11 +28,12 @@ import {
 import { truncate } from "../lib/kb-search"
 import { rateLimit } from "../lib/rate-limit"
 import { getClientIp } from "../lib/utils"
-import { requireAuth } from "../middleware/auth"
+import { requireAuthWrite } from "../middleware/auth"
 
 export const kbRoutes = new Hono<AppEnv>()
 
-kbRoutes.use("/kb/*", requireAuth)
+/** KB chat 消耗 AI；read-only Bearer 禁止 */
+kbRoutes.use("/kb/*", requireAuthWrite)
 
 kbRoutes.post("/kb/chat", async (c) => {
   const ip = getClientIp(c.req.raw)

@@ -24,6 +24,11 @@ export interface User {
   deepseek_configured: boolean
   deepseek_last4?: string | null
   deepseek_model?: string | null
+  embedding_configured?: boolean
+  embedding_base_url?: string | null
+  embedding_model?: string | null
+  embedding_last4?: string | null
+  embedding_reuse_ai_key?: boolean
   anysearch_configured?: boolean
   anysearch_last4?: string | null
   github_pat_configured?: boolean

@@ -13,6 +13,7 @@
   "menu": {
     "aria": "{{tagName}} menu",
     "edit": "Edit",
+    "merge": "Merge into…",
     "delete": "Delete"
   },
   "renameDialog": {
@@ -22,6 +23,31 @@
     "namePlaceholder": "Enter a new name",
     "successToast": "Tag updated",
     "errorToast": "Could not update tag. Please try again."
+  },
+  "mergeDialog": {
+    "notSelected": "No tag selected",
+    "title": "Merge tags",
+    "description": "Merge \"{{tagName}}\" into another tag. Links move to the target, then the source tag is deleted.",
+    "descriptionBatch": "Merge {{count}} selected tags into another tag. Links move to the target, then the source tags are deleted.",
+    "targetLabel": "Merge into",
+    "targetPlaceholder": "Select target tag",
+    "noTarget": "No target tag available. Deselect some tags and try again.",
+    "confirm": "Merge",
+    "previewUnique": "After merge, the target tag will have about {{count}} bookmarks.",
+    "previewOverlap": "Tag counts add up to {{additive}}, but bookmarks can carry multiple tags; after dedupe about {{unique}} bookmarks.",
+    "successToast": "Tags merged",
+    "successToastWithCount": "Merged. Target tag now has {{count}} bookmarks",
+    "errorToast": "Could not merge tags"
+  },
+  "batch": {
+    "selected": "{{count}} selected",
+    "selectAll": "Select all on page",
+    "deselectAll": "Deselect all",
+    "clear": "Clear selection",
+    "merge": "Merge into…",
+    "selectAria": "Select tag {{tagName}}",
+    "overLimit": "You can merge at most {{max}} tags at once",
+    "partialToast": "Finished {{processed}}, failed {{failed}}"
   },
   "deleteDialog": {
     "notSelected": "No tag selected",

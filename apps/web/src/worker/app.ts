@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import type { AppEnv } from "./env"
 import { withDb } from "./middleware/auth"
+import { apiTokenRoutes } from "./routes/api-tokens"
 import { authRoutes } from "./routes/auth"
 import { bookmarkRoutes } from "./routes/bookmarks"
 import { folderRoutes } from "./routes/folders"
@@ -11,6 +12,7 @@ import { importRoutes } from "./routes/import"
 import { insightsRoutes } from "./routes/insights"
 import { kbRoutes } from "./routes/kb"
 import { kbConversationRoutes } from "./routes/kb-conversations"
+import { mcpRoutes, setMcpHttpDispatch } from "./routes/mcp"
 import { meRoutes } from "./routes/me"
 import { settingsRoutes } from "./routes/settings"
 import { tagRoutes } from "./routes/tags"
@@ -32,6 +34,19 @@ app.route("/api", kbConversationRoutes)
 app.route("/api", settingsRoutes)
 app.route("/api", importRoutes)
 app.route("/api", exportRoutes)
+app.route("/api", apiTokenRoutes)
+app.route("/api", mcpRoutes)
+
+setMcpHttpDispatch(async (path, init, env, executionCtx) => {
+  const res = await app.request(
+    path,
+    init,
+    env,
+    executionCtx as ExecutionContext,
+  )
+  const body = await res.text()
+  return { ok: res.ok, status: res.status, body }
+})
 
 app.notFound((c) => {
   if (c.req.path.startsWith("/api/")) {

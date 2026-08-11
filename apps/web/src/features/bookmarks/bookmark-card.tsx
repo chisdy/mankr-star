@@ -8,13 +8,23 @@ import { HealthStatusBadge } from "./health-status-badge"
 import { PricingFeaturedBadges } from "./pricing-featured-badges"
 import { BookmarkAccountCopyButton } from "./bookmark-account-copy-button"
 import { BookmarkOpenButton } from "./bookmark-open-button"
+import { BookmarkSelectControl } from "./bookmark-select-control"
 
 interface BookmarkCardProps {
   bookmark: Bookmark
   onClick?: () => void
+  selectable?: boolean
+  selected?: boolean
+  onSelectedChange?: (id: string, selected: boolean) => void
 }
 
-export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
+export function BookmarkCard({
+  bookmark,
+  onClick,
+  selectable,
+  selected,
+  onSelectedChange,
+}: BookmarkCardProps) {
   const { t, i18n } = useTranslation("bookmarks")
   const isGithub = bookmark.source_type === "github"
   const isTwitter = bookmark.source_type === "twitter"
@@ -54,8 +64,17 @@ export function BookmarkCard({ bookmark, onClick }: BookmarkCardProps) {
         "hover:-translate-y-1 hover:border-border hover:bg-accent/30 hover:shadow-md",
         "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
         isGithub && bookmark.health_status === "unavailable" && "opacity-75",
+        selected && "border-primary/60 bg-primary/5",
       )}
     >
+      {selectable ? (
+        <BookmarkSelectControl
+          selected={selected}
+          ariaLabel={t("batch.selectAria")}
+          className="top-1.5 right-1.5"
+          onSelectedChange={(next) => onSelectedChange?.(bookmark.id, next)}
+        />
+      ) : null}
       <div className="min-w-0 space-y-3">
         {isTwitter && bookmark.image_url ? (
           <div className="-mx-4 -mt-4 overflow-hidden rounded-t-xl">

@@ -211,6 +211,40 @@
     "analytics": "Google 统计",
     "export": "导出",
     "danger": "危险操作",
-    "appearance": "外观"
+    "appearance": "外观",
+    "apiTokens": "API Token / MCP"
+  },
+  "apiTokens": {
+    "title": "API Token",
+    "description": "用于 MCP 与自动化脚本的 Bearer Token。明文仅在创建时显示一次。Cursor / Claude 可配置 URL 为本站 /api/mcp，并带上 Authorization: Bearer …。",
+    "nameLabel": "名称",
+    "namePlaceholder": "例如 Cursor MCP",
+    "defaultName": "API Token",
+    "create": "创建 Token",
+    "createdToast": "已创建 Token",
+    "createError": "创建失败",
+    "copyOnce": "请立即复制保存，关闭后无法再次查看明文：",
+    "copied": "已复制到剪贴板",
+    "mcpHint": "MCP 地址：{{url}}",
+    "empty": "尚未创建 Token",
+    "revoke": "吊销",
+    "revokedToast": "已吊销 Token",
+    "revokeError": "吊销失败"
+  },
+  "embedding": {
+    "title": "语义搜索 Embedding",
+    "description": "OpenAI 兼容 /embeddings。配置后列表默认 hybrid 检索；失败自动回退 FTS。",
+    "configured": "已配置",
+    "baseUrl": "Base URL",
+    "model": "模型",
+    "reuseAiKey": "复用 DeepSeek Key",
+    "reuseAiKeyHint": "用已保存的 DeepSeek Key 调用上方 Base URL",
+    "apiKey": "Embedding API Key",
+    "apiKeyPlaceholder": "sk-…",
+    "save": "保存 Embedding",
+    "test": "测试连接",
+    "savedToast": "已保存 Embedding 配置",
+    "saveError": "保存失败",
+    "testError": "测试失败"
   }
 }

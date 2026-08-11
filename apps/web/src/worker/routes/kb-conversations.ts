@@ -13,12 +13,18 @@ import { Hono } from "hono"
 import type { AppEnv } from "../env"
 import { truncate } from "../lib/kb-search"
 import { nowIso } from "../lib/utils"
-import { requireAuth } from "../middleware/auth"
+import { authByMethod, requireAuth, requireAuthWrite } from "../middleware/auth"
 
 export const kbConversationRoutes = new Hono<AppEnv>()
 
-kbConversationRoutes.use("/kb/conversations", requireAuth)
-kbConversationRoutes.use("/kb/conversations/*", requireAuth)
+kbConversationRoutes.use(
+  "/kb/conversations",
+  authByMethod(requireAuth, requireAuthWrite),
+)
+kbConversationRoutes.use(
+  "/kb/conversations/*",
+  authByMethod(requireAuth, requireAuthWrite),
+)
 
 kbConversationRoutes.get("/kb/conversations", async (c) => {
   const db = c.get("db")

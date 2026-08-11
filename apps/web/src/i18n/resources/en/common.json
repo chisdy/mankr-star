@@ -14,7 +14,8 @@
     "clearFilters": "Clear filters",
     "resetFilters": "Reset filters",
     "confirm": "Confirm",
-    "acknowledge": "Got it"
+    "acknowledge": "Got it",
+    "copy": "Copy"
   },
   "accessibility": {
     "showPassword": "Show password",

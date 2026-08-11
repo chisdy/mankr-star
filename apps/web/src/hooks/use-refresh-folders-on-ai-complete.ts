@@ -43,5 +43,6 @@ export function useRefreshFoldersOnAiComplete() {
     prevSignature.current = signature
     void queryClient.invalidateQueries({ queryKey: queryKeys.folders.all })
     void queryClient.invalidateQueries({ queryKey: queryKeys.tags.all })
+    void queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.all })
   }, [signature, queryClient])
 }

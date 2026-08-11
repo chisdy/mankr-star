@@ -21,6 +21,10 @@ export type Variables = {
   }
   /** 未登录但公开浏览已开启时为 true */
   isPublicRead?: boolean
+  /** session | token */
+  authMethod?: "session" | "token"
+  /** Bearer token scopes when authMethod=token */
+  tokenScopes?: Array<"read" | "write">
   db: import("@mankr/db").Db
 }
 

@@ -19,6 +19,7 @@ import {
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip"
 import {
+  useAuth,
   useBookmarkPaginationSettings,
   useRedirectGuestOnUnauthorized,
   useRequireAuthAction,
@@ -28,6 +29,7 @@ import { getAppScrollRoot } from "@/lib/scroll-root"
 import { BookmarkRowSkeleton } from "./bookmark-row"
 import { BookmarkCardSkeleton } from "./bookmark-card"
 import { AddBookmarkDialog } from "./add-bookmark-dialog"
+import { BookmarkBatchBar } from "./bookmark-batch-bar"
 import {
   countPanelFilters,
 } from "./filter-panel-body"
@@ -49,9 +51,25 @@ export function BookmarksPage() {
   const { t } = useTranslation(["bookmarks", "common"])
   const [searchParams, setSearchParams] = useReadableSearchParams()
   const requireAuth = useRequireAuthAction()
+  const { isAuthenticated } = useAuth()
   const { openDetail } = useBookmarkDetail()
 
   const [addDialogOpen, setAddDialogOpen] = React.useState(false)
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(
+    () => new Set(),
+  )
+
+  const handleSelectedChange = React.useCallback(
+    (id: string, selected: boolean) => {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        if (selected) next.add(id)
+        else next.delete(id)
+        return next
+      })
+    },
+    [],
+  )
 
   const [viewMode, setViewMode] = React.useState<"list" | "grid">(() => {
     if (typeof window !== "undefined") {
@@ -412,8 +430,22 @@ export function BookmarksPage() {
           loadMoreError={loadMoreError}
           onPageChange={goToPage}
           onOpenDetail={openDetail}
+          selectable={isAuthenticated}
+          selectedIds={selectedIds}
+          onSelectedChange={handleSelectedChange}
         />
       )}
+
+      {isAuthenticated ? (
+        <BookmarkBatchBar
+          selectedIds={Array.from(selectedIds)}
+          selectableIds={items.map((item) => item.id)}
+          onSelectAll={() =>
+            setSelectedIds(new Set(items.map((item) => item.id)))
+          }
+          onClear={() => setSelectedIds(new Set())}
+        />
+      ) : null}
 
       <AddBookmarkDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
     </div>

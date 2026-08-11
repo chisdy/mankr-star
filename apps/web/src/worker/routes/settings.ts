@@ -1,6 +1,8 @@
 import {
   aiJobs,
   aiUsageLogs,
+  apiTokens,
+  bookmarkEmbeddings,
   bookmarkTags,
   bookmarks,
   folders,
@@ -18,6 +20,7 @@ import {
   bookmarkPaginationSettingsSchema,
   changePasswordSchema,
   cloudflareSettingsSchema,
+  embeddingSettingsSchema,
   deepseekSettingsSchema,
   githubPatSettingsSchema,
   isCloudflareConfigured,
@@ -40,12 +43,13 @@ import { hashPassword, verifyPassword } from "../lib/password"
 import { rateLimit } from "../lib/rate-limit"
 import { readSetting, writeSetting } from "../lib/settings-store"
 import { getClientIp, nowIso } from "../lib/utils"
-import { requireAuth } from "../middleware/auth"
+import { requireAuthWrite } from "../middleware/auth"
 
 export const settingsRoutes = new Hono<AppEnv>()
 
-settingsRoutes.use("/settings", requireAuth)
-settingsRoutes.use("/settings/*", requireAuth)
+/** Settings 全是写操作；read-only Bearer 禁止 */
+settingsRoutes.use("/settings", requireAuthWrite)
+settingsRoutes.use("/settings/*", requireAuthWrite)
 
 settingsRoutes.put("/settings/deepseek", (c) => upsertDeepseek(c))
 settingsRoutes.patch("/settings/deepseek", (c) => upsertDeepseek(c))
@@ -175,6 +179,103 @@ settingsRoutes.post("/settings/deepseek/test", async (c) => {
     return c.json({ ok: false, error: result.error }, 502)
   }
   return c.json({ ok: true })
+})
+
+settingsRoutes.put("/settings/embedding", async (c) => {
+  const ip = getClientIp(c.req.raw)
+  const rl = rateLimit(`embedding-settings:${ip}`, 20, 60_000)
+  if (!rl.ok) {
+    return c.json({ error: "请求过于频繁", code: "RATE_LIMITED" }, 429)
+  }
+
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: "无效的 JSON", code: "BAD_REQUEST" }, 400)
+  }
+
+  const parsed = embeddingSettingsSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: parsed.error.flatten(),
+      },
+      400,
+    )
+  }
+
+  const db = c.get("db")
+  const encKey = c.env.AI_KEY_ENCRYPTION_KEY || c.env.PAT_ENCRYPTION_KEY
+  const patch: {
+    embeddingBaseUrl?: string
+    embeddingModel?: string
+    embeddingApiKeyEncrypted?: string | null
+    embeddingKeyLast4?: string | null
+    embeddingReuseAiKey?: boolean
+  } = {}
+
+  if (parsed.data.baseUrl !== undefined) {
+    patch.embeddingBaseUrl = parsed.data.baseUrl.replace(/\/+$/, "")
+  }
+  if (parsed.data.model !== undefined) {
+    patch.embeddingModel = parsed.data.model
+  }
+  if (parsed.data.reuseAiKey !== undefined) {
+    patch.embeddingReuseAiKey = parsed.data.reuseAiKey
+  }
+  if (parsed.data.clearKey) {
+    patch.embeddingApiKeyEncrypted = null
+    patch.embeddingKeyLast4 = null
+  } else if (parsed.data.apiKey) {
+    patch.embeddingApiKeyEncrypted = await encryptSecret(
+      parsed.data.apiKey,
+      encKey,
+    )
+    patch.embeddingKeyLast4 = last4(parsed.data.apiKey)
+  }
+
+  const ai = await writeSetting(db, "ai", patch)
+  const { isEmbeddingConfigured } = await import("../lib/embeddings")
+  return c.json({
+    embedding_configured: isEmbeddingConfigured(ai),
+    embedding_base_url: ai.embeddingBaseUrl.trim() || null,
+    embedding_model: ai.embeddingModel,
+    embedding_last4: ai.embeddingKeyLast4,
+    embedding_reuse_ai_key: ai.embeddingReuseAiKey,
+  })
+})
+
+settingsRoutes.post("/settings/embedding/test", async (c) => {
+  const ip = getClientIp(c.req.raw)
+  const rl = rateLimit(`embedding-test:${ip}`, 10, 60_000)
+  if (!rl.ok) {
+    return c.json({ error: "请求过于频繁", code: "RATE_LIMITED" }, 429)
+  }
+
+  const db = c.get("db")
+  const {
+    resolveEmbeddingCredentials,
+    testEmbeddingConnection,
+  } = await import("../lib/embeddings")
+  const creds = await resolveEmbeddingCredentials(db, c.env)
+  if (!creds) {
+    return c.json(
+      {
+        ok: false,
+        error: "尚未配置 Embedding（baseUrl + Key）",
+        code: "NOT_CONFIGURED",
+      },
+      400,
+    )
+  }
+  const result = await testEmbeddingConnection(creds)
+  if (!result.ok) {
+    return c.json({ ok: false, error: result.error }, 502)
+  }
+  return c.json({ ok: true, dims: result.dims })
 })
 
 settingsRoutes.put("/settings/anysearch", (c) => upsertAnysearch(c))
@@ -696,6 +797,7 @@ settingsRoutes.post("/settings/clear-data", async (c) => {
   // D1 batch：多次删除一次提交，避免中途失败留下半清空状态
   await db.batch([
     db.delete(bookmarkTags),
+    db.delete(bookmarkEmbeddings),
     db.delete(updateEvents),
     db.delete(aiJobs),
     db.delete(aiUsageLogs),
@@ -707,6 +809,7 @@ settingsRoutes.post("/settings/clear-data", async (c) => {
     db.delete(tags),
     db.delete(folders),
     db.delete(sessions).where(eq(sessions.userId, userId)),
+    db.delete(apiTokens),
   ])
   // 触发器已随 bookmarks 删除清理，这里兜底防孤儿行（FTS 不在 drizzle schema 内）
   await db.run(sql`DELETE FROM bookmarks_fts`)

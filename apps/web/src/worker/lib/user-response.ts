@@ -3,6 +3,7 @@ import {
   isCloudflareConfigured,
   type SettingsValueMap,
 } from "@mankr/shared"
+import { isEmbeddingConfigured } from "./embeddings"
 
 type UserRow = {
   id: string
@@ -23,6 +24,11 @@ export function serializeUser(user: UserRow, s: SettingsValueMap) {
     deepseek_configured: Boolean(s.ai.deepseekApiKeyEncrypted),
     deepseek_last4: s.ai.deepseekKeyLast4,
     deepseek_model: s.ai.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
+    embedding_configured: isEmbeddingConfigured(s.ai),
+    embedding_base_url: s.ai.embeddingBaseUrl.trim() || null,
+    embedding_model: s.ai.embeddingModel || null,
+    embedding_last4: s.ai.embeddingKeyLast4,
+    embedding_reuse_ai_key: Boolean(s.ai.embeddingReuseAiKey),
     anysearch_configured: Boolean(s.search.anysearchApiKeyEncrypted),
     anysearch_last4: s.search.anysearchKeyLast4,
     github_pat_configured: Boolean(s.github.patEncrypted),

@@ -33,8 +33,10 @@ import { useTheme } from "@/components/theme-provider"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { SectionNav, type SectionNavItem } from "@/components/section-nav"
 import { BookmarkListSection } from "./bookmark-list-section"
+import { ApiTokensSection } from "./api-tokens-section"
 import { ClearDataSection } from "./clear-data-section"
 import { CloudflareSettingsSection } from "./cloudflare-settings-section"
+import { EmbeddingSettingsSection } from "./embedding-settings-section"
 import { GithubImportSection } from "./github-import-section"
 import { GoogleAnalyticsSection } from "./google-analytics-section"
 
@@ -48,6 +50,7 @@ const EVENT_PREFS = [
 
 const SECTION_NAV_KEYS = [
   { id: "account", labelKey: "nav.account" },
+  { id: "api-tokens", labelKey: "nav.apiTokens" },
   { id: "deepseek", labelKey: "nav.deepseek" },
   { id: "anysearch", labelKey: "nav.anysearch" },
   { id: "cloudflare", labelKey: "nav.cloudflare" },
@@ -425,6 +428,10 @@ export function SettingsPage() {
         </form>
       </section>
 
+      <section id="api-tokens" className={SECTION_CLASS}>
+        <ApiTokensSection />
+      </section>
+
       {/* Section 2: DeepSeek AI */}
       <section id="deepseek" className={SECTION_CLASS}>
         <div className="flex items-center justify-between">
@@ -554,6 +561,8 @@ export function SettingsPage() {
             )}
           </div>
         </form>
+
+        <EmbeddingSettingsSection />
       </section>
 
       {/* Section 3: AnySearch 联网搜索 */}

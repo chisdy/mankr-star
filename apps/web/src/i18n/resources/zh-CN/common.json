@@ -14,7 +14,8 @@
     "clearFilters": "清除筛选",
     "resetFilters": "重置筛选条件",
     "confirm": "确认",
-    "acknowledge": "知道了"
+    "acknowledge": "知道了",
+    "copy": "复制"
   },
   "accessibility": {
     "showPassword": "显示密码",

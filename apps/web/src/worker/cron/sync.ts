@@ -339,6 +339,13 @@ export async function runCronJobs(
 ): Promise<void> {
   await syncUpdates(env)
   await aiBackfill(env)
+  try {
+    const { backfillEmbeddings } = await import("../lib/embeddings")
+    const db = createDb(env)
+    await backfillEmbeddings(db, env, 5)
+  } catch (err) {
+    console.error("[cron] embedding backfill", err)
+  }
   await continueStaleGithubImportJobs(env, ctx)
 }
 

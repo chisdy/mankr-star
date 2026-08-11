@@ -115,6 +115,9 @@ GitHub 原生 Star 能力难以支撑长期知识管理：
 | KB Chat、洞察页、设置（DeepSeek / PAT / AnySearch） | 已落地 |
 | GitHub Stars 导入 API | ✅ 含设置页导入 UI 与续导 |
 | 事件级订阅偏好、Markdown 导出、README 摘录缓存、renamed、PWA、浏览器扩展 | ✅ Wave 3 已落地 |
+| 列表 FTS、标签合并、批量操作 | ✅ |
+| API Token + MCP（`/api/mcp`） | ✅ |
+| 语义混合检索（OpenAI 兼容 embedding） | ✅ |
 
 ## 4. 产品范围与分期
 

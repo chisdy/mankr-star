@@ -180,5 +180,27 @@
     "archivedToast": "已移至归档",
     "unarchivedToast": "已取消归档",
     "deletedToast": "已删除该收藏"
+  },
+  "batch": {
+    "selected": "已选 {{count}} 项",
+    "selectAll": "全选",
+    "deselectAll": "取消全选",
+    "archive": "归档",
+    "feature": "精选",
+    "pricing": "付费属性",
+    "regenerateAi": "重跑 AI",
+    "delete": "删除",
+    "clear": "取消选择",
+    "errorToast": "批量操作失败",
+    "partialToast": "完成 {{processed}} 项，失败 {{failed}} 项",
+    "success": {
+      "archive": "已归档 {{count}} 项",
+      "unarchive": "已取消归档 {{count}} 项",
+      "delete": "已删除 {{count}} 项",
+      "setFeatured": "已更新精选 {{count}} 项",
+      "setPricing": "已更新付费属性 {{count}} 项",
+      "regenerateAi": "已提交 {{count}} 项重新生成"
+    },
+    "selectAria": "选择收藏"
   }
 }

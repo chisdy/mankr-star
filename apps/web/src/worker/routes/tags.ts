@@ -1,8 +1,9 @@
-import { bookmarkTags, tags, type Db } from "@mankr/db"
-import { updateTagSchema } from "@mankr/shared"
-import { and, asc, count, desc, eq, inArray, ne, or } from "drizzle-orm"
+import { bookmarkTags, bookmarks, tags } from "@mankr/db"
+import { batchTagsSchema, mergeTagsPreviewSchema, mergeTagsSchema, updateTagSchema } from "@mankr/shared"
+import { and, asc, count, desc, eq, inArray, isNull, ne, or } from "drizzle-orm"
 import { Hono } from "hono"
 import type { AppEnv } from "../env"
+import { mergeTagIntoTarget, previewMergeTags, runTagBatch, usageCountForTag } from "../lib/tag-batch"
 import { slugify } from "../lib/utils"
 import { authByMethod } from "../middleware/auth"
 
@@ -11,19 +12,11 @@ export const tagRoutes = new Hono<AppEnv>()
 tagRoutes.use("/tags", authByMethod())
 tagRoutes.use("/tags/*", authByMethod())
 
-async function usageCountForTag(db: Db, tagId: string): Promise<number> {
-  const row = await db
-    .select({ usage_count: count(bookmarkTags.bookmarkId) })
-    .from(bookmarkTags)
-    .where(eq(bookmarkTags.tagId, tagId))
-    .get()
-  return Number(row?.usage_count ?? 0)
-}
-
 tagRoutes.get("/tags", async (c) => {
   const db = c.get("db")
 
-  const usageCount = count(bookmarkTags.bookmarkId).as("usage_count")
+  // count(bookmarks.id)：软删/归档收藏在 join 条件外，id 为 null，不计入
+  const usageCount = count(bookmarks.id).as("usage_count")
 
   const rows = await db
     .select({
@@ -35,6 +28,14 @@ tagRoutes.get("/tags", async (c) => {
     })
     .from(tags)
     .leftJoin(bookmarkTags, eq(tags.id, bookmarkTags.tagId))
+    .leftJoin(
+      bookmarks,
+      and(
+        eq(bookmarkTags.bookmarkId, bookmarks.id),
+        isNull(bookmarks.deletedAt),
+        isNull(bookmarks.archivedAt),
+      ),
+    )
     .groupBy(tags.id)
     .orderBy(desc(usageCount), asc(tags.name))
 
@@ -121,11 +122,118 @@ tagRoutes.patch("/tags/:id", async (c) => {
   })
 })
 
+tagRoutes.post("/tags/merge", async (c) => {
+  const db = c.get("db")
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: "无效的 JSON", code: "BAD_REQUEST" }, 400)
+  }
+
+  const parsed = mergeTagsSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: parsed.error.flatten(),
+      },
+      400,
+    )
+  }
+
+  const { sourceId, targetId } = parsed.data
+
+  const source = await db.select().from(tags).where(eq(tags.id, sourceId)).get()
+  if (!source) {
+    return c.json({ error: "源标签不存在", code: "NOT_FOUND" }, 404)
+  }
+  const target = await db.select().from(tags).where(eq(tags.id, targetId)).get()
+  if (!target) {
+    return c.json({ error: "目标标签不存在", code: "NOT_FOUND" }, 404)
+  }
+
+  await mergeTagIntoTarget(db, sourceId, targetId)
+
+  const usage_count = await usageCountForTag(db, targetId)
+  return c.json({
+    id: target.id,
+    name: target.name,
+    slug: target.slug,
+    usage_count,
+    created_at: target.createdAt,
+  })
+})
+
+tagRoutes.post("/tags/merge/preview", async (c) => {
+  const db = c.get("db")
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: "无效的 JSON", code: "BAD_REQUEST" }, 400)
+  }
+
+  const parsed = mergeTagsPreviewSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: parsed.error.flatten(),
+      },
+      400,
+    )
+  }
+
+  const { sourceIds, targetId } = parsed.data
+  const target = await db.select().from(tags).where(eq(tags.id, targetId)).get()
+  if (!target) {
+    return c.json({ error: "目标标签不存在", code: "NOT_FOUND" }, 404)
+  }
+  const sources = await db
+    .select({ id: tags.id })
+    .from(tags)
+    .where(inArray(tags.id, sourceIds))
+  if (sources.length !== sourceIds.length) {
+    return c.json({ error: "源标签不存在", code: "NOT_FOUND" }, 404)
+  }
+
+  const preview = await previewMergeTags(db, sourceIds, targetId)
+  return c.json(preview)
+})
+
+tagRoutes.post("/tags/batch", async (c) => {
+  const db = c.get("db")
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: "无效的 JSON", code: "BAD_REQUEST" }, 400)
+  }
+
+  const parsed = batchTagsSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: parsed.error.flatten(),
+      },
+      400,
+    )
+  }
+
+  const result = await runTagBatch(db, parsed.data)
+  return c.json(result.body, result.status)
+})
+
 // Must register before DELETE /tags/:id so "empty" is not treated as an id.
 tagRoutes.delete("/tags/empty", async (c) => {
   const db = c.get("db")
 
-  const usageCount = count(bookmarkTags.bookmarkId).as("usage_count")
+  const usageCount = count(bookmarks.id).as("usage_count")
   const rows = await db
     .select({
       id: tags.id,
@@ -133,6 +241,14 @@ tagRoutes.delete("/tags/empty", async (c) => {
     })
     .from(tags)
     .leftJoin(bookmarkTags, eq(tags.id, bookmarkTags.tagId))
+    .leftJoin(
+      bookmarks,
+      and(
+        eq(bookmarkTags.bookmarkId, bookmarks.id),
+        isNull(bookmarks.deletedAt),
+        isNull(bookmarks.archivedAt),
+      ),
+    )
     .groupBy(tags.id)
 
   const emptyIds = rows

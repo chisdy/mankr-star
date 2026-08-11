@@ -7,12 +7,13 @@
 | 能力 | 说明 |
 |------|------|
 | 收藏来源 | GitHub 仓库、X/Twitter、通用网页（`source_type`: `github` / `twitter` / `url`） |
-| 组织 | 树形文件夹、标签、全文检索（FTS）、筛选与归档 |
+| 组织 | 树形文件夹、标签、全文检索（FTS）+ 可选语义混合检索、筛选与归档 |
 | AI | 用户自备 DeepSeek Key；异步摘要 / 文件夹 / 标签；无 Key 时规则降级 |
 | 同步 | Cron 每 6 小时拉取 GitHub 更新，写入 Feed 事件与健康状态 |
 | 洞察 | 来源 / 语言 / 健康分布、AI 用量、Cloudflare Free 额度、同步问题 |
 | KB Chat | 基于收藏库检索 + 可选 AnySearch 联网；SSE 流式回答 |
-| 设置 | DeepSeek / AnySearch / Cloudflare Analytics / GitHub PAT、跟踪阈值与动态订阅、公开浏览、JSON / Markdown 导出 |
+| 设置 | DeepSeek / AnySearch / Cloudflare Analytics / GitHub PAT、**API Token（MCP）**、跟踪阈值与动态订阅、公开浏览、JSON / Markdown 导出 |
+| MCP | `POST /api/mcp`（Bearer Token）；工具：search / get / list folders·tags / save / update |
 | PWA | 可安装到桌面/主屏；Service Worker 只缓存应用外壳与构建产物，`/api` 不走缓存 |
 | 浏览器扩展 | `apps/extension`（MV3）：一键把当前标签页带到收藏弹窗，见 [扩展说明](apps/extension/README.md) |
 

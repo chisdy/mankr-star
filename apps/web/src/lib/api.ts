@@ -894,6 +894,80 @@ export const api = {
     }
   },
 
+  async batchBookmarks(
+    ids: string[],
+    action:
+      | { type: "archive" }
+      | { type: "unarchive" }
+      | { type: "delete" }
+      | { type: "moveFolder"; folderId: string | null }
+      | { type: "addTags"; tags: string[] }
+      | { type: "setFeatured"; featured: boolean }
+      | {
+          type: "setPricing"
+          pricing: "free" | "freemium" | "paid" | null
+        }
+      | { type: "regenerateAi" },
+  ): Promise<{
+    ok: boolean
+    processed: number
+    failed: Array<{ id: string; code: string }>
+  }> {
+    try {
+      return await request("/api/bookmarks/batch", {
+        method: "POST",
+        body: JSON.stringify({ ids, action }),
+      })
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        let processed = 0
+        const failed: Array<{ id: string; code: string }> = []
+        const now = new Date().toISOString()
+        for (const id of ids) {
+          const idx = store.bookmarks.findIndex((b) => b.id === id)
+          if (idx < 0) {
+            failed.push({ id, code: "NOT_FOUND" })
+            continue
+          }
+          const b = store.bookmarks[idx]!
+          switch (action.type) {
+            case "archive":
+              store.bookmarks[idx] = { ...b, archived_at: now }
+              break
+            case "unarchive":
+              store.bookmarks[idx] = { ...b, archived_at: null }
+              break
+            case "delete":
+              store.bookmarks = store.bookmarks.filter((x) => x.id !== id)
+              break
+            case "moveFolder":
+              store.bookmarks[idx] = { ...b, folder_id: action.folderId }
+              break
+            case "setFeatured":
+              store.bookmarks[idx] = { ...b, featured: action.featured }
+              break
+            case "setPricing":
+              store.bookmarks[idx] = { ...b, pricing: action.pricing }
+              break
+            case "addTags": {
+              const nextTags = new Set([...(b.tags ?? []), ...action.tags])
+              store.bookmarks[idx] = { ...b, tags: Array.from(nextTags) }
+              break
+            }
+            case "regenerateAi":
+              store.bookmarks[idx] = { ...b, ai_status: "pending" }
+              break
+          }
+          processed += 1
+        }
+        saveMockStore()
+        return { ok: failed.length === 0, processed, failed }
+      }
+      throw err
+    }
+  },
+
   /** 记录外链打开次数，返回更新后的收藏 */
   async recordBookmarkOpen(id: string): Promise<Bookmark> {
     try {
@@ -1224,6 +1298,160 @@ export const api = {
     }
   },
 
+  async mergeTags(sourceId: string, targetId: string): Promise<Tag> {
+    try {
+      const res = await request<{
+        id: string
+        name: string
+        usage_count?: number
+      }>("/api/tags/merge", {
+        method: "POST",
+        body: JSON.stringify({ sourceId, targetId }),
+      })
+      return {
+        id: res.id,
+        name: res.name,
+        count: res.usage_count ?? 0,
+      }
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        const source = store.tags.find((t) => t.id === sourceId)
+        const target = store.tags.find((t) => t.id === targetId)
+        if (!source || !target) {
+          throw new ApiError("标签不存在", 404, { code: "NOT_FOUND" })
+        }
+        if (sourceId === targetId) {
+          throw new ApiError("源标签与目标标签不能相同", 400, {
+            code: "VALIDATION_ERROR",
+          })
+        }
+        store.bookmarks = store.bookmarks.map((b) => {
+          const names = new Set(b.tags ?? [])
+          if (names.has(source.name)) {
+            names.delete(source.name)
+            names.add(target.name)
+          }
+          return { ...b, tags: Array.from(names) }
+        })
+        store.tags = store.tags.filter((t) => t.id !== sourceId)
+        const count = store.bookmarks.filter((b) =>
+          (b.tags ?? []).includes(target.name),
+        ).length
+        const updated = { ...target, count }
+        const idx = store.tags.findIndex((t) => t.id === targetId)
+        if (idx >= 0) store.tags[idx] = updated
+        saveMockStore()
+        return updated
+      }
+      throw err
+    }
+  },
+
+  async previewMergeTags(
+    sourceIds: string[],
+    targetId: string,
+  ): Promise<{
+    unique_count: number
+    additive_count: number
+    per_tag: Array<{ id: string; usage_count: number }>
+  }> {
+    try {
+      return await request("/api/tags/merge/preview", {
+        method: "POST",
+        body: JSON.stringify({ sourceIds, targetId }),
+      })
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        const tagIds = Array.from(new Set([...sourceIds, targetId]))
+        const per_tag = tagIds.map((id) => {
+          const tag = store.tags.find((t) => t.id === id)
+          return { id, usage_count: tag?.count ?? 0 }
+        })
+        const additive_count = per_tag.reduce(
+          (sum, row) => sum + row.usage_count,
+          0,
+        )
+        const names = new Set(
+          tagIds
+            .map((id) => store.tags.find((t) => t.id === id)?.name)
+            .filter((name): name is string => Boolean(name)),
+        )
+        const unique_count = store.bookmarks.filter((b) =>
+          (b.tags ?? []).some((name) => names.has(name)),
+        ).length
+        return { unique_count, additive_count, per_tag }
+      }
+      throw err
+    }
+  },
+
+  async batchTags(
+    ids: string[],
+    action: { type: "merge"; targetId: string },
+  ): Promise<{
+    ok: boolean
+    processed: number
+    failed: Array<{ id: string; code: string }>
+    target?: { id: string; usage_count: number }
+  }> {
+    try {
+      return await request("/api/tags/batch", {
+        method: "POST",
+        body: JSON.stringify({ ids, action }),
+      })
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        const uniqueIds = Array.from(new Set(ids)).filter(
+          (id) => id !== action.targetId,
+        )
+        const failed: Array<{ id: string; code: string }> = []
+        let processed = 0
+
+        if (action.type === "merge") {
+          const target = store.tags.find((t) => t.id === action.targetId)
+          if (!target) {
+            throw new ApiError("目标标签不存在", 404, { code: "NOT_FOUND" })
+          }
+          for (const sourceId of uniqueIds) {
+            const source = store.tags.find((t) => t.id === sourceId)
+            if (!source) {
+              failed.push({ id: sourceId, code: "NOT_FOUND" })
+              continue
+            }
+            store.bookmarks = store.bookmarks.map((b) => {
+              const names = new Set(b.tags ?? [])
+              if (names.has(source.name)) {
+                names.delete(source.name)
+                names.add(target.name)
+              }
+              return { ...b, tags: Array.from(names) }
+            })
+            store.tags = store.tags.filter((t) => t.id !== sourceId)
+            processed += 1
+          }
+          const usage_count = store.bookmarks.filter((b) =>
+            (b.tags ?? []).includes(target.name),
+          ).length
+          const idx = store.tags.findIndex((t) => t.id === action.targetId)
+          if (idx >= 0) store.tags[idx] = { ...target, count: usage_count }
+          saveMockStore()
+          return {
+            ok: failed.length === 0,
+            processed,
+            failed,
+            target: { id: action.targetId, usage_count },
+          }
+        }
+
+        return { ok: failed.length === 0, processed, failed }
+      }
+      throw err
+    }
+  },
+
   async deleteTag(id: string): Promise<void> {
     try {
       await request(`/api/tags/${id}`, { method: "DELETE" })
@@ -1532,6 +1760,58 @@ export const api = {
     } catch (err) {
       if (shouldFallbackToMock(err)) {
         return { success: false, message: "后端未就绪，无法测试 DeepSeek 连接。" }
+      }
+      throw err
+    }
+  },
+
+  async updateEmbeddingSettings(data: {
+    base_url?: string
+    model?: string
+    api_key?: string
+    clear_key?: boolean
+    reuse_ai_key?: boolean
+  }): Promise<{
+    embedding_configured: boolean
+    embedding_base_url: string | null
+    embedding_model: string
+    embedding_last4: string | null
+    embedding_reuse_ai_key: boolean
+  }> {
+    return request("/api/settings/embedding", {
+      method: "PUT",
+      body: JSON.stringify({
+        ...(data.base_url !== undefined ? { baseUrl: data.base_url } : {}),
+        ...(data.model !== undefined ? { model: data.model } : {}),
+        ...(data.api_key ? { apiKey: data.api_key } : {}),
+        ...(data.clear_key ? { clearKey: true } : {}),
+        ...(data.reuse_ai_key !== undefined
+          ? { reuseAiKey: data.reuse_ai_key }
+          : {}),
+      }),
+    })
+  },
+
+  async testEmbeddingConnection(): Promise<{
+    success: boolean
+    message: string
+    dims?: number
+  }> {
+    try {
+      const res = await request<{ ok: boolean; error?: string; dims?: number }>(
+        "/api/settings/embedding/test",
+        { method: "POST" },
+      )
+      return {
+        success: res.ok,
+        message: res.ok
+          ? `Embedding 连接正常（dims=${res.dims ?? "?"})`
+          : res.error || "Embedding 测试失败",
+        dims: res.dims,
+      }
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        return { success: false, message: "后端未就绪，无法测试 Embedding。" }
       }
       throw err
     }
@@ -1928,6 +2208,50 @@ export const api = {
    */
   async clearData(): Promise<void> {
     await request("/api/settings/clear-data", { method: "POST" })
+  },
+
+  async listApiTokens(): Promise<
+    Array<{
+      id: string
+      name: string
+      token_prefix: string
+      scopes: Array<"read" | "write">
+      created_at: string
+      last_used_at: string | null
+    }>
+  > {
+    const res = await request<{
+      items: Array<{
+        id: string
+        name: string
+        token_prefix: string
+        scopes: Array<"read" | "write">
+        created_at: string
+        last_used_at: string | null
+      }>
+    }>("/api/api-tokens")
+    return res.items
+  },
+
+  async createApiToken(data: {
+    name: string
+    scopes?: Array<"read" | "write">
+  }): Promise<{
+    id: string
+    name: string
+    token_prefix: string
+    scopes: Array<"read" | "write">
+    token: string
+    created_at: string
+  }> {
+    return request("/api/api-tokens", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  },
+
+  async revokeApiToken(id: string): Promise<void> {
+    await request(`/api/api-tokens/${id}`, { method: "DELETE" })
   },
 
   /**

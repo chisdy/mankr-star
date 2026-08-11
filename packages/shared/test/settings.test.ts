@@ -18,6 +18,11 @@ describe("defaultSettingValue", () => {
       deepseekApiKeyEncrypted: null,
       deepseekKeyLast4: null,
       deepseekModel: DEFAULT_DEEPSEEK_MODEL,
+      embeddingBaseUrl: "",
+      embeddingModel: "text-embedding-3-small",
+      embeddingApiKeyEncrypted: null,
+      embeddingKeyLast4: null,
+      embeddingReuseAiKey: false,
     })
     expect(defaultSettingValue("bookmarks")).toEqual({
       paginationMode: DEFAULT_BOOKMARK_PAGINATION_MODE,
@@ -87,6 +92,11 @@ describe("parseSettingValue", () => {
       deepseekApiKeyEncrypted: "v1$cipher",
       deepseekKeyLast4: "60eb",
       deepseekModel: DEFAULT_DEEPSEEK_MODEL,
+      embeddingBaseUrl: "",
+      embeddingModel: "text-embedding-3-small",
+      embeddingApiKeyEncrypted: null,
+      embeddingKeyLast4: null,
+      embeddingReuseAiKey: false,
     })
   })
 

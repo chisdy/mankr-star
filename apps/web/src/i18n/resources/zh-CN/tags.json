@@ -13,6 +13,7 @@
   "menu": {
     "aria": "{{tagName}} 菜单",
     "edit": "编辑",
+    "merge": "合并到…",
     "delete": "删除"
   },
   "renameDialog": {
@@ -22,6 +23,31 @@
     "namePlaceholder": "输入新名称",
     "successToast": "已更新标签",
     "errorToast": "更新失败，请重试"
+  },
+  "mergeDialog": {
+    "notSelected": "未选择标签",
+    "title": "合并标签",
+    "description": "将「{{tagName}}」合并到目标标签。源标签的所有收藏关联会迁移过去，然后删除源标签。",
+    "descriptionBatch": "将选中的 {{count}} 个标签合并到目标标签。源标签的所有收藏关联会迁移过去，然后删除源标签。",
+    "targetLabel": "合并到",
+    "targetPlaceholder": "选择目标标签",
+    "noTarget": "没有可用的目标标签，请减少选中项后再试。",
+    "confirm": "确认合并",
+    "previewUnique": "合并后目标标签预计有 {{count}} 个收藏。",
+    "previewOverlap": "各标签计数相加为 {{additive}}，但同一收藏可挂多个标签；去重后预计 {{unique}} 个收藏。",
+    "successToast": "已合并标签",
+    "successToastWithCount": "已合并，目标标签现有 {{count}} 个收藏",
+    "errorToast": "合并失败"
+  },
+  "batch": {
+    "selected": "已选 {{count}} 个",
+    "selectAll": "全选本页",
+    "deselectAll": "取消全选",
+    "clear": "清除选择",
+    "merge": "合并到…",
+    "selectAria": "选择标签 {{tagName}}",
+    "overLimit": "一次最多合并 {{max}} 个标签",
+    "partialToast": "已处理 {{processed}} 个，失败 {{failed}} 个"
   },
   "deleteDialog": {
     "notSelected": "未选择标签",

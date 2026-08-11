@@ -13,7 +13,7 @@ import {
 } from "../lib/github-import-job"
 import { rateLimit } from "../lib/rate-limit"
 import { getClientIp, nowIso } from "../lib/utils"
-import { requireAuth } from "../middleware/auth"
+import { requireAuth, requireAuthWrite } from "../middleware/auth"
 
 export const importRoutes = new Hono<AppEnv>()
 
@@ -68,7 +68,7 @@ importRoutes.post("/bookmarks/import/github/jobs/:id/continue", async (c) => {
  * 启动 GitHub Stars 后台导入任务（discover → 逐条 README+AI）。
  * 立即返回 job；进度通过 GET .../active 轮询。
  */
-importRoutes.post("/bookmarks/import/github", requireAuth, async (c) => {
+importRoutes.post("/bookmarks/import/github", requireAuthWrite, async (c) => {
   const ip = getClientIp(c.req.raw)
   const rl = rateLimit(`import-github:${ip}`, 5, 300_000)
   if (!rl.ok) {
@@ -171,7 +171,7 @@ importRoutes.get("/bookmarks/import/github/active", requireAuth, async (c) => {
 })
 
 /** 取消进行中的导入 */
-importRoutes.post("/bookmarks/import/github/cancel", requireAuth, async (c) => {
+importRoutes.post("/bookmarks/import/github/cancel", requireAuthWrite, async (c) => {
   const db = c.get("db")
   const job = await cancelActiveImportJob(db)
   if (!job) {

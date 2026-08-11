@@ -346,7 +346,12 @@ export async function applyAiResult(
   bookmarkId: string,
   result: AiOutput,
   status: "done" | "fallback" | "failed",
-  opts?: { overwriteFolder?: boolean; existingFolderId?: string | null },
+  opts?: {
+    overwriteFolder?: boolean
+    existingFolderId?: string | null
+    /** true=用 AI 标签全量覆盖；默认与现有标签取并集，避免合并/手改后被异步 AI 冲掉 */
+    overwriteTags?: boolean
+  },
 ): Promise<void> {
   const shouldWriteFolder =
     opts?.overwriteFolder === true || !opts?.existingFolderId
@@ -371,7 +376,21 @@ export async function applyAiResult(
   }
 
   await db.update(bookmarks).set(patch).where(eq(bookmarks.id, bookmarkId))
-  await syncBookmarkTags(db, bookmarkId, result.tags)
+
+  const aiTags = result.tags ?? []
+  if (opts?.overwriteTags) {
+    await syncBookmarkTags(db, bookmarkId, aiTags)
+  } else {
+    const existing = await db
+      .select({ name: tags.name })
+      .from(bookmarkTags)
+      .innerJoin(tags, eq(bookmarkTags.tagId, tags.id))
+      .where(eq(bookmarkTags.bookmarkId, bookmarkId))
+    const merged = Array.from(
+      new Set([...existing.map((r) => r.name), ...aiTags]),
+    )
+    await syncBookmarkTags(db, bookmarkId, merged)
+  }
 }
 
 export async function runAiForBookmark(
@@ -400,6 +419,7 @@ export async function runAiForBookmark(
     overwriteFolder:
       opts?.overwriteFolder === true || opts?.overwriteCategory === true,
     existingFolderId: bookmark.folderId,
+    overwriteTags: opts?.overwriteCategory === true,
   }
 
   const buildFallback = () =>

@@ -180,5 +180,27 @@
     "archivedToast": "Moved to archive",
     "unarchivedToast": "Unarchived",
     "deletedToast": "Bookmark deleted"
+  },
+  "batch": {
+    "selected": "{{count}} selected",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "archive": "Archive",
+    "feature": "Feature",
+    "pricing": "Pricing",
+    "regenerateAi": "Regen AI",
+    "delete": "Delete",
+    "clear": "Clear selection",
+    "errorToast": "Batch action failed",
+    "partialToast": "Finished {{processed}}, failed {{failed}}",
+    "success": {
+      "archive": "Archived {{count}}",
+      "unarchive": "Unarchived {{count}}",
+      "delete": "Deleted {{count}}",
+      "setFeatured": "Updated featured on {{count}}",
+      "setPricing": "Updated pricing on {{count}}",
+      "regenerateAi": "Queued AI regen for {{count}}"
+    },
+    "selectAria": "Select bookmark"
   }
 }

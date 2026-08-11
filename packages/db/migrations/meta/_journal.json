@@ -127,6 +127,20 @@
       "when": 1786365756333,
       "tag": "0017_zippy_lenny_balinger",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1786400000000,
+      "tag": "0018_api_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1786410000000,
+      "tag": "0019_bookmark_embeddings",
+      "breakpoints": true
     }
   ]
 }

@@ -30,11 +30,14 @@ export type FacetSelectProps = {
   fullWidth?: boolean
   /** 触发器内前缀标签，如「标签」「开发者」 */
   prefixLabel?: string
+  /** 未选中时触发器文案；也可作「全部」选项文案（showAllOption 时） */
   allLabel: string
   searchPlaceholder: string
   loadingLabel: string
   noMatchLabel: string
   variant?: "owner" | "site" | "tag"
+  /** 是否展示清空为「全部」的选项；合并目标等场景应关闭 */
+  showAllOption?: boolean
 }
 
 type PanelPos = {
@@ -65,6 +68,7 @@ export function FacetSelect({
   loadingLabel,
   noMatchLabel,
   variant = "owner",
+  showAllOption = true,
 }: FacetSelectProps) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState("")
@@ -212,7 +216,7 @@ export function FacetSelect({
                 </div>
               ) : (
                 <>
-                  {!query.trim() ? (
+                  {showAllOption && !query.trim() ? (
                     <button
                       type="button"
                       role="option"

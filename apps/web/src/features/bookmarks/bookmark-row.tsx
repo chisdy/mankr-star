@@ -9,13 +9,23 @@ import { PricingFeaturedBadges } from "./pricing-featured-badges"
 import { HealthStatusBadge } from "./health-status-badge"
 import { BookmarkAccountCopyButton } from "./bookmark-account-copy-button"
 import { BookmarkOpenButton } from "./bookmark-open-button"
+import { BookmarkSelectControl } from "./bookmark-select-control"
 
 interface BookmarkRowProps {
   bookmark: Bookmark
   onClick?: () => void
+  selectable?: boolean
+  selected?: boolean
+  onSelectedChange?: (id: string, selected: boolean) => void
 }
 
-export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
+export function BookmarkRow({
+  bookmark,
+  onClick,
+  selectable,
+  selected,
+  onSelectedChange,
+}: BookmarkRowProps) {
   const { t, i18n } = useTranslation("bookmarks")
   const isGithub = bookmark.source_type === "github"
   const isTwitter = bookmark.source_type === "twitter"
@@ -57,8 +67,17 @@ export function BookmarkRow({ bookmark, onClick }: BookmarkRowProps) {
         "hover:-translate-y-1 hover:border-border hover:bg-accent/30 hover:shadow-md",
         "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
         isGithub && bookmark.health_status === "unavailable" && "opacity-75",
+        selected && "border-primary/60 bg-primary/5",
       )}
     >
+      {selectable ? (
+        <BookmarkSelectControl
+          selected={selected}
+          ariaLabel={t("batch.selectAria")}
+          className="top-1.5 right-1.5"
+          onSelectedChange={(next) => onSelectedChange?.(bookmark.id, next)}
+        />
+      ) : null}
       {hasCover ? (
         <div className="size-20 shrink-0 overflow-hidden rounded-md bg-muted sm:size-24">
           <img
