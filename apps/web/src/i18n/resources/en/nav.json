@@ -8,6 +8,7 @@
   "loginTooltip": "Sign in",
   "loginPrompt": "Sign in to sync and manage bookmarks",
   "userMenuAria": "User menu",
+  "github": "GitHub",
   "fallbackName": "User",
   "searchPlaceholder": "Search name, summary, tags…",
   "clearSearch": "Clear search",

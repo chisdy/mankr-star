@@ -14,6 +14,7 @@ import {
   TranslateIcon,
   UserIcon,
   ChartBarIcon,
+  GithubLogoIcon,
   type Icon,
 } from "@phosphor-icons/react"
 
@@ -42,6 +43,7 @@ import {
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip"
 import { BrandLogo } from "@/components/brand-logo"
+import { ExternalLink } from "@/components/external-link"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { api } from "@/lib/api"
 import { useTheme } from "@/components/theme-provider"
@@ -50,6 +52,8 @@ import { useAuth } from "@/hooks/use-auth"
 import { useLoginDialog } from "@/hooks/login-dialog-context"
 import { getLocale, setLocale } from "@/i18n"
 import { LOCALES, LOCALE_LABELS, type Locale } from "@/i18n/locales"
+
+const PROJECT_GITHUB_URL = "https://github.com/chisdy/mankr-star"
 
 type NavItem = {
   to: string
@@ -310,6 +314,15 @@ function DesktopRail() {
         </div>
 
         <div className="flex flex-col items-center gap-2 px-2">
+          <RailTooltip label={t("github")}>
+            <ExternalLink
+              href={PROJECT_GITHUB_URL}
+              className="flex size-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label={t("github")}
+            >
+              <GithubLogoIcon className="size-5" />
+            </ExternalLink>
+          </RailTooltip>
           <UserMenu />
         </div>
       </aside>

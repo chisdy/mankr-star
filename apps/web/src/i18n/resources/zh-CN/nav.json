@@ -8,6 +8,7 @@
   "loginTooltip": "登录",
   "loginPrompt": "登录后可同步与管理收藏",
   "userMenuAria": "用户菜单",
+  "github": "GitHub",
   "fallbackName": "个人用户",
   "searchPlaceholder": "搜索名称、摘要、标签…",
   "clearSearch": "清除搜索",
