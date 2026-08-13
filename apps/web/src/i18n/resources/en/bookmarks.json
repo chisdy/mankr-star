@@ -107,10 +107,14 @@
     "featured": "Featured"
   },
   "open": {
-    "aria": "Open link, clicked {{count}} times",
-    "title": "Open in new tab"
+    "aria": "Open link, viewed {{count}} times",
+    "ariaOpenOnly": "Open in new tab",
+    "title": "Open in new tab",
+    "action": "Open"
   },
   "detail": {
+    "viewCountTitle": "Viewed {{count}} times",
+    "viewCountAria": "Viewed {{count}} times",
     "titleFallback": "Bookmark detail",
     "titleLabel": "Title",
     "titlePlaceholder": "Title",

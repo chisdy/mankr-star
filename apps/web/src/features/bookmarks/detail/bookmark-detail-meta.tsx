@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next"
 import {
   ClockIcon,
+  EyeIcon,
   GitForkIcon,
   HeartIcon,
   StarIcon,
@@ -16,6 +17,7 @@ export function BookmarkDetailMeta({ bookmark }: { bookmark: Bookmark }) {
   const { t, i18n } = useTranslation("bookmarks")
   const isGithub = bookmark.source_type === "github"
   const isTwitter = bookmark.source_type === "twitter"
+  const viewCount = bookmark.click_count ?? 0
 
   return (
     <div className="flex flex-wrap items-center gap-3.5 rounded-lg border border-border/50 bg-muted/30 p-2.5 text-xs text-muted-foreground">
@@ -40,6 +42,14 @@ export function BookmarkDetailMeta({ bookmark }: { bookmark: Bookmark }) {
         </span>
       ) : null}
       <PricingFeaturedBadges bookmark={bookmark} />
+      <span
+        className="flex items-center gap-1 font-mono text-[11px]"
+        title={t("detail.viewCountTitle", { count: viewCount })}
+        aria-label={t("detail.viewCountAria", { count: viewCount })}
+      >
+        <EyeIcon className="size-3.5" />
+        {viewCount}
+      </span>
       {(isGithub || isTwitter) && bookmark.stars !== undefined ? (
         <span className="flex items-center gap-1 font-mono text-[11px]">
           {isTwitter ? (

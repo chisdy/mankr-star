@@ -19,11 +19,14 @@ import type { Bookmark } from "@/lib/types"
 interface BookmarkOpenButtonProps {
   bookmark: Bookmark
   className?: string
+  /** 列表保留数字；详情底部只保留打开动作，避免与 meta 查看次数重复 */
+  showCount?: boolean
 }
 
 export function BookmarkOpenButton({
   bookmark,
   className,
+  showCount = true,
 }: BookmarkOpenButtonProps) {
   const { t } = useTranslation("bookmarks")
   const queryClient = useQueryClient()
@@ -38,7 +41,14 @@ export function BookmarkOpenButton({
     mutationFn: () => api.recordBookmarkOpen(bookmark.id),
     onSuccess: (updated) => {
       setClickCount(updated.click_count ?? 0)
-      void queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.all })
+      queryClient.setQueryData(
+        queryKeys.bookmarks.detail(bookmark.id),
+        updated,
+      )
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.bookmarks.all,
+        predicate: (query) => query.queryKey[1] !== "detail",
+      })
     },
   })
 
@@ -47,7 +57,7 @@ export function BookmarkOpenButton({
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     // 阻止冒泡到卡片（打开详情），但不 preventDefault，保留浏览器原生新标签行为
     e.stopPropagation()
-    setClickCount((n) => n + 1)
+    if (showCount) setClickCount((n) => n + 1)
     openMutation.mutate()
   }
 
@@ -66,13 +76,21 @@ export function BookmarkOpenButton({
                 "h-6 gap-1 px-2 font-mono text-[11px] text-muted-foreground hover:text-foreground",
                 className
               )}
-              aria-label={t("open.aria", { count: clickCount })}
+              aria-label={
+                showCount
+                  ? t("open.aria", { count: clickCount })
+                  : t("open.ariaOpenOnly")
+              }
             >
               <ArrowSquareOutIcon
                 className="size-3.5"
                 data-icon="inline-start"
               />
-              <span>{clickCount}</span>
+              {showCount ? (
+                <span>{clickCount}</span>
+              ) : (
+                <span>{t("open.action")}</span>
+              )}
             </ExternalLink>
           }
         />

@@ -107,10 +107,14 @@
     "featured": "精选"
   },
   "open": {
-    "aria": "打开链接，已点击 {{count}} 次",
-    "title": "在新标签页打开"
+    "aria": "打开链接，已查看 {{count}} 次",
+    "ariaOpenOnly": "在新标签页打开",
+    "title": "在新标签页打开",
+    "action": "打开"
   },
   "detail": {
+    "viewCountTitle": "查看 {{count}} 次",
+    "viewCountAria": "已查看 {{count}} 次",
     "titleFallback": "收藏详情",
     "titleLabel": "标题",
     "titlePlaceholder": "标题",

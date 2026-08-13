@@ -129,6 +129,7 @@ export function BookmarkDetailFooter({
           {hasExternalLink ? (
             <BookmarkOpenButton
               bookmark={bookmark}
+              showCount={false}
               className="h-8 gap-1.5 rounded-md border border-input bg-secondary px-2.5 text-xs font-medium hover:bg-accent hover:text-accent-foreground"
             />
           ) : null}

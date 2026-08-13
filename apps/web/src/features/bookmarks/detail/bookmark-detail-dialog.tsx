@@ -22,12 +22,15 @@ import { useBookmarkDetail } from "@/hooks/use-bookmark-detail"
  * 查询失效导致的重挂载——useState 会被清掉，按钮又露出来。
  */
 const syncedBookmarkIdsWhileOpen = new Set<string>()
+/** 本轮打开详情期间已发起过打开计数的 id，避免 StrictMode / 重挂载重复 +1 */
+const recordedOpenDetailIds = new Set<string>()
 let trackedOpenBookmarkId: string | null = null
 
 function trackOpenBookmark(bookmarkId: string | null) {
   if (bookmarkId === trackedOpenBookmarkId) return
   if (trackedOpenBookmarkId) {
     syncedBookmarkIdsWhileOpen.delete(trackedOpenBookmarkId)
+    recordedOpenDetailIds.delete(trackedOpenBookmarkId)
   }
   trackedOpenBookmarkId = bookmarkId
 }
@@ -117,9 +120,36 @@ export function BookmarkDetailDialog() {
     },
   })
 
+  const recordOpenMutation = useMutation({
+    mutationFn: (id: string) => api.recordBookmarkOpen(id),
+    onSuccess: (updated, id) => {
+      // 快速 A→B 时，A 的迟到响应不能写脏当前详情缓存
+      if (id === trackedOpenBookmarkId) {
+        queryClient.setQueryData(queryKeys.bookmarks.detail(id), updated)
+      }
+      // 详情已 setQueryData；prefix invalidate 会重拉 GET，可能用旧 click_count 盖掉
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.bookmarks.all,
+        predicate: (query) => query.queryKey[1] !== "detail",
+      })
+    },
+    onError: (_err, id) => {
+      recordedOpenDetailIds.delete(id)
+    },
+  })
+  const recordOpen = recordOpenMutation.mutate
+
   React.useEffect(() => {
     trackOpenBookmark(bookmarkId)
   }, [bookmarkId])
+
+  // 详情 GET 成功后再计次，避免与初始拉取竞态覆盖 click_count
+  React.useEffect(() => {
+    if (!bookmarkId || bookmark?.id !== bookmarkId) return
+    if (recordedOpenDetailIds.has(bookmarkId)) return
+    recordedOpenDetailIds.add(bookmarkId)
+    recordOpen(bookmarkId)
+  }, [bookmarkId, bookmark?.id, recordOpen])
 
   const showSync =
     !!bookmark &&
