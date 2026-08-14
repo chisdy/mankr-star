@@ -136,6 +136,9 @@ describe("公开浏览", () => {
 
     const open = await guest.post<{
       click_count?: number
+      open_count?: number
+      view_count?: number
+      like_count?: number
       notes?: string | null
       account_username?: string | null
       account_password_set?: boolean
@@ -143,6 +146,9 @@ describe("公开浏览", () => {
     }>(`/api/bookmarks/${bookmarkId}/open`)
     expect(open.status).toBe(200)
     expect(open.body.click_count).toBe(1)
+    expect(open.body.open_count).toBe(1)
+    expect(open.body.view_count).toBe(0)
+    expect(open.body.like_count).toBe(0)
     expect(open.body.notes).toBeNull()
     expect(open.body.account_username).toBeUndefined()
     expect(open.body.account_password_set).toBeUndefined()
@@ -151,6 +157,34 @@ describe("公开浏览", () => {
       name: "访客不可建",
     })
     expect(folder.status).toBe(401)
+  })
+
+  it("开启后访客可以点赞，也可以取消（DELETE 同样在公开写白名单里）", async () => {
+    await owner.put("/api/settings/public-browsing", { enabled: true })
+
+    const liked = await guest.post<{ like_count: number; liked: boolean }>(
+      `/api/bookmarks/${bookmarkId}/like`,
+    )
+    expect(liked.status).toBe(200)
+    expect(liked.body).toMatchObject({ like_count: 1, liked: true })
+
+    const mine = await guest.json<{ ids: string[] }>("/api/bookmarks/likes/mine")
+    expect(mine.body.ids).toEqual([bookmarkId])
+
+    const unliked = await guest.delete<{ like_count: number; liked: boolean }>(
+      `/api/bookmarks/${bookmarkId}/like`,
+    )
+    expect(unliked.status).toBe(200)
+    expect(unliked.body).toMatchObject({ like_count: 0, liked: false })
+  })
+
+  it("关闭公开浏览后访客不能点赞", async () => {
+    await owner.put("/api/settings/public-browsing", { enabled: false })
+
+    const liked = await guest.post<{ code?: string }>(
+      `/api/bookmarks/${bookmarkId}/like`,
+    )
+    expect(liked.status).toBe(401)
   })
 
   it("开启后访客搜索不能命中仅存在于 notes 的关键词", async () => {

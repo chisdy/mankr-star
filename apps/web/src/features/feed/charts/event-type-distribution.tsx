@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next"
 import type { UpdateEventType } from "@mankr/shared"
 
+import { EmptyState } from "@/components/empty-state"
 import { formatNumber } from "@/features/insights/format"
 
 const TYPE_COLOR: Record<string, string> = {
@@ -23,11 +24,7 @@ export function EventTypeDistribution({
   const total = items.reduce((sum, item) => sum + item.count, 0)
 
   if (total === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-border/60 py-8 text-center text-xs text-muted-foreground">
-        {t("charts.typeEmpty")}
-      </div>
-    )
+    return <EmptyState>{t("charts.typeEmpty")}</EmptyState>
   }
 
   const maxCount = Math.max(...items.map((item) => item.count), 1)

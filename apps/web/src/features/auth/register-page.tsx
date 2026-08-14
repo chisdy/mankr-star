@@ -112,6 +112,7 @@ export function RegisterPage() {
         <div>
           <div className="flex items-center gap-2 font-bold tracking-tight text-foreground text-2xl md:text-3xl">
             <BrandLogo
+              variant="flat"
               className="size-9 rounded-md bg-primary text-primary-foreground"
               iconClassName="size-5"
             />

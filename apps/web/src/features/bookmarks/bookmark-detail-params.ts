@@ -3,7 +3,6 @@
  * 既方便单测，也让「拼一个能打开弹窗的链接」这件事有唯一出处。
  */
 
-import { toReadableSearch } from "@/lib/search-params"
 import { BOOKMARK_PAGE_PARAM } from "./bookmark-pagination"
 
 export const BOOKMARK_PARAM = "bookmark"
@@ -68,7 +67,5 @@ export function withTagFilter(
 
 /** 非收藏列表页（如 feed / insights）上点标签时，直接回首页按标签筛 */
 export function tagFilterHref(tag: string): string {
-  const next = new URLSearchParams()
-  next.set(TAG_PARAM, tag)
-  return `/${toReadableSearch(next)}`
+  return `/?${TAG_PARAM}=${encodeURIComponent(tag)}`
 }

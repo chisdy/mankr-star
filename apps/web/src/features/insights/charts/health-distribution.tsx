@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router"
 
+import { EmptyState } from "@/components/empty-state"
 import { formatNumber } from "@/features/insights/format"
 
 const HEALTH_BAR: Record<string, string> = {
@@ -24,11 +25,7 @@ export function HealthDistribution({
 
   const total = health.reduce((sum, h) => sum + h.count, 0)
   if (total === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-border/60 py-8 text-center text-xs text-muted-foreground">
-        {t("charts.healthEmpty")}
-      </div>
-    )
+    return <EmptyState>{t("charts.healthEmpty")}</EmptyState>
   }
 
   const maxCount = Math.max(...health.map((h) => h.count), 1)

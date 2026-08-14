@@ -299,7 +299,7 @@ export function BookmarksPage() {
           {aiStatus ? (
             <Badge
               variant="outline"
-              className="h-6 shrink-0 gap-1 pr-1 pl-2 text-[11px] font-normal"
+              className="h-6 shrink-0 gap-1 pr-1 pl-2 text-xs font-normal"
             >
               <span className="truncate">
                 {t("list.aiStatusFilterLabel", {

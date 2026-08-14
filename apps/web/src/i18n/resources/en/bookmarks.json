@@ -61,7 +61,7 @@
     "sortRecent": "Recently added",
     "sortUpdated": "Recently updated",
     "sortStars": "Most stars",
-    "sortLikes": "Most likes",
+    "sortLikes": "Most source likes",
     "sortName": "Name A-Z",
     "includeArchived": "Include archived",
     "archivedLabel": "Archive",
@@ -78,6 +78,28 @@
     "aiStatusDone": "Done",
     "aiStatusFallback": "Fallback",
     "aiStatusFailed": "Failed"
+  },
+  "ranking": {
+    "title": "Top bookmarks",
+    "description": "Leaderboards ranked by user engagement. Click to preview details or jump straight to the source.",
+    "boardViews": "Most viewed",
+    "boardViewsDesc": "Ranked by detail dialog views",
+    "boardOpens": "Most visited",
+    "boardOpensDesc": "Ranked by external link clicks",
+    "boardLikes": "Most liked",
+    "boardLikesDesc": "Ranked by community likes",
+    "empty": "No data yet",
+    "loadError": "Failed to load rankings",
+    "top10": "Top 10",
+    "openLink": "Open external link",
+    "viewDetail": "View bookmark details"
+  },
+  "like": {
+    "action": "Like",
+    "undo": "Unlike",
+    "aria": "Like ({{count}})",
+    "ariaUndo": "Unlike ({{count}})",
+    "failed": "Something went wrong. Please try again."
   },
   "pagination": {
     "loadingMore": "Loading more…",
@@ -101,16 +123,15 @@
     "archived": "Archived",
     "aiPending": "AI generating…",
     "noSummary": "No description or AI summary.",
+    "viewCount": "Views",
     "copyAccountAria": "Copy username and password",
     "copyAccountTitle": "Copy username and password",
     "copyAccountEmpty": "No username or password saved yet",
     "featured": "Featured"
   },
   "open": {
-    "aria": "Open link, viewed {{count}} times",
-    "ariaOpenOnly": "Open in new tab",
-    "title": "Open in new tab",
-    "action": "Open"
+    "aria": "Open link, opened {{count}} times",
+    "title": "Open in new tab"
   },
   "detail": {
     "viewCountTitle": "Viewed {{count}} times",

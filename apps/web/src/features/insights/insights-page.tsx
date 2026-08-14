@@ -121,8 +121,10 @@ export function InsightsPage() {
     <div className="mx-auto max-w-5xl space-y-8 pb-12">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <ChartBarIcon className="size-5 text-primary" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
+              <ChartBarIcon className="size-4.5" />
+            </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               {t("header.title")}
             </h1>

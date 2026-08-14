@@ -182,6 +182,12 @@ export const bookmarks = sqliteTable(
     archivedAt: text("archived_at"),
     deletedAt: text("deleted_at"),
     clickCount: integer("click_count").notNull().default(0),
+    /** 详情弹窗打开次数；click_count 保留为两类打开的历史总数 */
+    viewCount: integer("view_count").notNull().default(0),
+    /** 外链跳转次数 */
+    openCount: integer("open_count").notNull().default(0),
+    /** 本站点赞数（冗余计数，明细见 bookmark_likes）；与 X 同步进 stars 的赞数无关 */
+    likeCount: integer("like_count").notNull().default(0),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -202,6 +208,31 @@ export const bookmarks = sqliteTable(
     index("bookmarks_source_type_idx").on(t.sourceType),
     index("bookmarks_pricing_idx").on(t.pricing),
     index("bookmarks_featured_idx").on(t.featured),
+    index("bookmarks_view_count_idx").on(t.viewCount),
+    index("bookmarks_open_count_idx").on(t.openCount),
+    index("bookmarks_like_count_idx").on(t.likeCount),
+  ],
+)
+
+/**
+ * 点赞明细：公开浏览下访客也可点赞，用 SHA-256(ip + UA) 指纹去重，不落明文 IP。
+ * bookmarks.like_count 是它的冗余计数，排行查询直接读那一列。
+ */
+export const bookmarkLikes = sqliteTable(
+  "bookmark_likes",
+  {
+    id: text("id").primaryKey(),
+    bookmarkId: text("bookmark_id")
+      .notNull()
+      .references(() => bookmarks.id, { onDelete: "cascade" }),
+    fingerprint: text("fingerprint").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [
+    uniqueIndex("bookmark_likes_bookmark_fp_uq").on(t.bookmarkId, t.fingerprint),
+    index("bookmark_likes_fingerprint_idx").on(t.fingerprint),
   ],
 )
 

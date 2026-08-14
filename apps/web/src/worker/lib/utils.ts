@@ -73,3 +73,16 @@ export function getClientIp(request: Request): string {
     "unknown"
   )
 }
+
+/**
+ * 访客指纹：SHA-256(ip + UA)。点赞去重用，明文 IP 不落库。
+ * 同一网络下不同浏览器算不同人，够用且不需要 cookie。
+ */
+export async function clientFingerprint(request: Request): Promise<string> {
+  const raw = `${getClientIp(request)}\n${request.headers.get("user-agent") ?? ""}`
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(raw),
+  )
+  return bytesToBase64(digest)
+}

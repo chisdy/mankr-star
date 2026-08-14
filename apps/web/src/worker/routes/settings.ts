@@ -3,6 +3,7 @@ import {
   aiUsageLogs,
   apiTokens,
   bookmarkEmbeddings,
+  bookmarkLikes,
   bookmarkTags,
   bookmarks,
   folders,
@@ -798,6 +799,7 @@ settingsRoutes.post("/settings/clear-data", async (c) => {
   await db.batch([
     db.delete(bookmarkTags),
     db.delete(bookmarkEmbeddings),
+    db.delete(bookmarkLikes),
     db.delete(updateEvents),
     db.delete(aiJobs),
     db.delete(aiUsageLogs),

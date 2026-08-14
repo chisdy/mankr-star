@@ -10,9 +10,12 @@ import {
 import type {
   AnySearchSettings,
   Bookmark,
+  BookmarkLikeResult,
   BookmarkPaginationSettings,
   BookmarkOwner,
   BookmarkPricing,
+  BookmarkRankingItem,
+  BookmarkRankings,
   BookmarkSite,
   BookmarksQueryParams,
   BookmarksResponse,
@@ -345,6 +348,8 @@ interface MockDataStore {
   bookmarks: Bookmark[]
   tags: Tag[]
   events: UpdateEvent[]
+  /** mock 下没有服务端指纹，用本地已赞 id 列表模拟去重 */
+  likedIds?: string[]
 }
 
 function getInitialMockData(): MockDataStore {
@@ -471,6 +476,7 @@ function getInitialMockData(): MockDataStore {
       { id: "t-2", name: "llm", count: 1 },
     ],
     events: [],
+    likedIds: [],
   }
 }
 
@@ -501,6 +507,39 @@ function foldersWithCounts(store: MockDataStore): Folder[] {
     const count = ids.reduce((sum, id) => sum + (direct.get(id) ?? 0), 0)
     return { ...f, count }
   })
+}
+
+/** 点赞与取消点赞只差方法，mock 兜底也共用同一份去重逻辑 */
+async function toggleLike(
+  id: string,
+  liked: boolean,
+): Promise<BookmarkLikeResult> {
+  try {
+    return await request<BookmarkLikeResult>(`/api/bookmarks/${id}/like`, {
+      method: liked ? "POST" : "DELETE",
+    })
+  } catch (err) {
+    if (shouldFallbackToMock(err)) {
+      const store = mockStore()
+      const idx = store.bookmarks.findIndex((b) => b.id === id)
+      if (idx === -1) throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
+
+      const likedIds = new Set(store.likedIds ?? [])
+      const wasLiked = likedIds.has(id)
+      // 对齐服务端：明细是事实来源，计数由它派生，重复点赞不叠加
+      if (liked) likedIds.add(id)
+      else likedIds.delete(id)
+      store.likedIds = [...likedIds]
+
+      const prev = store.bookmarks[idx]!
+      const others = Math.max(0, (prev.like_count ?? 0) - (wasLiked ? 1 : 0))
+      const nextCount = others + (liked ? 1 : 0)
+      store.bookmarks[idx] = { ...prev, like_count: nextCount }
+      saveMockStore()
+      return { like_count: nextCount, liked }
+    }
+    throw err
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1037,21 +1076,32 @@ export const api = {
     }
   },
 
-  /** 记录外链打开次数，返回更新后的收藏 */
-  async recordBookmarkOpen(id: string): Promise<Bookmark> {
+  /**
+   * 记录打开次数，返回更新后的收藏。
+   * detail=打开详情弹窗，external=跳转目标地址；两者都会累加 click_count 总数。
+   */
+  async recordBookmarkOpen(
+    id: string,
+    type: "detail" | "external" = "external",
+  ): Promise<Bookmark> {
     try {
-      const raw = await request<ApiBookmark>(`/api/bookmarks/${id}/open`, {
-        method: "POST",
-      })
+      const raw = await request<ApiBookmark>(
+        `/api/bookmarks/${id}/open?type=${type}`,
+        { method: "POST" },
+      )
       return toBookmark(raw)
     } catch (err) {
       if (shouldFallbackToMock(err)) {
         const store = mockStore()
         const idx = store.bookmarks.findIndex((b) => b.id === id)
         if (idx === -1) throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
+        const prev = store.bookmarks[idx]!
         const updated: Bookmark = {
-          ...store.bookmarks[idx]!,
-          click_count: (store.bookmarks[idx]!.click_count ?? 0) + 1,
+          ...prev,
+          click_count: (prev.click_count ?? 0) + 1,
+          ...(type === "detail"
+            ? { view_count: (prev.view_count ?? 0) + 1 }
+            : { open_count: (prev.open_count ?? 0) + 1 }),
           updated_at: new Date().toISOString(),
         }
         store.bookmarks[idx] = updated
@@ -1060,6 +1110,55 @@ export const api = {
       }
       throw err
     }
+  },
+
+  /** 三个榜一次取回，前端 Tab 切换不再发请求 */
+  async getBookmarkRankings(): Promise<BookmarkRankings> {
+    try {
+      return await request<BookmarkRankings>("/api/bookmarks/rankings")
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const alive = mockStore().bookmarks.filter((b) => !b.deleted_at)
+        const top = (pick: (b: Bookmark) => number): BookmarkRankingItem[] =>
+          alive
+            .filter((b) => pick(b) > 0)
+            .sort((a, b) => pick(b) - pick(a) || a.title.localeCompare(b.title))
+            .slice(0, 10)
+            .map((b) => ({
+              id: b.id,
+              title: b.title,
+              external_id: b.external_id ?? null,
+              canonical_url: b.canonical_url,
+              favicon_url: b.favicon_url ?? null,
+              count: pick(b),
+            }))
+        return {
+          views: top((b) => b.view_count ?? 0),
+          opens: top((b) => b.open_count ?? 0),
+          likes: top((b) => b.like_count ?? 0),
+        }
+      }
+      throw err
+    }
+  },
+
+  /** 当前访客赞过的收藏 id（后端按 IP+UA 指纹判定） */
+  async getMyLikes(): Promise<string[]> {
+    try {
+      const res = await request<{ ids: string[] }>("/api/bookmarks/likes/mine")
+      return res.ids
+    } catch (err) {
+      if (shouldFallbackToMock(err)) return mockStore().likedIds ?? []
+      throw err
+    }
+  },
+
+  async likeBookmark(id: string): Promise<BookmarkLikeResult> {
+    return toggleLike(id, true)
+  },
+
+  async unlikeBookmark(id: string): Promise<BookmarkLikeResult> {
+    return toggleLike(id, false)
   },
 
   /** 触发重新生成后返回最新收藏（AI 在后台异步执行，ai_status 可能仍为 pending） */

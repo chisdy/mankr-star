@@ -61,7 +61,7 @@
     "sortRecent": "最近添加",
     "sortUpdated": "最近更新",
     "sortStars": "Stars 最多",
-    "sortLikes": "赞最多",
+    "sortLikes": "原帖赞数最多",
     "sortName": "名称 A-Z",
     "includeArchived": "是否包含归档",
     "archivedLabel": "归档",
@@ -78,6 +78,28 @@
     "aiStatusDone": "已完成",
     "aiStatusFallback": "已兜底",
     "aiStatusFailed": "已失败"
+  },
+  "ranking": {
+    "title": "热门排行",
+    "description": "按用户互动与关注度排出的热门书签榜单，支持快速预览与一键直达。",
+    "boardViews": "查看最多",
+    "boardViewsDesc": "按详情弹窗打开频次排序",
+    "boardOpens": "访问最多",
+    "boardOpensDesc": "按外链跳转直达次数排序",
+    "boardLikes": "点赞最多",
+    "boardLikesDesc": "按站内用户点赞总数排序",
+    "empty": "暂无数据",
+    "loadError": "排行加载失败",
+    "top10": "Top 10",
+    "openLink": "新标签打开链接",
+    "viewDetail": "查看书签详情"
+  },
+  "like": {
+    "action": "点赞",
+    "undo": "取消点赞",
+    "aria": "点赞（{{count}}）",
+    "ariaUndo": "取消点赞（{{count}}）",
+    "failed": "操作失败，请稍后重试"
   },
   "pagination": {
     "loadingMore": "正在加载更多…",
@@ -101,16 +123,15 @@
     "archived": "已归档",
     "aiPending": "AI 生成中…",
     "noSummary": "暂无描述或 AI 摘要。",
+    "viewCount": "查看次数",
     "copyAccountAria": "复制账号和密码",
     "copyAccountTitle": "复制账号和密码",
     "copyAccountEmpty": "尚未填写账号或密码",
     "featured": "精选"
   },
   "open": {
-    "aria": "打开链接，已查看 {{count}} 次",
-    "ariaOpenOnly": "在新标签页打开",
-    "title": "在新标签页打开",
-    "action": "打开"
+    "aria": "打开链接，已跳转 {{count}} 次",
+    "title": "在新标签页打开"
   },
   "detail": {
     "viewCountTitle": "查看 {{count}} 次",

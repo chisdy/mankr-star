@@ -121,7 +121,7 @@ export function BookmarkDetailDialog() {
   })
 
   const recordOpenMutation = useMutation({
-    mutationFn: (id: string) => api.recordBookmarkOpen(id),
+    mutationFn: (id: string) => api.recordBookmarkOpen(id, "detail"),
     onSuccess: (updated, id) => {
       // 快速 A→B 时，A 的迟到响应不能写脏当前详情缓存
       if (id === trackedOpenBookmarkId) {

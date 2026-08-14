@@ -15,6 +15,7 @@ import {
   UserIcon,
   ChartBarIcon,
   GithubLogoIcon,
+  TrophyIcon,
   type Icon,
 } from "@phosphor-icons/react"
 
@@ -57,7 +58,7 @@ const PROJECT_GITHUB_URL = "https://github.com/chisdy/mankr-star"
 
 type NavItem = {
   to: string
-  labelKey: "bookmarks" | "tags" | "feed" | "insights" | "settings"
+  labelKey: "bookmarks" | "tags" | "rankings" | "feed" | "insights" | "settings"
   icon: Icon
   /** 未登录时是否可见；默认 true */
   guestVisible?: boolean
@@ -65,6 +66,7 @@ type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { to: "/", labelKey: "bookmarks", icon: BookmarksIcon },
+  { to: "/rankings", labelKey: "rankings", icon: TrophyIcon },
   { to: "/tags", labelKey: "tags", icon: HashIcon },
   { to: "/feed", labelKey: "feed", icon: RssIcon },
   {

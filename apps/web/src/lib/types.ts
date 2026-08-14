@@ -151,9 +151,40 @@ export interface Bookmark {
   repo_size?: number | null
   archived_at?: string | null
   deleted_at?: string | null
+  /** 两类打开的历史总数；细分见 view_count / open_count */
   click_count?: number
+  /** 打开详情弹窗的次数 */
+  view_count?: number
+  /** 跳转目标地址的次数 */
+  open_count?: number
+  /** 本站点赞数；与 X 同步进 stars 的原帖赞数无关 */
+  like_count?: number
   created_at: string
   updated_at?: string
+}
+
+/** 排行榜条目；count 是当前榜单对应的那个计数 */
+export interface BookmarkRankingItem {
+  id: string
+  title: string
+  external_id: string | null
+  canonical_url: string
+  favicon_url: string | null
+  count: number
+}
+
+export interface BookmarkRankings {
+  /** 详情弹窗打开榜 */
+  views: BookmarkRankingItem[]
+  /** 外链跳转榜 */
+  opens: BookmarkRankingItem[]
+  /** 本站点赞榜 */
+  likes: BookmarkRankingItem[]
+}
+
+export interface BookmarkLikeResult {
+  like_count: number
+  liked: boolean
 }
 
 export type EventType = "push" | "release" | "stars_delta" | "meta_change"

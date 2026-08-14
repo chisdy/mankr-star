@@ -1,4 +1,11 @@
-import { bookmarkTags, bookmarks, folders, tags } from "@mankr/db"
+import {
+  bookmarkLikes,
+  bookmarkTags,
+  bookmarks,
+  folders,
+  tags,
+  type Db,
+} from "@mankr/db"
 import {
   DEFAULT_FACET_PAGE_SIZE,
   SOURCE_CAPABILITIES,
@@ -29,7 +36,7 @@ import {
   or,
   sql,
 } from "drizzle-orm"
-import { Hono } from "hono"
+import { Hono, type Context } from "hono"
 import type { AppEnv } from "../env"
 import {
   fetchGithubRepo,
@@ -49,16 +56,25 @@ import { runBookmarkBatch } from "../lib/bookmark-batch"
 import { scheduleBookmarkEmbedding } from "../lib/embeddings"
 import { rateLimit } from "../lib/rate-limit"
 import { readSetting } from "../lib/settings-store"
-import { getClientIp, nowIso } from "../lib/utils"
+import { clientFingerprint, getClientIp, nowIso } from "../lib/utils"
 import { authByMethod } from "../middleware/auth"
 
 export const bookmarkRoutes = new Hono<AppEnv>()
 
-/** 外链打开计数：公开浏览访客也可 POST（非其它写操作） */
+/**
+ * 公开浏览访客可用的互动写操作：打开计数、点赞与取消点赞。
+ * 取消点赞是 DELETE，必须一并放行，否则访客只能赞不能撤。
+ */
 const bookmarkAuth = authByMethod(undefined, undefined, (c) => {
-  if (c.req.method !== "POST") return false
   // 兼容挂载前后 path：/api/bookmarks/:id/open 或 /bookmarks/:id/open
-  return /\/bookmarks\/[^/]+\/open\/?$/.test(c.req.path)
+  const path = c.req.path
+  if (c.req.method === "POST") {
+    return /\/bookmarks\/[^/]+\/(open|like)\/?$/.test(path)
+  }
+  if (c.req.method === "DELETE") {
+    return /\/bookmarks\/[^/]+\/like\/?$/.test(path)
+  }
+  return false
 })
 bookmarkRoutes.use("/bookmarks", bookmarkAuth)
 bookmarkRoutes.use("/bookmarks/*", bookmarkAuth)
@@ -175,6 +191,9 @@ function serializeBookmark(
     repo_size: b.repoSize,
     archived_at: b.archivedAt,
     click_count: b.clickCount,
+    view_count: b.viewCount,
+    open_count: b.openCount,
+    like_count: b.likeCount,
     tags: tagNames,
     created_at: b.createdAt,
     updated_at: b.updatedAt,
@@ -542,6 +561,58 @@ bookmarkRoutes.get("/bookmarks/sites", async (c) => {
     pageSize,
     total: Number(totalRow?.value ?? 0),
   })
+})
+
+const RANKING_LIMIT = 50
+
+/** 单个榜单：按给定计数列取前 N，计数为 0 的不上榜 */
+function topBookmarksBy(
+  db: ReturnType<typeof import("@mankr/db").createDb>,
+  column:
+    | typeof bookmarks.viewCount
+    | typeof bookmarks.openCount
+    | typeof bookmarks.likeCount,
+) {
+  return db
+    .select({
+      id: bookmarks.id,
+      title: bookmarks.title,
+      external_id: bookmarks.externalId,
+      canonical_url: bookmarks.canonicalUrl,
+      favicon_url: bookmarks.faviconUrl,
+      count: column,
+    })
+    .from(bookmarks)
+    .where(and(isNull(bookmarks.deletedAt), sql`${column} > 0`))
+    .orderBy(desc(column), asc(bookmarks.title))
+    .limit(RANKING_LIMIT)
+}
+
+/**
+ * 三个榜一次返回，排行页三列并排渲染，只发一次请求。
+ * 必须注册在 GET /bookmarks/:id 之前，否则会被 :id 抢先匹配。
+ */
+bookmarkRoutes.get("/bookmarks/rankings", async (c) => {
+  const db = c.get("db")
+  const [views, opens, likes] = await Promise.all([
+    topBookmarksBy(db, bookmarks.viewCount),
+    topBookmarksBy(db, bookmarks.openCount),
+    topBookmarksBy(db, bookmarks.likeCount),
+  ])
+  return c.json({ views, opens, likes })
+})
+
+/** 当前指纹赞过的收藏 id；前端据此渲染按钮的已赞态 */
+bookmarkRoutes.get("/bookmarks/likes/mine", async (c) => {
+  const db = c.get("db")
+  const fingerprint = await clientFingerprint(c.req.raw)
+  const rows = await db
+    .select({ bookmarkId: bookmarkLikes.bookmarkId })
+    .from(bookmarkLikes)
+    .where(eq(bookmarkLikes.fingerprint, fingerprint))
+
+  c.header("Cache-Control", "no-store")
+  return c.json({ ids: rows.map((r) => r.bookmarkId) })
 })
 
 bookmarkRoutes.get("/bookmarks/:id", async (c) => {
@@ -1239,6 +1310,8 @@ bookmarkRoutes.post("/bookmarks/:id/open", async (c) => {
   const db = c.get("db")
   const isPublicRead = Boolean(c.get("isPublicRead"))
   const id = c.req.param("id")
+  // detail=打开详情弹窗，external=跳转目标地址；缺省按 external，兼容旧客户端
+  const openType = c.req.query("type") === "detail" ? "detail" : "external"
   const existing = await db
     .select()
     .from(bookmarks)
@@ -1249,7 +1322,11 @@ bookmarkRoutes.post("/bookmarks/:id/open", async (c) => {
   await db
     .update(bookmarks)
     .set({
+      // click_count 继续记两类打开的总数，历史数据语义不变
       clickCount: sql`${bookmarks.clickCount} + 1`,
+      ...(openType === "detail"
+        ? { viewCount: sql`${bookmarks.viewCount} + 1` }
+        : { openCount: sql`${bookmarks.openCount} + 1` }),
       updatedAt: nowIso(),
     })
     .where(eq(bookmarks.id, id))
@@ -1267,6 +1344,95 @@ bookmarkRoutes.post("/bookmarks/:id/open", async (c) => {
       includeAccount: !isPublicRead,
     }),
   )
+})
+
+/** 点赞写操作共用：限流 + 存在性校验，返回指纹 */
+async function prepareLike(c: Context<AppEnv, "/bookmarks/:id/like">) {
+  const ip = getClientIp(c.req.raw)
+  const rl = rateLimit(`bookmark-like:${ip}`, 60, 60_000)
+  if (!rl.ok) {
+    return {
+      error: c.json(
+        { error: "请求过于频繁，请稍后再试", code: "RATE_LIMITED" },
+        429,
+      ),
+    } as const
+  }
+
+  const db = c.get("db")
+  const id = c.req.param("id")
+  const existing = await db
+    .select({ id: bookmarks.id })
+    .from(bookmarks)
+    .where(and(eq(bookmarks.id, id), isNull(bookmarks.deletedAt)))
+    .get()
+  if (!existing) {
+    return {
+      error: c.json({ error: "收藏不存在", code: "NOT_FOUND" }, 404),
+    } as const
+  }
+
+  return { id, fingerprint: await clientFingerprint(c.req.raw) } as const
+}
+
+/**
+ * 明细表是唯一事实来源，bookmarks.like_count 只是它的物化缓存。
+ * 每次写入都整体重算而不是 +1/-1：重复点赞天然幂等，计数也不会随时间漂移。
+ */
+function likeCountFromDetails(id: string) {
+  return sql`(select count(*) from ${bookmarkLikes} where ${bookmarkLikes.bookmarkId} = ${id})`
+}
+
+/** 明细与计数必须一起落库，否则中途失败会留下对不上的数字 */
+function syncLikeCount(db: Db, id: string) {
+  return db
+    .update(bookmarks)
+    .set({ likeCount: likeCountFromDetails(id) })
+    .where(eq(bookmarks.id, id))
+    .returning({ likeCount: bookmarks.likeCount })
+}
+
+/**
+ * 点赞。同一指纹重复点不叠加，靠唯一索引挡住。
+ * 不写 updatedAt：点赞是互动，不该把收藏顶到「最近更新」最前。
+ */
+bookmarkRoutes.post("/bookmarks/:id/like", async (c) => {
+  const prepared = await prepareLike(c)
+  if ("error" in prepared) return prepared.error
+  const { id, fingerprint } = prepared
+  const db = c.get("db")
+
+  const [, updated] = await db.batch([
+    db
+      .insert(bookmarkLikes)
+      .values({ id: crypto.randomUUID(), bookmarkId: id, fingerprint })
+      .onConflictDoNothing(),
+    syncLikeCount(db, id),
+  ])
+
+  return c.json({ like_count: updated[0]?.likeCount ?? 0, liked: true })
+})
+
+/** 取消点赞。没赞过也返回 200，前端只关心最终状态 */
+bookmarkRoutes.delete("/bookmarks/:id/like", async (c) => {
+  const prepared = await prepareLike(c)
+  if ("error" in prepared) return prepared.error
+  const { id, fingerprint } = prepared
+  const db = c.get("db")
+
+  const [, updated] = await db.batch([
+    db
+      .delete(bookmarkLikes)
+      .where(
+        and(
+          eq(bookmarkLikes.bookmarkId, id),
+          eq(bookmarkLikes.fingerprint, fingerprint),
+        ),
+      ),
+    syncLikeCount(db, id),
+  ])
+
+  return c.json({ like_count: updated[0]?.likeCount ?? 0, liked: false })
 })
 
 bookmarkRoutes.post("/bookmarks/:id/ai/regenerate", async (c) => {

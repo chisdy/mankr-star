@@ -12,11 +12,20 @@ export const queryKeys = {
     infinite: (params?: BookmarksQueryParams) =>
       ["bookmarks", "infinite", params] as const,
     detail: (id: string) => ["bookmarks", "detail", id] as const,
+    /** 排行榜；挂在 bookmarks 前缀下，互动写操作后随列表一起失效 */
+    rankings: ["bookmarks", "rankings"] as const,
     /** 挂在 bookmarks 前缀下，invalidate bookmarks.all 时一并刷新 */
     ownersInfinite: (sourceType?: string, q?: string) =>
       ["bookmarks", "owners", sourceType ?? "github", "infinite", q ?? ""] as const,
     sitesInfinite: (q?: string) =>
       ["bookmarks", "sites", "infinite", q ?? ""] as const,
+  },
+  /**
+   * 已赞 id 集合。刻意不挂 bookmarks 前缀：写操作普遍 invalidate bookmarks.all，
+   * 挂进去会让每次打开外链都白白重拉一次已赞列表。
+   */
+  bookmarkLikes: {
+    mine: ["bookmark-likes", "mine"] as const,
   },
   folders: {
     all: ["folders"] as const,

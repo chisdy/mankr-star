@@ -40,6 +40,7 @@ const ADD_PARAM = "add"
 
 const FOLDER_TREE_HIDDEN_PATHS = new Set([
   "/tags",
+  "/rankings",
   "/feed",
   "/insights",
   "/settings",

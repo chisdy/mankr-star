@@ -36,6 +36,7 @@ export function LoginPage() {
         <div>
           <div className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
             <BrandLogo
+              variant="flat"
               className="size-9 rounded-md bg-primary text-primary-foreground"
               iconClassName="size-7"
             />

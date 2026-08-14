@@ -28,7 +28,7 @@ export function LoginDialog() {
         <LocaleSwitcher variant="compact" className="absolute top-4 left-4" />
         <DialogHeader className="items-center space-y-1.5 pt-1 text-center">
           <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-2xs">
-            <BrandLogo iconClassName="size-8" />
+            <BrandLogo variant="flat" iconClassName="size-8" />
           </div>
           <DialogTitle className="pt-1 text-lg font-semibold tracking-tight text-foreground">
             {t("login.dialogTitle")}

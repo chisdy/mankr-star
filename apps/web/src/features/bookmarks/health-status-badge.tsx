@@ -34,7 +34,7 @@ export function HealthStatusBadge({
     <Badge
       variant={muted ? "secondary" : "outline"}
       className={cn(
-        "text-[10px] h-4.5 px-1.5 font-normal shrink-0",
+        "text-xs h-5 px-1.5 font-normal shrink-0",
         status === "unavailable" && "opacity-70",
         status === "hot" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
         status === "active" && "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",

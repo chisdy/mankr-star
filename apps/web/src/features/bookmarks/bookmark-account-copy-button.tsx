@@ -108,7 +108,7 @@ export function BookmarkAccountCopyButton({
               disabled={pending}
               className={cn(
                 buttonVariants({ variant: "ghost", size: "xs" }),
-                "h-6 gap-1 px-1.5 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-50",
+                "h-6.5 gap-1 px-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50",
                 className,
               )}
               aria-label={t("bookmarks:card.copyAccountAria")}

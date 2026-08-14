@@ -170,11 +170,16 @@ export function FeedPage() {
     <div className="mx-auto max-w-3xl space-y-6 pb-12">
       {/* Header */}
       <div className="space-y-4">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            {t("title")}
-          </h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
+              <RssIcon className="size-4.5" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              {t("title")}
+            </h1>
+          </div>
+          <p className="text-xs text-muted-foreground">
             {t("description")}
           </p>
         </div>

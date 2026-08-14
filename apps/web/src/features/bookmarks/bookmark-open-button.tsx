@@ -19,28 +19,25 @@ import type { Bookmark } from "@/lib/types"
 interface BookmarkOpenButtonProps {
   bookmark: Bookmark
   className?: string
-  /** 列表保留数字；详情底部只保留打开动作，避免与 meta 查看次数重复 */
-  showCount?: boolean
 }
 
 export function BookmarkOpenButton({
   bookmark,
   className,
-  showCount = true,
 }: BookmarkOpenButtonProps) {
   const { t } = useTranslation("bookmarks")
   const queryClient = useQueryClient()
-  const [clickCount, setClickCount] = React.useState(bookmark.click_count ?? 0)
+  const [openCount, setOpenCount] = React.useState(bookmark.open_count ?? 0)
   const safeHref = toSafeExternalHref(bookmark.canonical_url)
 
   React.useEffect(() => {
-    setClickCount(bookmark.click_count ?? 0)
-  }, [bookmark.click_count])
+    setOpenCount(bookmark.open_count ?? 0)
+  }, [bookmark.open_count])
 
   const openMutation = useMutation({
-    mutationFn: () => api.recordBookmarkOpen(bookmark.id),
+    mutationFn: () => api.recordBookmarkOpen(bookmark.id, "external"),
     onSuccess: (updated) => {
-      setClickCount(updated.click_count ?? 0)
+      setOpenCount(updated.open_count ?? 0)
       queryClient.setQueryData(
         queryKeys.bookmarks.detail(bookmark.id),
         updated,
@@ -57,7 +54,7 @@ export function BookmarkOpenButton({
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     // 阻止冒泡到卡片（打开详情），但不 preventDefault，保留浏览器原生新标签行为
     e.stopPropagation()
-    if (showCount) setClickCount((n) => n + 1)
+    setOpenCount((n) => n + 1)
     openMutation.mutate()
   }
 
@@ -73,24 +70,16 @@ export function BookmarkOpenButton({
               onClick={handleClick}
               className={cn(
                 buttonVariants({ variant: "ghost", size: "xs" }),
-                "h-6 gap-1 px-2 font-mono text-[11px] text-muted-foreground hover:text-foreground",
+                "h-6.5 gap-1 px-2 font-mono text-xs text-muted-foreground hover:text-foreground",
                 className
               )}
-              aria-label={
-                showCount
-                  ? t("open.aria", { count: clickCount })
-                  : t("open.ariaOpenOnly")
-              }
+              aria-label={t("open.aria", { count: openCount })}
             >
               <ArrowSquareOutIcon
                 className="size-3.5"
                 data-icon="inline-start"
               />
-              {showCount ? (
-                <span>{clickCount}</span>
-              ) : (
-                <span>{t("open.action")}</span>
-              )}
+              {openCount > 0 ? <span>{openCount}</span> : null}
             </ExternalLink>
           }
         />

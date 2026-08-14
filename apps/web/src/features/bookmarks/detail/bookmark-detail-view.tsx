@@ -101,7 +101,7 @@ export function BookmarkDetailView({
       ) : null}
 
       {bookmark.sync_status || bookmark.last_synced_at ? (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {t("detail.syncPrefix", { status: bookmark.sync_status || "-" })}
           {bookmark.last_synced_at
             ? ` · ${new Date(bookmark.last_synced_at).toLocaleString(i18n.language)}`
@@ -123,7 +123,7 @@ export function BookmarkDetailView({
               </AccordionTrigger>
               <AccordionContent className="pb-3">
                 <ScrollArea className="max-h-40" contentClassName="pr-2">
-                  <p className="text-[11px] leading-relaxed whitespace-pre-wrap text-muted-foreground">
+                  <p className="text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">
                     {bookmark.content_excerpt}
                   </p>
                 </ScrollArea>
@@ -141,7 +141,7 @@ export function BookmarkDetailView({
               </AccordionTrigger>
               <AccordionContent className="pb-3">
                 <ScrollArea className="max-h-64" contentClassName="pr-2">
-                  <p className="font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-muted-foreground">
+                  <p className="font-mono text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">
                     {bookmark.readme_excerpt.slice(0, README_PREVIEW_CHARS)}
                     {bookmark.readme_excerpt.length > README_PREVIEW_CHARS
                       ? "…"
@@ -165,7 +165,7 @@ export function BookmarkDetailView({
               size="xs"
               onClick={onRegenerate}
               disabled={regenerating}
-              className="h-6 gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+              className="h-6 gap-1 text-xs text-muted-foreground hover:text-foreground"
             >
               <ArrowClockwiseIcon
                 className={`size-3 ${regenerating ? "animate-spin" : ""}`}

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next"
 
+import { EmptyState } from "@/components/empty-state"
 import {
   CHART_PALETTE,
   LANG_COLORS,
@@ -18,11 +19,7 @@ export function LanguageDistribution({
 
   const total = languages.reduce((sum, l) => sum + l.count, 0)
   if (total === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-border/60 py-8 text-center text-xs text-muted-foreground">
-        {t("charts.languageEmpty")}
-      </div>
-    )
+    return <EmptyState>{t("charts.languageEmpty")}</EmptyState>
   }
 
   return (

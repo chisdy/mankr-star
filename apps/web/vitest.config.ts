@@ -28,5 +28,10 @@ export default defineConfig(async () => {
       include: ["test/**/*.test.ts"],
       setupFiles: ["./test/setup.ts"],
     },
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+      },
+    },
   }
 })

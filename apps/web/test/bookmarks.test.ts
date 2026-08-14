@@ -51,8 +51,12 @@ interface BookmarkPayload {
   health_status?: string
   sync_status?: string
   click_count?: number
+  view_count?: number
+  open_count?: number
+  like_count?: number
   archived_at: string | null
   created_at: string
+  updated_at?: string
 }
 
 interface BookmarkList {
@@ -1444,12 +1448,192 @@ describe("POST /api/bookmarks/:id/open", () => {
     expect(second.body.click_count).toBe(2)
   })
 
+  it("按 type 分流到 view_count / open_count，click_count 仍记总数", async () => {
+    const created = await createBookmark("https://github.com/facebook/react")
+    const id = created.body.id
+    expect(created.body.view_count ?? 0).toBe(0)
+    expect(created.body.open_count ?? 0).toBe(0)
+
+    const detail = await client.post<BookmarkPayload>(
+      `/api/bookmarks/${id}/open?type=detail`,
+    )
+    expect(detail.body.view_count).toBe(1)
+    expect(detail.body.open_count).toBe(0)
+    expect(detail.body.click_count).toBe(1)
+
+    const external = await client.post<BookmarkPayload>(
+      `/api/bookmarks/${id}/open?type=external`,
+    )
+    expect(external.body.view_count).toBe(1)
+    expect(external.body.open_count).toBe(1)
+    expect(external.body.click_count).toBe(2)
+  })
+
+  it("缺省 type 按 external 处理，兼容旧客户端", async () => {
+    const created = await createBookmark("https://github.com/facebook/react")
+    const { body } = await client.post<BookmarkPayload>(
+      `/api/bookmarks/${created.body.id}/open`,
+    )
+    expect(body.open_count).toBe(1)
+    expect(body.view_count).toBe(0)
+  })
+
   it("不存在的收藏返回 404", async () => {
     const { status, body } = await client.post<{ code?: string }>(
       "/api/bookmarks/missing-id/open",
     )
     expect(status).toBe(404)
     expect(body.code).toBe("NOT_FOUND")
+  })
+})
+
+describe("收藏点赞", () => {
+  interface LikeResult {
+    like_count: number
+    liked: boolean
+    code?: string
+  }
+
+  /** 同 IP 下换 UA 即换指纹。client.delete 的第二参是 body，改不了头，只能走 json */
+  function likeAs(client: TestClient, id: string, ua: string) {
+    return client.json<LikeResult>(`/api/bookmarks/${id}/like`, {
+      method: "POST",
+      headers: { "user-agent": ua },
+    })
+  }
+
+  function unlikeAs(client: TestClient, id: string, ua: string) {
+    return client.json<LikeResult>(`/api/bookmarks/${id}/like`, {
+      method: "DELETE",
+      headers: { "user-agent": ua },
+    })
+  }
+
+  it("同一指纹重复点赞只累加一次", async () => {
+    const created = await createBookmark("https://github.com/facebook/react")
+    const id = created.body.id
+    expect(created.body.like_count ?? 0).toBe(0)
+
+    const first = await client.post<LikeResult>(`/api/bookmarks/${id}/like`)
+    expect(first.status).toBe(200)
+    expect(first.body).toMatchObject({ like_count: 1, liked: true })
+
+    const second = await client.post<LikeResult>(`/api/bookmarks/${id}/like`)
+    expect(second.body).toMatchObject({ like_count: 1, liked: true })
+  })
+
+  it("不同指纹各计一次", async () => {
+    const created = await createBookmark("https://github.com/facebook/react")
+    const id = created.body.id
+
+    await likeAs(client, id, "agent-a")
+    const second = await likeAs(client, id, "agent-b")
+    expect(second.body.like_count).toBe(2)
+  })
+
+  it("取消点赞后归零，重复取消不会减成负数", async () => {
+    const created = await createBookmark("https://github.com/facebook/react")
+    const id = created.body.id
+
+    await client.post<LikeResult>(`/api/bookmarks/${id}/like`)
+    const removed = await client.delete<LikeResult>(`/api/bookmarks/${id}/like`)
+    expect(removed.body).toMatchObject({ like_count: 0, liked: false })
+
+    const again = await client.delete<LikeResult>(`/api/bookmarks/${id}/like`)
+    expect(again.body.like_count).toBe(0)
+  })
+
+  it("多人点赞后取消其一只减自己那份，且不与别的收藏串台", async () => {
+    const a = await createBookmark("https://github.com/facebook/react")
+    const b = await createBookmark("https://github.com/astral-sh/uv")
+
+    await likeAs(client, a.body.id, "agent-a")
+    await likeAs(client, a.body.id, "agent-b")
+    await likeAs(client, b.body.id, "agent-a")
+
+    const removed = await unlikeAs(client, a.body.id, "agent-a")
+    expect(removed.body.like_count).toBe(1)
+
+    const other = await client.json<BookmarkPayload>(
+      `/api/bookmarks/${b.body.id}`,
+    )
+    expect(other.body.like_count).toBe(1)
+  })
+
+  it("点赞不修改 updated_at，避免顶到「最近更新」最前", async () => {
+    const created = await createBookmark("https://github.com/facebook/react")
+    const id = created.body.id
+    const before = await client.json<BookmarkPayload>(`/api/bookmarks/${id}`)
+
+    await client.post<LikeResult>(`/api/bookmarks/${id}/like`)
+
+    const after = await client.json<BookmarkPayload>(`/api/bookmarks/${id}`)
+    expect(after.body.updated_at).toBe(before.body.updated_at)
+    expect(after.body.like_count).toBe(1)
+  })
+
+  it("GET /bookmarks/likes/mine 只返回当前指纹赞过的 id", async () => {
+    const a = await createBookmark("https://github.com/facebook/react")
+    const b = await createBookmark("https://github.com/astral-sh/uv")
+
+    await likeAs(client, a.body.id, "agent-a")
+    await likeAs(client, b.body.id, "agent-b")
+
+    const mine = await client.json<{ ids: string[] }>(
+      "/api/bookmarks/likes/mine",
+      { headers: { "user-agent": "agent-a" } },
+    )
+    expect(mine.status).toBe(200)
+    expect(mine.body.ids).toEqual([a.body.id])
+  })
+
+  it("不存在的收藏返回 404", async () => {
+    const { status, body } = await client.post<LikeResult>(
+      "/api/bookmarks/missing-id/like",
+    )
+    expect(status).toBe(404)
+    expect(body.code).toBe("NOT_FOUND")
+  })
+})
+
+describe("GET /api/bookmarks/rankings", () => {
+  it("三个榜各自按计数倒序，且不会被 /bookmarks/:id 抢匹配", async () => {
+    const react = await createBookmark("https://github.com/facebook/react")
+    const uv = await createBookmark("https://github.com/astral-sh/uv")
+
+    // react 详情打开 2 次、uv 1 次；跳转次数反过来
+    await client.post(`/api/bookmarks/${react.body.id}/open?type=detail`)
+    await client.post(`/api/bookmarks/${react.body.id}/open?type=detail`)
+    await client.post(`/api/bookmarks/${uv.body.id}/open?type=detail`)
+    await client.post(`/api/bookmarks/${uv.body.id}/open?type=external`)
+    await client.post(`/api/bookmarks/${uv.body.id}/like`)
+
+    const { status, body } = await client.json<{
+      views: Array<{ id: string; count: number; canonical_url: string }>
+      opens: Array<{ id: string; count: number }>
+      likes: Array<{ id: string; count: number }>
+    }>("/api/bookmarks/rankings")
+
+    expect(status).toBe(200)
+    expect(body.views.map((v) => v.id)).toEqual([react.body.id, uv.body.id])
+    expect(body.views[0]!.count).toBe(2)
+    // 访问榜要带 canonical_url，前端据此直接跳转
+    expect(body.views[0]!.canonical_url).toBe("https://github.com/facebook/react")
+    expect(body.opens.map((v) => v.id)).toEqual([uv.body.id])
+    expect(body.likes.map((v) => v.id)).toEqual([uv.body.id])
+  })
+
+  it("计数为 0 的收藏不上榜", async () => {
+    await createBookmark("https://github.com/facebook/react")
+    const { body } = await client.json<{
+      views: unknown[]
+      opens: unknown[]
+      likes: unknown[]
+    }>("/api/bookmarks/rankings")
+
+    expect(body.views).toEqual([])
+    expect(body.opens).toEqual([])
+    expect(body.likes).toEqual([])
   })
 })
 

@@ -10,6 +10,7 @@ import { BookmarksPage } from "@/features/bookmarks/bookmarks-page"
 import { BookmarkDetailPage } from "@/features/bookmarks/bookmark-detail-page"
 import { FeedPage } from "@/features/feed/feed-page"
 import { TagsPage } from "@/features/tags/tags-page"
+import { RankingsPage } from "@/features/rankings/rankings-page"
 import { InsightsPage } from "@/features/insights/insights-page"
 import { SettingsPage } from "@/features/settings/settings-page"
 import { Skeleton } from "@workspace/ui/components/skeleton"
@@ -21,6 +22,7 @@ function AuthLoading() {
     <div className="flex min-h-screen items-center justify-center p-6 bg-background">
       <div className="flex flex-col items-center gap-3">
         <BrandLogo
+          variant="flat"
           className="size-10 rounded-lg bg-primary text-primary-foreground"
           iconClassName="size-6"
         />
@@ -112,6 +114,7 @@ export const router = createBrowserRouter([
               { path: "/", element: <BookmarksPage /> },
               { path: "/folders", element: <Navigate to="/" replace /> },
               { path: "/tags", element: <TagsPage /> },
+              { path: "/rankings", element: <RankingsPage /> },
               { path: "/feed", element: <FeedPage /> },
               { path: "/bookmarks/:id", element: <BookmarkDetailPage /> },
               {

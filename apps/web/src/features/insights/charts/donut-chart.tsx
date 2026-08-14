@@ -1,6 +1,7 @@
 import { SparkleIcon } from "@phosphor-icons/react"
 import { useTranslation } from "react-i18next"
 
+import { EmptyState } from "@/components/empty-state"
 import { CHART_PALETTE, formatNumber } from "@/features/insights/format"
 
 export function DonutChart({
@@ -16,12 +17,7 @@ export function DonutChart({
 
   const sum = items.reduce((acc, i) => acc + i.value, 0)
   if (sum === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/60 py-8 text-center text-xs text-muted-foreground">
-        <SparkleIcon className="mb-1 size-6 text-muted-foreground/40" />
-        <span>{t("charts.donutEmpty")}</span>
-      </div>
-    )
+    return <EmptyState icon={SparkleIcon}>{t("charts.donutEmpty")}</EmptyState>
   }
 
   let cumulativePercent = 0

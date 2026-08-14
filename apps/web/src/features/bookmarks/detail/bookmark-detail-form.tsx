@@ -86,7 +86,7 @@ export function BookmarkDetailForm({
             size="xs"
             onClick={onRegenerate}
             disabled={regenerating}
-            className="h-6 gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+            className="h-6 gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
             <ArrowClockwiseIcon
               className={`size-3 ${regenerating ? "animate-spin" : ""}`}
@@ -183,7 +183,7 @@ export function BookmarkDetailForm({
               <div className="text-xs font-medium">
                 {t("detail.accountSection")}
               </div>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 {t("detail.accountHint")}
               </p>
             </div>
@@ -236,7 +236,7 @@ export function BookmarkDetailForm({
                 <Label className="text-xs font-medium">
                   {t("detail.accountPassword")}
                 </Label>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {bookmark.account_password_set
                     ? t("detail.accountPasswordSet")
                     : t("detail.accountPasswordUnset")}
@@ -278,7 +278,7 @@ export function BookmarkDetailForm({
                 />
               </div>
               {values.passwordDirty ? (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {values.accountPassword === ""
                     ? t("detail.accountPasswordClearHint")
                     : t("detail.accountPasswordSaveFirst")}
@@ -297,7 +297,7 @@ export function BookmarkDetailForm({
               <div className="text-xs font-medium">
                 {t("detail.trackUpdates")}
               </div>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 {t("detail.trackUpdatesDescription")}
               </p>
             </div>
