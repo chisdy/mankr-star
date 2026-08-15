@@ -6,6 +6,10 @@
   "filterAll": "全部类型",
   "timelineTitle": "更新时间线",
   "loadMore": "加载更多",
+  "loadingMore": "正在加载更多…",
+  "loadMoreError": "加载下一页失败",
+  "retry": "重试",
+  "end": "已经到底了",
   "filteredByBookmark": "已按单个仓库筛选",
   "clearFilter": "清除筛选",
   "eventType": {

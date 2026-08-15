@@ -6,6 +6,10 @@
   "filterAll": "All types",
   "timelineTitle": "Update timeline",
   "loadMore": "Load more",
+  "loadingMore": "Loading more…",
+  "loadMoreError": "Failed to load the next page",
+  "retry": "Retry",
+  "end": "You've reached the end",
   "filteredByBookmark": "Filtered to a single repo",
   "clearFilter": "Clear filter",
   "eventType": {

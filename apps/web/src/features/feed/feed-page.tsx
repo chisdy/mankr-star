@@ -1,15 +1,11 @@
 import * as React from "react"
 import { useReadableSearchParams } from "@/lib/search-params"
-import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { UPDATE_EVENT_TYPES, type UpdateEventType } from "@mankr/shared"
 import {
   RssIcon,
-  TagIcon,
-  GitCommitIcon,
-  StarIcon,
-  InfoIcon,
   XIcon,
+  CircleNotchIcon,
   ClockCounterClockwiseIcon,
 } from "@phosphor-icons/react"
 
@@ -23,10 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
+import { FeedEventCard } from "@/features/feed/feed-event-card"
 import { FeedStats } from "@/features/feed/feed-stats"
-import { api } from "@/lib/api"
-import { queryKeys } from "@/lib/query-keys"
-import type { EventType, UpdateEvent } from "@/lib/types"
+import { flattenFeedRows } from "@/features/feed/feed-timeline"
+import { useFeedPages } from "@/features/feed/use-feed-pages"
+import { VirtualFeedList } from "@/features/feed/virtual-feed-list"
+import type { UpdateEvent } from "@/lib/types"
+import { useAppScrollRoot } from "@/hooks/use-app-scroll-root"
 import { useBookmarkDetail } from "@/hooks/use-bookmark-detail"
 import { useRedirectGuestOnUnauthorized } from "@/hooks/use-auth"
 
@@ -42,54 +41,30 @@ export function FeedPage() {
   const { t, i18n } = useTranslation("feed")
   const { openDetail } = useBookmarkDetail()
   const [searchParams, setSearchParams] = useReadableSearchParams()
+  const scrollElement = useAppScrollRoot()
 
   const eventTypeParam = searchParams.get(EVENT_TYPE_PARAM)
   const eventTypeFilter = isEventType(eventTypeParam) ? eventTypeParam : null
   const bookmarkIdFilter = searchParams.get(BOOKMARK_ID_PARAM) || null
-  const filterKey = `${eventTypeFilter ?? ""}:${bookmarkIdFilter ?? ""}`
 
-  // 筛选与页码绑在同一状态：筛选一变，page 立即回到 1，避免「新筛选 + 旧页」多余请求
-  const [pager, setPager] = React.useState<{
-    key: string
-    page: number
-    events: UpdateEvent[]
-  }>({ key: filterKey, page: 1, events: [] })
-
-  const page = pager.key === filterKey ? pager.page : 1
-  const events = pager.key === filterKey ? pager.events : []
-
-  const { data, isLoading, isFetching, isError, error } = useQuery({
-    queryKey: queryKeys.feed.list({
-      eventType: eventTypeFilter ?? undefined,
-      bookmarkId: bookmarkIdFilter ?? undefined,
-      page,
-      pageSize: FEED_PAGE_SIZE,
-    }),
-    queryFn: () =>
-      api.getFeed({
-        eventType: eventTypeFilter ?? undefined,
-        bookmarkId: bookmarkIdFilter ?? undefined,
-        page,
-        pageSize: FEED_PAGE_SIZE,
-      }),
+  // 筛选进 queryKey：改筛选即换一条查询，自然从第 1 页重新开始
+  const {
+    items,
+    isLoading,
+    isError,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    loadMoreError,
+    fetchNextPage,
+  } = useFeedPages({
+    eventType: eventTypeFilter ?? undefined,
+    bookmarkId: bookmarkIdFilter ?? undefined,
+    pageSize: FEED_PAGE_SIZE,
   })
 
-  useRedirectGuestOnUnauthorized(isError ? (error as Error) : null)
+  useRedirectGuestOnUnauthorized(isError ? error : null)
 
-  React.useEffect(() => {
-    if (!data) return
-    setPager((prev) => ({
-      key: filterKey,
-      page: data.page,
-      events:
-        data.page === 1
-          ? data.items
-          : [...(prev.key === filterKey ? prev.events : []), ...data.items],
-    }))
-  }, [data, filterKey])
-
-  const total = data?.total ?? 0
-  const hasMore = events.length < total
   const isFiltered = Boolean(eventTypeFilter || bookmarkIdFilter)
 
   const setEventTypeFilter = (value: string | null) => {
@@ -105,14 +80,6 @@ export function FeedPage() {
     setSearchParams(next)
   }
 
-  const loadMore = () => {
-    setPager({
-      key: filterKey,
-      page: page + 1,
-      events,
-    })
-  }
-
   const eventTypeItems = React.useMemo(
     () => [
       { value: null, label: t("filterAll") },
@@ -124,47 +91,17 @@ export function FeedPage() {
     [t]
   )
 
-  // Group events by date (YYYY-MM-DD)
-  const groupedEvents = React.useMemo(() => {
-    const map = new Map<string, UpdateEvent[]>()
-    events.forEach((evt) => {
-      const dateStr = new Date(evt.detected_at).toLocaleDateString(
-        i18n.language,
-        {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }
-      )
-      if (!map.has(dateStr)) {
-        map.set(dateStr, [])
-      }
-      map.get(dateStr)!.push(evt)
-    })
-    return Array.from(map.entries())
-  }, [events, i18n.language])
+  const rows = React.useMemo(
+    () => flattenFeedRows(items, i18n.language),
+    [items, i18n.language]
+  )
 
-  const renderEventIcon = (type: EventType) => {
-    switch (type) {
-      case "release":
-        return (
-          <TagIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
-        )
-      case "push":
-        return (
-          <GitCommitIcon className="size-4 text-sky-600 dark:text-sky-400" />
-        )
-      case "stars_delta":
-        return (
-          <StarIcon className="size-4 text-amber-500/90 dark:text-amber-400" />
-        )
-      case "meta_change":
-      default:
-        return (
-          <InfoIcon className="size-4 text-violet-500 dark:text-violet-400" />
-        )
-    }
-  }
+  const renderEvent = React.useCallback(
+    (event: UpdateEvent) => (
+      <FeedEventCard event={event} onOpen={() => openDetail(event.bookmark_id)} />
+    ),
+    [openDetail]
+  )
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-12">
@@ -239,7 +176,7 @@ export function FeedPage() {
             <Skeleton className="h-20 w-full rounded-lg" />
             <Skeleton className="h-20 w-full rounded-lg" />
           </div>
-        ) : events.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center space-y-3 rounded-xl border border-dashed border-border/80 bg-card p-12 text-center">
             <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <RssIcon className="size-5" />
@@ -250,89 +187,48 @@ export function FeedPage() {
           </div>
         ) : (
           <>
-            <div className="space-y-8">
-              {groupedEvents.map(([date, items]) => (
-                <div key={date} className="space-y-3">
-                  <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                    {date}
-                  </h3>
+            <VirtualFeedList
+              rows={rows}
+              scrollElement={scrollElement}
+              renderEvent={renderEvent}
+            />
 
-                  <div className="ml-1 space-y-2 border-l-2 border-border/60 pl-3 md:pl-4">
-                    {items.map((evt) => {
-                      let payloadData: Record<string, string> = {}
-                      try {
-                        if (evt.payload_json) {
-                          payloadData = JSON.parse(evt.payload_json)
-                        }
-                      } catch {
-                        // ignore
-                      }
-
-                      return (
-                        <div
-                          key={evt.id}
-                          onClick={() => openDetail(evt.bookmark_id)}
-                          className="group flex cursor-pointer flex-col gap-1.5 rounded-lg border border-border/60 bg-card p-3.5 text-card-foreground shadow-2xs transition-all hover:border-border"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex min-w-0 items-center gap-2">
-                              {renderEventIcon(evt.event_type)}
-                              <span className="truncate text-xs font-semibold text-foreground transition-colors group-hover:text-primary md:text-sm">
-                                {evt.bookmark_external_id || evt.bookmark_title}
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className="h-4.5 px-1.5 text-[10px] font-normal"
-                              >
-                                {t(`eventType.${evt.event_type}`)}
-                              </Badge>
-                            </div>
-
-                            <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                              {new Date(evt.detected_at).toLocaleTimeString(
-                                i18n.language,
-                                {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                }
-                              )}
-                            </span>
-                          </div>
-
-                          {(payloadData.tag ||
-                            payloadData.title ||
-                            payloadData.commit) && (
-                            <p className="pl-6 text-xs text-muted-foreground">
-                              {payloadData.tag && (
-                                <span className="mr-1.5 font-mono font-medium text-foreground">
-                                  {payloadData.tag}
-                                </span>
-                              )}
-                              {payloadData.title || payloadData.commit}
-                            </p>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
+            <div
+              className="flex min-h-9 items-center justify-center pt-2 text-xs text-muted-foreground"
+              aria-live="polite"
+            >
+              {loadMoreError ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-destructive">{t("loadMoreError")}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={fetchNextPage}
+                  >
+                    {t("retry")}
+                  </Button>
                 </div>
-              ))}
-            </div>
-
-            {hasMore && (
-              <div className="flex justify-center pt-2">
+              ) : isFetchingNextPage ? (
+                <span className="flex items-center gap-1.5">
+                  <CircleNotchIcon className="size-3.5 animate-spin" />
+                  {t("loadingMore")}
+                </span>
+              ) : hasNextPage ? (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={loadMore}
-                  disabled={isFetching}
-                  className="text-xs"
+                  onClick={fetchNextPage}
+                  className="h-8 text-xs"
                 >
                   {t("loadMore")}
                 </Button>
-              </div>
-            )}
+              ) : (
+                <span>{t("end")}</span>
+              )}
+            </div>
           </>
         )}
       </div>

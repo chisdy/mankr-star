@@ -43,6 +43,12 @@ export const queryKeys = {
       page?: number
       pageSize?: number
     }) => ["feed", "list", params] as const,
+    /** 时间线追加分页；页码是 pageParam 不进 key，与 feed.list 分开避免互相污染 */
+    infinite: (params?: {
+      eventType?: string
+      bookmarkId?: string
+      pageSize?: number
+    }) => ["feed", "infinite", params] as const,
     stats: (range: string) => ["feed", "stats", range] as const,
   },
   insights: {

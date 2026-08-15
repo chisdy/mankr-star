@@ -6,7 +6,7 @@ import Masonry from "react-masonry-css"
 import { Button } from "@workspace/ui/components/button"
 import { cn } from "@workspace/ui/lib/utils"
 import type { Bookmark, BookmarkPaginationMode } from "@/lib/types"
-import { getAppScrollRoot } from "@/lib/scroll-root"
+import { useAppScrollRoot } from "@/hooks/use-app-scroll-root"
 import { BookmarkCard } from "./bookmark-card"
 import { BookmarkRow } from "./bookmark-row"
 import { paginationItems } from "./bookmark-pagination"
@@ -324,15 +324,6 @@ function Paginator({
       </Button>
     </nav>
   )
-}
-
-/** 滚动根在 AppShell 里，挂载后才拿得到 */
-function useAppScrollRoot(): HTMLElement | null {
-  const [element, setElement] = React.useState<HTMLElement | null>(null)
-  React.useLayoutEffect(() => {
-    setElement(getAppScrollRoot())
-  }, [])
-  return element
 }
 
 /**
