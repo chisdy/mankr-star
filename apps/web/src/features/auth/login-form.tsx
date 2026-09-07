@@ -127,13 +127,12 @@ export function LoginForm({ onSuccess, footer, autoFocus = true }: LoginFormProp
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2.5 flex size-7 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+              className="absolute right-2.5 flex size-7 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={
                 showPassword
                   ? t("common:accessibility.hidePassword")
                   : t("common:accessibility.showPassword")
               }
-              tabIndex={-1}
             >
               {showPassword ? (
                 <EyeSlashIcon className="size-4" />
@@ -147,7 +146,7 @@ export function LoginForm({ onSuccess, footer, autoFocus = true }: LoginFormProp
         <Button
           type="submit"
           disabled={loginMutation.isPending}
-          className="mt-2 h-10 w-full text-xs font-semibold tracking-wide transition-all shadow-xs active:scale-[0.99]"
+          className="mt-2 h-10 w-full text-xs font-semibold tracking-wide transition-all shadow-xs active:scale-[0.98] motion-reduce:active:scale-100"
         >
           {loginMutation.isPending ? (
             <span className="inline-flex items-center gap-2">

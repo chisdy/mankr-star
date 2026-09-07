@@ -58,7 +58,7 @@
     --card-foreground: oklch(0.141 0.005 285.823);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.141 0.005 285.823);
-    --primary: oklch(0.58 0.16 75);
+    --primary: oklch(0.54 0.16 75);
     --primary-foreground: oklch(0.985 0.003 75);
     --secondary: oklch(0.967 0.001 286.375);
     --secondary-foreground: oklch(0.21 0.006 285.885);
@@ -69,7 +69,7 @@
     --destructive: oklch(0.56 0.18 25);
     --border: oklch(0.92 0.004 286.32);
     --input: oklch(0.92 0.004 286.32);
-    --ring: oklch(0.58 0.16 75 / 40%);
+    --ring: oklch(0.54 0.16 75 / 40%);
     --chart-1: oklch(0.65 0.15 75);
     --chart-2: oklch(0.65 0.10 182);
     --chart-3: oklch(0.62 0.11 16);
@@ -78,12 +78,12 @@
     --radius: 0.625rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.141 0.005 285.823);
-    --sidebar-primary: oklch(0.58 0.16 75);
+    --sidebar-primary: oklch(0.54 0.16 75);
     --sidebar-primary-foreground: oklch(0.985 0.003 75);
     --sidebar-accent: oklch(0.967 0.001 286.375);
     --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
     --sidebar-border: oklch(0.92 0.004 286.32);
-    --sidebar-ring: oklch(0.58 0.16 75 / 40%);
+    --sidebar-ring: oklch(0.54 0.16 75 / 40%);
 }
 
 /* Dark: warm maple neutrals (hue ~60–75) + Maple primary */

@@ -1,6 +1,6 @@
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
-import { ChevronDown } from "lucide-react"
+import { CaretDownIcon } from "@phosphor-icons/react"
 import { type HTMLMotionProps, motion, useReducedMotion } from "motion/react"
 import {
   type ComponentPropsWithRef,
@@ -317,7 +317,7 @@ export function MessageBubbleCollapsible({
           animate={{ rotate: currentOpen ? 180 : 0 }}
           transition={reduce ? { duration: 0 } : SPRING_SWAP}
         >
-          <ChevronDown className="size-3.5" />
+          <CaretDownIcon className="size-3.5" />
         </motion.span>
       </button>
     </div>

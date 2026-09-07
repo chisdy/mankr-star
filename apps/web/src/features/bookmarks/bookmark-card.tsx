@@ -74,9 +74,16 @@ export function BookmarkCard({
     !isGithub && Boolean(siteLabel) && (!rawOwner || !isOwnerInTitle)
   const ownerDisplay = isTwitter && rawOwner ? `@${rawOwner}` : siteLabel
 
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("button, a, input, [role='button']")) {
+      return
+    }
+    onClick?.()
+  }
+
   return (
     <div
-      onClick={onClick}
+      onClick={handleCardClick}
       className={cn(
         "group relative flex cursor-pointer flex-col justify-between rounded-xl border border-border/60 bg-card p-4 text-card-foreground shadow-2xs",
         // 保持流畅硬件加速交互
@@ -90,7 +97,7 @@ export function BookmarkCard({
       {selectable ? (
         <BookmarkSelectControl
           selected={selected}
-          ariaLabel={t("batch.selectAria")}
+          ariaLabel={t("batch.selectBookmarkAria", { title: displayTitle })}
           className="top-1.5 right-1.5"
           onSelectedChange={(next) => onSelectedChange?.(bookmark.id, next)}
         />
@@ -122,11 +129,15 @@ export function BookmarkCard({
                   referrerPolicy="no-referrer"
                 />
               ) : null}
-              <h3
-                className="flex-1 truncate text-sm font-semibold tracking-tight text-foreground transition-colors duration-200 group-hover:text-primary"
-                title={displayTitle}
-              >
-                {displayTitle}
+              <h3 className="min-w-0 flex-1">
+                <button
+                  type="button"
+                  onClick={onClick}
+                  title={displayTitle}
+                  className="block w-full truncate text-left text-sm font-semibold tracking-tight text-foreground transition-colors duration-200 hover:underline group-hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xs"
+                >
+                  {displayTitle}
+                </button>
               </h3>
             </div>
 
@@ -151,7 +162,7 @@ export function BookmarkCard({
             {bookmark.folder_name && (
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <FolderIcon className="size-3.5" />
-                <span className="truncate max-w-[120px]">
+                <span className="truncate max-w-[120px]" title={bookmark.folder_name}>
                   {bookmark.folder_name}
                 </span>
               </span>
@@ -162,7 +173,7 @@ export function BookmarkCard({
                 {bookmark.folder_name ? (
                   <span className="text-muted-foreground/30">·</span>
                 ) : null}
-                <span className="truncate max-w-[120px] text-xs text-muted-foreground">
+                <span className="truncate max-w-[120px] text-xs text-muted-foreground" title={ownerDisplay}>
                   {ownerDisplay}
                 </span>
               </>
@@ -217,7 +228,7 @@ export function BookmarkCard({
             bookmark.description ? (
               <div className="space-y-1">
                 <p className="line-clamp-2">{bookmark.description}</p>
-                <p className="text-xs text-muted-foreground/75">
+                <p className="text-xs text-muted-foreground">
                   {t("card.aiPending")}
                 </p>
               </div>
@@ -240,13 +251,13 @@ export function BookmarkCard({
               <Badge
                 key={tag}
                 variant="secondary"
-                className="h-5 px-1.5 text-xs font-normal bg-muted/50 text-muted-foreground/80 hover:bg-muted hover:text-foreground border-transparent"
+                className="h-5 px-1.5 text-xs font-normal bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground border-transparent"
               >
                 #{tag}
               </Badge>
             ))}
             {hiddenTagsCount > 0 && (
-              <span className="text-xs text-muted-foreground/70">
+              <span className="text-xs text-muted-foreground">
                 +{hiddenTagsCount}
               </span>
             )}
@@ -258,7 +269,7 @@ export function BookmarkCard({
       <div className="flex items-center justify-between text-xs text-muted-foreground -mx-4 -mb-4 mt-3 px-4 py-2 border-t border-border/50 rounded-b-xl min-w-0">
         <div className="flex items-center gap-2.5 min-w-0">
           {formattedDate && (
-            <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground/75">
+            <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
               <ClockIcon className="size-3.5" />
               {formattedDate}
             </span>
@@ -266,7 +277,7 @@ export function BookmarkCard({
 
           {viewCount > 0 && (
             <span
-              className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground/75"
+              className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"
               title={t("card.viewCount")}
             >
               <EyeIcon className="size-3.5" />

@@ -138,7 +138,7 @@ export function LocaleSwitcher({
             type="button"
             onClick={() => select(locale)}
             className={cn(
-              "rounded px-1 py-0.5 transition-colors hover:text-foreground",
+              "relative rounded px-1.5 py-1 text-xs transition-colors hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring before:absolute before:inset-[-4px] before:content-['']",
               current === locale && "font-semibold text-foreground",
             )}
           >

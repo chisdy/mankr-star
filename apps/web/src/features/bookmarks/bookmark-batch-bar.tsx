@@ -15,6 +15,14 @@ import type { BookmarkPricing } from "@mankr/shared"
 
 import { Button } from "@workspace/ui/components/button"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -100,10 +108,12 @@ export function BookmarkBatchBar({
     selectableIds.length > 0 &&
     selectableIds.every((id) => selectedSet.has(id))
   const anchor = useAppScrollContentAnchor(visible)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
 
   const mutation = useMutation({
     mutationFn: (action: BatchAction) => api.batchBookmarks(selectedIds, action),
     onSuccess: (result, action) => {
+      setDeleteConfirmOpen(false)
       void queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.all })
       void queryClient.invalidateQueries({ queryKey: queryKeys.tags.all })
       void queryClient.invalidateQueries({ queryKey: queryKeys.insights.all })
@@ -253,7 +263,7 @@ export function BookmarkBatchBar({
                 variant="destructive"
                 className="h-8 gap-1.5 text-xs"
                 disabled={mutation.isPending}
-                onClick={() => mutation.mutate({ type: "delete" })}
+                onClick={() => setDeleteConfirmOpen(true)}
               >
                 <TrashIcon className="size-3.5" />
                 {t("batch.delete")}
@@ -262,7 +272,64 @@ export function BookmarkBatchBar({
           </div>
         </motion.div>
       ) : null}
+      <BookmarkBatchDeleteDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        count={count}
+        pending={mutation.isPending}
+        onConfirm={() => mutation.mutate({ type: "delete" })}
+      />
     </AnimatePresence>,
     document.body,
+  )
+}
+
+function BookmarkBatchDeleteDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  pending,
+  count,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: () => void
+  pending: boolean
+  count: number
+}) {
+  const { t } = useTranslation(["bookmarks", "common"])
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>{t("batch.deleteConfirmTitle")}</DialogTitle>
+          <DialogDescription>
+            {t("batch.deleteConfirmBody", { count })}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={pending}
+            className="h-8 text-xs"
+          >
+            {t("common:actions.cancel")}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={onConfirm}
+            disabled={pending}
+            className="h-8 text-xs font-medium"
+          >
+            {pending ? t("common:actions.wait") : t("batch.deleteConfirmAction")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

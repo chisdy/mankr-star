@@ -73,7 +73,7 @@ function FolderCount({ count, hidden }: { count?: number; hidden?: boolean }) {
     <span
       className={cn(
         "inline-flex size-6 shrink-0 items-center justify-end font-mono text-[10px] text-muted-foreground tabular-nums transition-opacity",
-        "group-hover/folder:opacity-0",
+        "group-hover/folder:opacity-0 group-focus-within/folder:opacity-0 focus-within:opacity-0",
         hidden && "opacity-0"
       )}
     >
@@ -146,7 +146,7 @@ function FolderTreeNode({
             <button
               type="button"
               onClick={() => onSelect(folder.id)}
-              className="flex min-w-0 flex-1 items-center gap-1.5 text-left outline-none"
+              className="flex min-w-0 flex-1 items-center gap-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
             >
               <FolderIconAnimated
                 className="shrink-0"
@@ -182,12 +182,13 @@ function FolderTreeNode({
               />
             </button>
 
-            {/* 覆盖在计数上：仅 hover / 菜单打开时显示 */}
+            {/* 覆盖在计数上：仅 hover / 聚焦 / 菜单打开时显示 */}
             {canManage ? (
               <div
                 className={cn(
                   "pointer-events-none absolute top-1/2 right-1.5 z-10 -translate-y-1/2 opacity-0 transition-opacity",
                   "group-hover/folder:pointer-events-auto group-hover/folder:opacity-100",
+                  "group-focus-within/folder:pointer-events-auto group-focus-within/folder:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100",
                   menuOpen && "pointer-events-auto opacity-100"
                 )}
               >

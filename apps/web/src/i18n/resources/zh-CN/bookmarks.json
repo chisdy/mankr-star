@@ -226,6 +226,10 @@
       "setPricing": "已更新付费属性 {{count}} 项",
       "regenerateAi": "已提交 {{count}} 项重新生成"
     },
-    "selectAria": "选择收藏"
+    "selectAria": "选择收藏",
+    "selectBookmarkAria": "选择收藏 {{title}}",
+    "deleteConfirmTitle": "批量删除收藏",
+    "deleteConfirmBody": "确定要删除选中的 {{count}} 项收藏吗？此操作不可撤销。",
+    "deleteConfirmAction": "确认删除"
   }
 }

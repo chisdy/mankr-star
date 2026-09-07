@@ -1,4 +1,4 @@
-import { ChevronDown, ListTodo } from "lucide-react"
+import { CaretDownIcon, ListChecksIcon } from "@phosphor-icons/react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import {
   type ReactNode,
@@ -94,7 +94,7 @@ function TodoHeaderIcon({ complete }: { complete: boolean }) {
             transition={reduce ? { duration: 0 } : SPRING_SWAP}
             className="absolute grid place-items-center text-muted-foreground"
           >
-            <ListTodo className="size-4" />
+            <ListChecksIcon className="size-4" />
           </motion.span>
         )}
       </AnimatePresence>
@@ -308,7 +308,7 @@ export function TodoList({
           transition={reduce ? { duration: 0 } : SPRING_SWAP}
           className="text-muted-foreground/50 transition-colors group-hover:text-muted-foreground"
         >
-          <ChevronDown className="size-3.5" />
+          <CaretDownIcon className="size-3.5" />
         </motion.span>
       </button>
 

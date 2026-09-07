@@ -46,17 +46,31 @@ export function FeedEventCard({
     [event.payload_json],
   )
 
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("button, a, input, [role='button']")) {
+      return
+    }
+    onOpen()
+  }
+
+  const titleText = event.bookmark_external_id || event.bookmark_title
+
   return (
     <div
-      onClick={onOpen}
+      onClick={handleCardClick}
       className="group flex cursor-pointer flex-col gap-1.5 rounded-lg border border-border/60 bg-card p-3.5 text-card-foreground shadow-2xs transition-all hover:border-border"
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <EventIcon type={event.event_type} />
-          <span className="truncate text-xs font-semibold text-foreground transition-colors group-hover:text-primary md:text-sm">
-            {event.bookmark_external_id || event.bookmark_title}
-          </span>
+          <button
+            type="button"
+            onClick={onOpen}
+            title={titleText}
+            className="truncate text-left text-xs font-semibold text-foreground transition-colors hover:underline group-hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xs md:text-sm"
+          >
+            {titleText}
+          </button>
           <Badge
             variant="outline"
             className="h-4.5 px-1.5 text-[10px] font-normal"

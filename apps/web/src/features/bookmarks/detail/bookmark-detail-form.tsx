@@ -55,8 +55,11 @@ export function BookmarkDetailForm({
   return (
     <div className="space-y-5 p-4 text-sm md:p-6">
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium">{t("detail.titleLabel")}</Label>
+        <Label htmlFor="bookmark-detail-title" className="text-xs font-medium">
+          {t("detail.titleLabel")}
+        </Label>
         <Input
+          id="bookmark-detail-title"
           value={values.title}
           onChange={(e) => patch({ title: e.target.value })}
           placeholder={t("detail.titlePlaceholder")}
@@ -65,10 +68,11 @@ export function BookmarkDetailForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium">
+        <Label htmlFor="bookmark-detail-description" className="text-xs font-medium">
           {t("detail.descriptionLabel")}
         </Label>
         <Textarea
+          id="bookmark-detail-description"
           value={values.description}
           onChange={(e) => patch({ description: e.target.value })}
           placeholder={t("detail.descriptionPlaceholder")}
@@ -78,7 +82,7 @@ export function BookmarkDetailForm({
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-medium">
+          <Label htmlFor="bookmark-detail-summary" className="text-xs font-medium">
             {t("detail.summaryLabel")}
           </Label>
           <Button
@@ -95,6 +99,7 @@ export function BookmarkDetailForm({
           </Button>
         </div>
         <Textarea
+          id="bookmark-detail-summary"
           value={values.summaryAi}
           onChange={(e) => patch({ summaryAi: e.target.value })}
           placeholder={t("detail.summaryPlaceholder")}
@@ -103,8 +108,11 @@ export function BookmarkDetailForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium">{t("detail.folderLabel")}</Label>
+        <Label htmlFor="bookmark-detail-folder" className="text-xs font-medium">
+          {t("detail.folderLabel")}
+        </Label>
         <FolderSelect
+          id="bookmark-detail-folder"
           folders={folders}
           value={values.folderId || null}
           onValueChange={(id) => patch({ folderId: id || "" })}
@@ -113,8 +121,11 @@ export function BookmarkDetailForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium">{t("detail.tagsEditable")}</Label>
+        <Label htmlFor="bookmark-detail-tags" className="text-xs font-medium">
+          {t("detail.tagsEditable")}
+        </Label>
         <Input
+          id="bookmark-detail-tags"
           value={values.tagsInput}
           onChange={(e) => patch({ tagsInput: e.target.value })}
           placeholder="react, ui, components"
@@ -123,8 +134,11 @@ export function BookmarkDetailForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium">{t("detail.notesLabel")}</Label>
+        <Label htmlFor="bookmark-detail-notes" className="text-xs font-medium">
+          {t("detail.notesLabel")}
+        </Label>
         <Textarea
+          id="bookmark-detail-notes"
           value={values.notes}
           onChange={(e) => patch({ notes: e.target.value })}
           placeholder={t("detail.notesPlaceholder")}
@@ -133,7 +147,7 @@ export function BookmarkDetailForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium">
+        <Label htmlFor="bookmark-detail-pricing" className="text-xs font-medium">
           {t("detail.pricingLabel")}
         </Label>
         <Select
@@ -149,7 +163,7 @@ export function BookmarkDetailForm({
             patch({ pricing: (val as PricingFormValue) ?? null })
           }
         >
-          <SelectTrigger className="h-9 w-full text-xs">
+          <SelectTrigger id="bookmark-detail-pricing" className="h-9 w-full text-xs">
             <SelectValue placeholder={t("detail.pricingUnset")} />
           </SelectTrigger>
           <SelectContent>
@@ -203,11 +217,15 @@ export function BookmarkDetailForm({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium">
+              <Label
+                htmlFor="bookmark-account-username"
+                className="text-xs font-medium"
+              >
                 {t("detail.accountUsername")}
               </Label>
               <div className="relative flex items-center">
                 <Input
+                  id="bookmark-account-username"
                   value={values.accountUsername}
                   onChange={(e) =>
                     patch({
@@ -233,7 +251,10 @@ export function BookmarkDetailForm({
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between gap-2">
-                <Label className="text-xs font-medium">
+                <Label
+                  htmlFor="bookmark-account-password"
+                  className="text-xs font-medium"
+                >
                   {t("detail.accountPassword")}
                 </Label>
                 <span className="text-xs text-muted-foreground">
@@ -244,6 +265,7 @@ export function BookmarkDetailForm({
               </div>
               <div className="relative flex items-center">
                 <Input
+                  id="bookmark-account-password"
                   type="password"
                   value={values.accountPassword}
                   onChange={(e) =>

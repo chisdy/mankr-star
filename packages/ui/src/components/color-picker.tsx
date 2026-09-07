@@ -42,6 +42,8 @@ export type ColorPickerProps = {
   id?: string
   className?: string
   "aria-label"?: string
+  presetsAriaLabel?: string
+  hexInputAriaLabel?: string
 }
 
 /**
@@ -58,6 +60,8 @@ export function ColorPicker({
   id,
   className,
   "aria-label": ariaLabel = "选择颜色",
+  presetsAriaLabel = "预设颜色",
+  hexInputAriaLabel = "十六进制颜色",
 }: ColorPickerProps) {
   const rootRef = React.useRef<HTMLDivElement>(null)
   const [open, setOpen] = React.useState(false)
@@ -142,7 +146,7 @@ export function ColorPicker({
         >
           <div
             role="radiogroup"
-            aria-label="预设颜色"
+            aria-label={presetsAriaLabel}
             className="grid grid-cols-6 gap-1.5"
           >
             {presets.map((swatch) => {
@@ -202,7 +206,7 @@ export function ColorPicker({
               }}
               maxLength={6}
               spellCheck={false}
-              aria-label="十六进制颜色"
+              aria-label={hexInputAriaLabel}
               className="h-full border-0 bg-transparent px-1.5 font-mono text-xs uppercase shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
             />
           </div>

@@ -945,11 +945,17 @@ export function SettingsPage() {
           </p>
         </div>
 
-        <div className="bg-card p-4 rounded-xl border border-border/60 grid grid-cols-3 gap-3">
+        <div
+          role="radiogroup"
+          aria-label={t("appearance.section")}
+          className="bg-card p-4 rounded-xl border border-border/60 grid grid-cols-3 gap-3"
+        >
           <button
             type="button"
+            role="radio"
+            aria-checked={theme === "system"}
             onClick={() => setTheme("system")}
-            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all ${
+            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               theme === "system"
                 ? "border-primary bg-primary/5 text-primary"
                 : "border-border text-muted-foreground hover:bg-muted/50"
@@ -961,8 +967,10 @@ export function SettingsPage() {
 
           <button
             type="button"
+            role="radio"
+            aria-checked={theme === "light"}
             onClick={() => setTheme("light")}
-            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all ${
+            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               theme === "light"
                 ? "border-primary bg-primary/5 text-primary"
                 : "border-border text-muted-foreground hover:bg-muted/50"
@@ -974,8 +982,10 @@ export function SettingsPage() {
 
           <button
             type="button"
+            role="radio"
+            aria-checked={theme === "dark"}
             onClick={() => setTheme("dark")}
-            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all ${
+            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               theme === "dark"
                 ? "border-primary bg-primary/5 text-primary"
                 : "border-border text-muted-foreground hover:bg-muted/50"

@@ -1,4 +1,4 @@
-import { ArrowUp, Plus, Square } from "lucide-react"
+import { ArrowUpIcon, PlusIcon, SquareIcon } from "@phosphor-icons/react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import {
   type FormEvent,
@@ -224,7 +224,7 @@ export function PromptInput({
                 animate={{ rotate: actionsOpen ? 45 : 0 }}
                 transition={reduce ? { duration: 0 } : SPRING_SWAP}
               >
-                <Plus className="size-4" />
+                <PlusIcon className="size-4" />
               </motion.span>
             </PopoverTrigger>
 
@@ -341,9 +341,9 @@ export function PromptInput({
               className="grid place-items-center"
             >
               {loading ? (
-                <Square className="size-3 fill-current" />
+                <SquareIcon weight="fill" className="size-3" />
               ) : (
-                <ArrowUp className="size-4" />
+                <ArrowUpIcon className="size-4" />
               )}
             </motion.span>
           </AnimatePresence>

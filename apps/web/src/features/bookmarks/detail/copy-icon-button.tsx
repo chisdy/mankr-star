@@ -22,9 +22,8 @@ export function CopyIconButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      tabIndex={-1}
       className={cn(
-        "flex size-7 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
+        "flex size-7 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
         className,
       )}
     >

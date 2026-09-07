@@ -273,9 +273,9 @@ export function RankingsPage() {
                   <span>{formatCount(item.count)}</span>
                 </span>
 
-                {/* 辅助快捷按钮：常态不占位，悬停时从右向左平滑滑入推出 */}
+                {/* 辅助快捷按钮：常态不占位，悬停或聚焦时从右向左平滑滑入推出 */}
                 {kind !== "opens" && (
-                  <div className="flex w-0 translate-x-2 items-center overflow-hidden opacity-0 transition-all duration-200 ease-out group-hover/row:w-7 group-hover/row:translate-x-0 group-hover/row:opacity-100 group-hover/row:pl-1">
+                  <div className="flex w-0 translate-x-2 items-center overflow-hidden opacity-0 transition-all duration-200 ease-out group-hover/row:w-7 group-hover/row:translate-x-0 group-hover/row:opacity-100 group-hover/row:pl-1 focus-within:w-7 focus-within:translate-x-0 focus-within:opacity-100 focus-within:pl-1 group-focus-within/row:w-7 group-focus-within/row:translate-x-0 group-focus-within/row:opacity-100 group-focus-within/row:pl-1">
                     <ExternalLink
                       href={item.canonical_url}
                       onClick={(e) => {
@@ -284,7 +284,7 @@ export function RankingsPage() {
                       }}
                       title={t("ranking.openLink")}
                       aria-label={t("ranking.openLink")}
-                      className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+                      className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <ArrowSquareOutIcon className="size-3.5" />
                     </ExternalLink>

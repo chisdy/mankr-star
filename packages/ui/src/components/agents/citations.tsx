@@ -1,4 +1,9 @@
-import { BookOpenText, ChevronDown, ExternalLink, Globe2 } from "lucide-react"
+import {
+  ArrowSquareOutIcon,
+  BookOpenTextIcon,
+  CaretDownIcon,
+  GlobeIcon,
+} from "@phosphor-icons/react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import type { MouseEvent } from "react"
 import { type ReactNode, useCallback, useId, useState } from "react"
@@ -120,7 +125,7 @@ export function CitationFavicon({
           className="size-4 rounded-sm object-contain"
         />
       ) : (
-        <Globe2 className="size-3.5" />
+        <GlobeIcon className="size-3.5" />
       )}
     </span>
   )
@@ -184,7 +189,7 @@ function CitationRow({
           aria-hidden="true"
           className="grid size-5 shrink-0 place-items-center pt-0.5 text-muted-foreground/40 transition-colors group-hover/citation:text-muted-foreground"
         >
-          <ExternalLink className="size-3.5" />
+          <ArrowSquareOutIcon className="size-3.5" />
         </span>
       ) : null}
     </>
@@ -213,7 +218,7 @@ function CitationRow({
             aria-label={externalLabel}
             className="grid size-5 shrink-0 place-items-center rounded-md pt-0.5 text-muted-foreground/40 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <ExternalLink className="size-3.5" />
+            <ArrowSquareOutIcon className="size-3.5" />
           </a>
         ) : null}
       </div>
@@ -321,7 +326,7 @@ export function Citations({
         onClick={() => setOpen(!currentOpen)}
         className="group -ml-1 flex min-h-8 items-center gap-2 rounded-lg px-1 text-left text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <BookOpenText className="size-4" />
+        <BookOpenTextIcon className="size-4" />
         <span className="font-medium">{title}</span>
         <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums">
           {citations.length}
@@ -332,7 +337,7 @@ export function Citations({
           transition={reduce ? { duration: 0 } : SPRING_SWAP}
           className="text-muted-foreground/60"
         >
-          <ChevronDown className="size-3.5" />
+          <CaretDownIcon className="size-3.5" />
         </motion.span>
       </button>
 

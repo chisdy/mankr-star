@@ -1,16 +1,16 @@
 import {
-  Check,
-  Circle,
-  FileText,
-  Globe2,
+  ChatDotsIcon,
+  CheckIcon,
+  CircleIcon,
+  FileTextIcon,
+  GlobeIcon,
   ImageIcon,
-  MessageSquare,
-  PencilLine,
-  Search,
-  Sparkles,
-  SquareTerminal,
-  Wrench,
-} from "lucide-react"
+  MagnifyingGlassIcon,
+  PencilSimpleLineIcon,
+  SparkleIcon,
+  TerminalWindowIcon,
+  WrenchIcon,
+} from "@phosphor-icons/react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import type { ReactNode } from "react"
 
@@ -37,7 +37,7 @@ function StepRow({ item }: { item: AgentActivityStep }) {
         className="mt-0.5 grid size-4 shrink-0 place-items-center text-muted-foreground/70"
       >
         {state === "complete" ? (
-          <Check className="size-4" strokeWidth={1.8} />
+          <CheckIcon className="size-4" weight="bold" />
         ) : state === "active" ? (
           <span className="relative grid size-3 place-items-center">
             <motion.span
@@ -48,7 +48,7 @@ function StepRow({ item }: { item: AgentActivityStep }) {
             <span className="size-1.5 rounded-full bg-foreground/60" />
           </span>
         ) : (
-          <Circle className="size-3" strokeWidth={1.5} />
+          <CircleIcon className="size-3" />
         )}
       </span>
       <span
@@ -84,7 +84,7 @@ function SearchResultRow({ result }: { result: AgentSearchResult }) {
         aria-hidden="true"
         className="grid size-5 shrink-0 place-items-center text-muted-foreground"
       >
-        {result.icon ?? <Globe2 className="size-3" strokeWidth={2} />}
+        {result.icon ?? <GlobeIcon className="size-3" />}
       </span>
       <span className="min-w-0 flex-1 truncate font-medium text-foreground/90">
         {result.title}
@@ -138,10 +138,9 @@ function SearchRow({
   return (
     <div className="space-y-0.5">
       <div className="flex min-h-7 items-center gap-2.5 rounded-md px-1.5 py-1 text-muted-foreground">
-        <Search
+        <MagnifyingGlassIcon
           aria-hidden="true"
           className="size-4 shrink-0"
-          strokeWidth={1.7}
         />
         <span className="min-w-0 truncate">{item.query}</span>
       </div>
@@ -182,12 +181,12 @@ function SearchRow({
 }
 
 function ActionIcon({ action }: { action: string }) {
-  if (action === "read") return <FileText className="size-4" />
+  if (action === "read") return <FileTextIcon className="size-4" />
   if (action === "edit" || action === "write") {
-    return <PencilLine className="size-4" />
+    return <PencilSimpleLineIcon className="size-4" />
   }
-  if (action === "run") return <SquareTerminal className="size-4" />
-  return <Wrench className="size-4" />
+  if (action === "run") return <TerminalWindowIcon className="size-4" />
+  return <WrenchIcon className="size-4" />
 }
 
 function ToolRow({ item }: { item: AgentActivityTool }) {
@@ -221,12 +220,12 @@ function ToolRow({ item }: { item: AgentActivityTool }) {
 }
 
 function TraceIcon({ kind }: { kind: AgentActivityTrace["kind"] }) {
-  if (kind === "thinking") return <Sparkles className="size-4" />
-  if (kind === "message") return <MessageSquare className="size-4" />
-  if (kind === "write") return <PencilLine className="size-4" />
-  if (kind === "run") return <SquareTerminal className="size-4" />
+  if (kind === "thinking") return <SparkleIcon className="size-4" />
+  if (kind === "message") return <ChatDotsIcon className="size-4" />
+  if (kind === "write") return <PencilSimpleLineIcon className="size-4" />
+  if (kind === "run") return <TerminalWindowIcon className="size-4" />
   if (kind === "read") return <ImageIcon className="size-4" />
-  return <Wrench className="size-4" />
+  return <WrenchIcon className="size-4" />
 }
 
 function TraceRow({ item }: { item: AgentActivityTrace }) {

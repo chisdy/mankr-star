@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react"
+import { CaretDownIcon } from "@phosphor-icons/react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import {
   type ReactNode,
@@ -221,7 +221,7 @@ export function AgentActivity({
             transition={reduce ? { duration: 0 } : SPRING_SWAP}
             className="inline-flex shrink-0 text-muted-foreground/70 group-hover:text-foreground"
           >
-            <ChevronDown className="size-3.5" />
+            <CaretDownIcon className="size-3.5" />
           </motion.span>
         </button>
       )}

@@ -1,11 +1,11 @@
 import {
-  Check,
-  ChevronDown,
-  Copy,
-  RotateCcw,
-  ThumbsDown,
-  ThumbsUp,
-} from "lucide-react"
+  ArrowCounterClockwiseIcon,
+  CaretDownIcon,
+  CheckIcon,
+  CopyIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+} from "@phosphor-icons/react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import {
   type ReactNode,
@@ -204,9 +204,9 @@ export function StreamingResponse({
                   onClick={handleCopy}
                 >
                   {copied ? (
-                    <Check className="size-3.5" />
+                    <CheckIcon className="size-3.5" weight="bold" />
                   ) : (
-                    <Copy className="size-3.5" />
+                    <CopyIcon className="size-3.5" />
                   )}
                 </ResponseAction>
               ) : null}
@@ -215,7 +215,7 @@ export function StreamingResponse({
                   label={labels?.retry ?? "Retry response"}
                   onClick={onRetry}
                 >
-                  <RotateCcw className="size-3.5" />
+                  <ArrowCounterClockwiseIcon className="size-3.5" />
                 </ResponseAction>
               ) : null}
               {complete ? (
@@ -226,7 +226,7 @@ export function StreamingResponse({
                     active={currentFeedback === "up"}
                     onClick={() => setFeedback("up")}
                   >
-                    <ThumbsUp className="size-3.5" />
+                    <ThumbsUpIcon className="size-3.5" />
                   </ResponseAction>
                   <ResponseAction
                     label={labels?.notHelpful ?? "Not helpful"}
@@ -234,7 +234,7 @@ export function StreamingResponse({
                     active={currentFeedback === "down"}
                     onClick={() => setFeedback("down")}
                   >
-                    <ThumbsDown className="size-3.5" />
+                    <ThumbsDownIcon className="size-3.5" />
                   </ResponseAction>
                 </>
               ) : null}
@@ -257,7 +257,7 @@ export function StreamingResponse({
                     transition={reduce ? { duration: 0 } : SPRING_SWAP}
                     className="text-muted-foreground/50 group-hover:text-muted-foreground"
                   >
-                    <ChevronDown className="size-3" />
+                    <CaretDownIcon className="size-3" />
                   </motion.span>
                 </button>
               ) : null}

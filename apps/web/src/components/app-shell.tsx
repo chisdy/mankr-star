@@ -236,8 +236,7 @@ function AppShellContent() {
                     type="button"
                     variant="outline"
                     size="icon-sm"
-                    tabIndex={-1}
-                    className="pointer-events-auto rounded-full border-border/60 bg-background/65 shadow-md backdrop-blur-xl supports-[backdrop-filter]:bg-background/50"
+                    className="pointer-events-auto rounded-full border-border/60 bg-background/65 shadow-md backdrop-blur-xl supports-[backdrop-filter]:bg-background/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => scrollFilterToolbar("left")}
                     aria-label={t("bookmarks:list.filterScrollLeftAria")}
                     title={t("bookmarks:list.filterScrollLeftAria")}
@@ -251,8 +250,7 @@ function AppShellContent() {
                     type="button"
                     variant="outline"
                     size="icon-sm"
-                    tabIndex={-1}
-                    className="pointer-events-auto rounded-full border-border/60 bg-background/65 shadow-md backdrop-blur-xl supports-[backdrop-filter]:bg-background/50"
+                    className="pointer-events-auto rounded-full border-border/60 bg-background/65 shadow-md backdrop-blur-xl supports-[backdrop-filter]:bg-background/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => scrollFilterToolbar("right")}
                     aria-label={t("bookmarks:list.filterScrollRightAria")}
                     title={t("bookmarks:list.filterScrollRightAria")}

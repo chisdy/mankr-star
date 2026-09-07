@@ -226,6 +226,10 @@
       "setPricing": "Updated pricing on {{count}}",
       "regenerateAi": "Queued AI regen for {{count}}"
     },
-    "selectAria": "Select bookmark"
+    "selectAria": "Select bookmark",
+    "selectBookmarkAria": "Select bookmark {{title}}",
+    "deleteConfirmTitle": "Delete bookmarks",
+    "deleteConfirmBody": "Are you sure you want to delete {{count}} selected bookmarks? This action cannot be undone.",
+    "deleteConfirmAction": "Delete"
   }
 }

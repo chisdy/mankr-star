@@ -81,7 +81,7 @@ function FolderTreeSelectNode({
             <button
               type="button"
               onClick={() => onSelect(folder.id)}
-              className="flex min-w-0 flex-1 items-center gap-1.5 text-left outline-none"
+              className="flex min-w-0 flex-1 items-center gap-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
             >
               <FolderIconAnimated
                 className="shrink-0"
@@ -219,7 +219,7 @@ export function FolderTree({
           type="button"
           onClick={() => onSelect(null)}
           className={cn(
-            "mx-1 mt-1 flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
+            "mx-1 mt-1 flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
             !selectedId
               ? "bg-accent font-medium text-accent-foreground"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",

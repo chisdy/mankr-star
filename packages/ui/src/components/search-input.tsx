@@ -54,7 +54,7 @@ function SearchInput({
           onClick={handleClear}
           aria-label={clearAriaLabel}
           disabled={props.disabled}
-          className="absolute top-1/2 right-1.5 flex size-5 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          className="absolute top-1/2 right-1.5 flex size-5 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring before:absolute before:inset-[-6px] before:content-[''] disabled:pointer-events-none disabled:opacity-50"
         >
           <XIcon className="size-3.5" />
         </button>
