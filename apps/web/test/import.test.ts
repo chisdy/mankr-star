@@ -331,6 +331,9 @@ describe("POST /api/bookmarks/import/github", () => {
     expect(mid?.processed).toBe(0)
     expect(mid?.status).toBe("running")
 
+    const beforeContinue = await client.fetch("/api/bookmarks/match-index")
+    const beforeBody = (await beforeContinue.json()) as { revision: number }
+
     const cont = await client.post<{ ok: boolean; job: ImportJob }>(
       `/api/bookmarks/import/github/jobs/${jobId}/continue`,
       { token: mid!.continueToken },
@@ -344,5 +347,9 @@ describe("POST /api/bookmarks/import/github", () => {
     expect(active.body.job?.status).toBe("completed")
     expect(active.body.job?.processed).toBe(2)
     expect(active.body.job?.imported).toBe(2)
+
+    const afterContinue = await client.fetch("/api/bookmarks/match-index")
+    const afterBody = (await afterContinue.json()) as { revision: number }
+    expect(afterBody.revision).toBe(beforeBody.revision + 1)
   })
 })

@@ -53,6 +53,11 @@ import { UrlFetchError } from "../lib/url-ssrf"
 import { decryptSecret, encryptSecret } from "../lib/crypto"
 import { queryBookmarkIdsByFts } from "../lib/bookmark-fts"
 import { runBookmarkBatch } from "../lib/bookmark-batch"
+import {
+  bumpBookmarkMatchRevision,
+  ifNoneMatchSatisfied,
+  readBookmarkMatchRevision,
+} from "../lib/bookmark-match-revision"
 import { scheduleBookmarkEmbedding } from "../lib/embeddings"
 import { rateLimit } from "../lib/rate-limit"
 import { readSetting } from "../lib/settings-store"
@@ -589,6 +594,48 @@ function topBookmarksBy(
 }
 
 /**
+ * 扩展本地身份表。必须注册在 GET /bookmarks/:id 之前。
+ * 版本未变时只读 settings 里的一行版本号，不查询 bookmarks。
+ */
+bookmarkRoutes.get("/bookmarks/match-index", async (c) => {
+  if (c.get("isPublicRead") || !c.get("user")) {
+    return c.json({ error: "未登录", code: "UNAUTHORIZED" }, 401)
+  }
+
+  const db = c.get("db")
+  const revision = await readBookmarkMatchRevision(db)
+  const etag = `"${revision}"`
+  c.header("Cache-Control", "no-store")
+  c.header("ETag", etag)
+
+  if (ifNoneMatchSatisfied(c.req.header("If-None-Match"), revision)) {
+    return c.body(null, 304)
+  }
+
+  const rows = await db
+    .select({
+      id: bookmarks.id,
+      sourceType: bookmarks.sourceType,
+      canonicalUrl: bookmarks.canonicalUrl,
+      externalId: bookmarks.externalId,
+      archivedAt: bookmarks.archivedAt,
+    })
+    .from(bookmarks)
+    .where(isNull(bookmarks.deletedAt))
+
+  return c.json({
+    revision,
+    items: rows.map((row) => ({
+      id: row.id,
+      source_type: row.sourceType,
+      canonical_url: row.canonicalUrl,
+      external_id: row.externalId,
+      archived: Boolean(row.archivedAt),
+    })),
+  })
+})
+
+/**
  * 三个榜一次返回，排行页三列并排渲染，只发一次请求。
  * 必须注册在 GET /bookmarks/:id 之前，否则会被 :id 抢先匹配。
  */
@@ -808,6 +855,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
 
     c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
     scheduleBookmarkEmbedding(c.executionCtx.waitUntil.bind(c.executionCtx), db, c.env, id)
+    await bumpBookmarkMatchRevision(db)
     const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
     return c.json(serializeBookmark(row!, [], null, undefined, { includeAccount: true }), 201)
   }
@@ -930,6 +978,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
 
     c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
     scheduleBookmarkEmbedding(c.executionCtx.waitUntil.bind(c.executionCtx), db, c.env, id)
+    await bumpBookmarkMatchRevision(db)
     const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
     return c.json(serializeBookmark(row!, [], null, undefined, { includeAccount: true }), 201)
   }
@@ -1060,6 +1109,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
   c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
   scheduleBookmarkEmbedding(c.executionCtx.waitUntil.bind(c.executionCtx), db, c.env, id)
 
+  await bumpBookmarkMatchRevision(db)
   const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
   return c.json(serializeBookmark(row!, [], null, undefined, { includeAccount: true }), 201)
 })
@@ -1202,6 +1252,13 @@ bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
 
   await db.update(bookmarks).set(patch).where(eq(bookmarks.id, id))
 
+  if (
+    data.archived !== undefined &&
+    Boolean(existing.archivedAt) !== data.archived
+  ) {
+    await bumpBookmarkMatchRevision(db)
+  }
+
   if (data.tagNames) {
     await syncBookmarkTags(db, id, data.tagNames)
   }
@@ -1249,6 +1306,8 @@ bookmarkRoutes.delete("/bookmarks/:id", async (c) => {
     .update(bookmarks)
     .set({ deletedAt: nowIso(), updatedAt: nowIso() })
     .where(eq(bookmarks.id, id))
+
+  await bumpBookmarkMatchRevision(db)
 
   return c.json({ ok: true })
 })

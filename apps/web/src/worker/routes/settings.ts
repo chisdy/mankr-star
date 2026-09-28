@@ -42,6 +42,7 @@ import { recordAiUsage } from "../lib/ai-usage"
 import { testDeepSeekConnection } from "../lib/deepseek"
 import { hashPassword, verifyPassword } from "../lib/password"
 import { rateLimit } from "../lib/rate-limit"
+import { bumpBookmarkMatchRevision } from "../lib/bookmark-match-revision"
 import { readSetting, writeSetting } from "../lib/settings-store"
 import { getClientIp, nowIso } from "../lib/utils"
 import { requireAuthWrite } from "../middleware/auth"
@@ -815,6 +816,8 @@ settingsRoutes.post("/settings/clear-data", async (c) => {
   ])
   // 触发器已随 bookmarks 删除清理，这里兜底防孤儿行（FTS 不在 drizzle schema 内）
   await db.run(sql`DELETE FROM bookmarks_fts`)
+  // 收藏已经整表删除。版本不前进时，重新登录后的扩展仍拿旧 ETag 得到 304，星标会留在已清空的网址上。
+  await bumpBookmarkMatchRevision(db)
 
   return c.json({ ok: true })
 })

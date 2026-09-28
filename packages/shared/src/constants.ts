@@ -1,3 +1,5 @@
+import type { SourceType } from "./source-detect-rules"
+
 /** 预置根文件夹（注册/首次登录后 seed）；description 供 AI prompt 语义用 */
 export const PRESET_FOLDERS = [
   {
@@ -228,12 +230,13 @@ export type AiStatus = (typeof AI_STATUSES)[number]
 export const DEFAULT_FACET_PAGE_SIZE = 50
 export const MAX_FACET_PAGE_SIZE = 100
 
-export const SOURCE_TYPES = ["github", "twitter", "url"] as const
-export type SourceType = (typeof SOURCE_TYPES)[number]
-
-/** 本期已实现写库/同步的适配器 */
-export const IMPLEMENTED_SOURCE_TYPES = ["github", "twitter", "url"] as const
-export type ImplementedSourceType = (typeof IMPLEMENTED_SOURCE_TYPES)[number]
+export {
+  IMPLEMENTED_SOURCE_TYPES,
+  SOURCE_DETECT_RULES,
+  SOURCE_TYPES,
+  type ImplementedSourceType,
+  type SourceType,
+} from "./source-detect-rules"
 
 export type SourceCapabilities = {
   healthStatus: boolean
@@ -267,21 +270,6 @@ export const SOURCE_CAPABILITIES: Record<SourceType, SourceCapabilities> = {
     accountCredentials: true,
   },
 }
-
-/** 识别规则：更具体的 host 须排在通用 url 之前 */
-export const SOURCE_DETECT_RULES: Array<{
-  type: SourceType
-  match: RegExp
-  label: string
-}> = [
-  { type: "github", match: /(?:^|\.)github\.com$/i, label: "GitHub" },
-  {
-    type: "twitter",
-    match: /(?:^|\.)(?:x|twitter)\.com$/i,
-    label: "X",
-  },
-  { type: "url", match: /^https?:\/\//i, label: "通用网页" },
-]
 
 export const HEALTH_STATUSES = [
   "unavailable",
@@ -374,18 +362,7 @@ export const IMPORT_JOB_TIME_BUDGET_MS = 20_000
 export const IMPORT_JOB_LEASE_MS = 45_000
 /** 网页/仓库正文摘录入库与 AI prompt 共用上限 */
 export const CONTENT_EXCERPT_MAX_CHARS = 8000
-/** URL 规范化时剥离的常见追踪参数前缀/全名 */
-export const TRACKING_QUERY_PARAMS = [
-  "fbclid",
-  "gclid",
-  "gbraid",
-  "wbraid",
-  "mc_cid",
-  "mc_eid",
-  "ref",
-  "ref_src",
-  "ref_url",
-] as const
+export { TRACKING_QUERY_PARAMS } from "./tracking-params"
 
 /** 仓库近况：近期活跃 / 疑似停更默认阈值（天） */
 export const DEFAULT_HOT_WITHIN_DAYS = 30

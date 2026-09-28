@@ -18,6 +18,7 @@ import {
   maxDescendantDepth,
 } from "../lib/folder-utils"
 import { rateLimit } from "../lib/rate-limit"
+import { bumpBookmarkMatchRevision } from "../lib/bookmark-match-revision"
 import { getClientIp, nowIso } from "../lib/utils"
 import { authByMethod } from "../middleware/auth"
 
@@ -449,10 +450,13 @@ folderRoutes.delete("/folders/:id", async (c) => {
       .set({ folderId: moveToFolderId!, updatedAt: ts })
       .where(and(eq(bookmarks.folderId, id), isNull(bookmarks.deletedAt)))
   } else if (bookmarkAction === "delete") {
-    await db
+    const updated = await db
       .update(bookmarks)
       .set({ deletedAt: ts, updatedAt: ts })
       .where(and(eq(bookmarks.folderId, id), isNull(bookmarks.deletedAt)))
+    if (updated.meta.changes > 0) {
+      await bumpBookmarkMatchRevision(db)
+    }
   }
   // detach：依赖 FK onDelete set null，删除文件夹后自动清空 folder_id
 

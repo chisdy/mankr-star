@@ -11,6 +11,7 @@ import type { AppEnv } from "../env"
 import { hasScope } from "../lib/api-tokens"
 import { queryBookmarkIdsByFts } from "../lib/bookmark-fts"
 import { syncBookmarkTags } from "../lib/ai-service"
+import { bumpBookmarkMatchRevision } from "../lib/bookmark-match-revision"
 import { nowIso } from "../lib/utils"
 import { requireAuth } from "../middleware/auth"
 
@@ -338,7 +339,7 @@ async function callTool(
       const id = String(args.id ?? "")
       if (!id) throw new Error("id is required")
       const existing = await db
-        .select({ id: bookmarks.id })
+        .select({ id: bookmarks.id, archivedAt: bookmarks.archivedAt })
         .from(bookmarks)
         .where(and(eq(bookmarks.id, id), isNull(bookmarks.deletedAt)))
         .get()
@@ -359,10 +360,17 @@ async function callTool(
             ? null
             : String(args.notes)
       }
+      let archivedChanged = false
       if (typeof args.archived === "boolean") {
-        patch.archivedAt = args.archived ? nowIso() : null
+        archivedChanged = Boolean(existing.archivedAt) !== args.archived
+        if (archivedChanged) {
+          patch.archivedAt = args.archived ? nowIso() : null
+        }
       }
       await db.update(bookmarks).set(patch).where(eq(bookmarks.id, id))
+      if (archivedChanged) {
+        await bumpBookmarkMatchRevision(db)
+      }
       if (Array.isArray(args.tagNames)) {
         await syncBookmarkTags(
           db,

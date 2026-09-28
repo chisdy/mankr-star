@@ -3,6 +3,7 @@ import type { BatchBookmarksInput } from "@mankr/shared"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import type { Env } from "../env"
 import { runAiForBookmark } from "./ai-service"
+import { bumpBookmarkMatchRevision } from "./bookmark-match-revision"
 import { nowIso, slugify } from "./utils"
 
 export type BatchBookmarksResult =
@@ -193,6 +194,15 @@ export async function runBookmarkBatch(
       status: 500,
       body: { error: "批量操作失败", code: "BATCH_FAILED" },
     }
+  }
+
+  if (
+    processed > 0 &&
+    (action.type === "archive" ||
+      action.type === "unarchive" ||
+      action.type === "delete")
+  ) {
+    await bumpBookmarkMatchRevision(db)
   }
 
   return {

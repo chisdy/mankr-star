@@ -1,4 +1,4 @@
-import { TRACKING_QUERY_PARAMS } from "./constants"
+import { TRACKING_QUERY_PARAMS } from "./tracking-params"
 
 export type CanonicalizeUrlResult =
   | { ok: true; canonicalUrl: string; hostname: string; pathname: string }

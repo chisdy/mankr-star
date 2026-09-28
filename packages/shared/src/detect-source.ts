@@ -2,7 +2,7 @@ import {
   IMPLEMENTED_SOURCE_TYPES,
   SOURCE_DETECT_RULES,
   type SourceType,
-} from "./constants"
+} from "./source-detect-rules"
 
 export type DetectSourceResult =
   | {

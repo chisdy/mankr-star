@@ -20,6 +20,7 @@ import {
   fetchStarredPage,
   type StarredRepo,
 } from "./github"
+import { bumpBookmarkMatchRevision } from "./bookmark-match-revision"
 import { readSetting } from "./settings-store"
 import { nowIso } from "./utils"
 
@@ -206,6 +207,11 @@ async function markFailed(db: Db, jobId: string, error: string): Promise<void> {
 }
 
 async function markCompleted(db: Db, jobId: string): Promise<void> {
+  const existing = await db
+    .select({ imported: githubImportJobs.imported })
+    .from(githubImportJobs)
+    .where(eq(githubImportJobs.id, jobId))
+    .get()
   const now = nowIso()
   await db
     .update(githubImportJobs)
@@ -218,6 +224,10 @@ async function markCompleted(db: Db, jobId: string): Promise<void> {
       updatedAt: now,
     })
     .where(eq(githubImportJobs.id, jobId))
+  // 整次导入只加一次版本。跳过或空队列不改变身份，不加。
+  if ((existing?.imported ?? 0) > 0) {
+    await bumpBookmarkMatchRevision(db)
+  }
 }
 
 async function discoverQueue(

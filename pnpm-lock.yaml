@@ -21,6 +21,12 @@ importers:
         specifier: ~7.0.2
         version: 7.0.2
 
+  apps/extension:
+    devDependencies:
+      esbuild:
+        specifier: ^0.25.11
+        version: 0.25.12
+
   apps/web:
     dependencies:
       '@mankr/db':

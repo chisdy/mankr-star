@@ -19,6 +19,7 @@ import {
   fetchLatestRelease,
   fetchReadmeExcerpt,
 } from "../lib/github"
+import { bumpBookmarkMatchRevision } from "../lib/bookmark-match-revision"
 import { readSetting } from "../lib/settings-store"
 import { nowIso } from "../lib/utils"
 
@@ -136,6 +137,7 @@ export async function syncUpdates(env: Env): Promise<{ scanned: number; events: 
     .limit(CRON_SYNC_BATCH_SIZE)
 
   let events = 0
+  let renamed = false
 
   for (const bookmark of batch) {
     const [owner, repo] = bookmark.externalId.split("/")
@@ -277,6 +279,7 @@ export async function syncUpdates(env: Env): Promise<{ scanned: number; events: 
           updatedAt: now,
         })
         .where(eq(bookmarks.id, bookmark.id))
+      if (identityPatch) renamed = true
     } catch (e) {
       let syncStatus: SyncStatus = "error"
       let healthStatus: HealthStatus = bookmark.healthStatus as HealthStatus
@@ -308,6 +311,8 @@ export async function syncUpdates(env: Env): Promise<{ scanned: number; events: 
         .where(eq(bookmarks.id, bookmark.id))
     }
   }
+
+  if (renamed) await bumpBookmarkMatchRevision(db)
 
   return { scanned: batch.length, events }
 }
