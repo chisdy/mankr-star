@@ -246,6 +246,59 @@ export interface GithubImportStartResult {
   job: GithubImportJob
 }
 
+export type BrowserImportPlacement = "original" | "existing" | "ai_new"
+export type BrowserImportDeadPolicy = "skip" | "import"
+
+export interface BrowserImportFolderCount {
+  label: string
+  count: number
+}
+
+export interface BrowserImportLinkSample {
+  title: string
+  url: string
+}
+
+export interface BrowserImportSummary {
+  ok: number
+  dead: number
+  unknown: number
+  invalid: number
+  duplicate: number
+  original_folders: BrowserImportFolderCount[]
+  suggested_folders: BrowserImportFolderCount[]
+  dead_samples: BrowserImportLinkSample[]
+  invalid_samples: BrowserImportLinkSample[]
+}
+
+export interface BrowserImportJob {
+  id: string
+  status: string
+  source: string
+  placement: BrowserImportPlacement | string | null
+  dead_policy: BrowserImportDeadPolicy | string | null
+  has_folders: boolean
+  classified: boolean
+  ai_available: boolean
+  total: number
+  processed: number
+  imported: number
+  skipped: number
+  failed_count: number
+  summary: BrowserImportSummary
+  current_title: string | null
+  last_error: string | null
+  started_at: string | null
+  updated_at: string
+  finished_at: string | null
+}
+
+export interface BrowserImportItemInput {
+  title: string
+  url: string
+  folderPath: string[]
+}
+
 export interface BookmarksQueryParams {
   folder_id?: string
   tag?: string

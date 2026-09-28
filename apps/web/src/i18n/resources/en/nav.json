@@ -13,5 +13,6 @@
   "fallbackName": "User",
   "searchPlaceholder": "Search name, summary, tags…",
   "clearSearch": "Clear search",
-  "addButton": "Add"
+  "addButton": "Add",
+  "importButton": "Import"
 }

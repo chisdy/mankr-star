@@ -2,6 +2,8 @@
  * 后台脚本源文件。运行时加载的是 esbuild 打出来的 background.js。
  * 匹配规则从共享包和 parseGithubRepoInput 打进来，不要在这里手抄一份。
  */
+/// <reference types="chrome" />
+
 import { canonicalizeUrl } from "../../../packages/shared/src/canonicalize-url.ts"
 import { detectSourceType } from "../../../packages/shared/src/detect-source.ts"
 import { parseTwitterStatusInput } from "../../../packages/shared/src/twitter-url.ts"
@@ -10,6 +12,20 @@ import { parseGithubRepoInput } from "../../web/src/worker/lib/github-url.ts"
 const INSTANCE_KEY = "instanceUrl"
 const INDEX_KEY = "bookmarkMatchIndex"
 const ALARM = "match-index"
+
+const ICON_PLAIN = {
+  16: "icons/icon-16.png",
+  32: "icons/icon-32.png",
+  48: "icons/icon-48.png",
+  128: "icons/icon-128.png",
+}
+
+const ICON_SAVED = {
+  16: "icons/icon-saved-16.png",
+  32: "icons/icon-saved-32.png",
+  48: "icons/icon-saved-48.png",
+  128: "icons/icon-saved-128.png",
+}
 
 type MatchItem = {
   id: string
@@ -95,17 +111,13 @@ async function loadIndexFromStorage() {
 }
 
 async function paintTab(tabId: number, url: string | undefined) {
-  if (!url || !/^https?:/i.test(url)) {
-    await chrome.action.setBadgeText({ tabId, text: "" })
-    return
-  }
-  const hit = matchUrl(url)
-  if (!hit) {
-    await chrome.action.setBadgeText({ tabId, text: "" })
-    return
-  }
-  await chrome.action.setBadgeBackgroundColor({ tabId, color: "#d97706" })
-  await chrome.action.setBadgeText({ tabId, text: "★" })
+  const saved = Boolean(url && /^https?:/i.test(url) && matchUrl(url))
+  await chrome.action.setIcon({
+    tabId,
+    path: saved ? ICON_SAVED : ICON_PLAIN,
+  })
+  // 清掉旧版本留在这个标签上的 ★ 角标
+  await chrome.action.setBadgeText({ tabId, text: "" })
 }
 
 async function paintAllTabs() {
@@ -120,11 +132,13 @@ async function paintAllTabs() {
 async function clearAllBadges() {
   const tabs = await chrome.tabs.query({})
   await Promise.all(
-    tabs.map((tab) =>
-      tab.id == null
-        ? Promise.resolve()
-        : chrome.action.setBadgeText({ tabId: tab.id, text: "" })
-    )
+    tabs.map((tab) => {
+      if (tab.id == null) return Promise.resolve()
+      return Promise.all([
+        chrome.action.setBadgeText({ tabId: tab.id, text: "" }),
+        chrome.action.setIcon({ tabId: tab.id, path: ICON_PLAIN }),
+      ])
+    })
   )
 }
 
@@ -242,13 +256,91 @@ chrome.tabs.onActivated.addListener((info) => {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   const type = message && typeof message === "object" ? message.type : ""
-  if (type !== "getState" && type !== "refreshAndGetState") return
-  void (async () => {
-    await boot()
-    if (type === "refreshAndGetState") await refresh()
-    sendResponse(await currentState())
-  })()
-  return true
+  if (type === "getState" || type === "refreshAndGetState") {
+    void (async () => {
+      await boot()
+      if (type === "refreshAndGetState") await refresh()
+      sendResponse(await currentState())
+    })()
+    return true
+  }
+  if (
+    type === "importBookmarksStart" ||
+    type === "importBookmarksBatch" ||
+    type === "importBookmarksFinish"
+  ) {
+    void handleBookmarkImport(message)
+      .then(sendResponse)
+      .catch((error: unknown) => {
+        sendResponse({
+          ok: false,
+          error: error instanceof Error ? error.message : "导入失败",
+        })
+      })
+    return true
+  }
+  return
 })
+
+type ImportItem = { title: string; url: string; folderPath: string[] }
+
+async function readOriginOrThrow(): Promise<string> {
+  const origin = await readOrigin()
+  if (!origin) throw new Error("请先填写实例地址")
+  const permitted = await chrome.permissions.contains({ origins: [`${origin}/*`] })
+  if (!permitted) throw new Error("还没有授权这个实例")
+  return origin
+}
+
+async function postImport(origin: string, path: string, body: unknown): Promise<unknown> {
+  const response = await fetch(`${origin}${path}`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  const text = await response.text()
+  let parsed: { error?: string; job?: { id?: string } } = {}
+  if (text) {
+    try {
+      parsed = JSON.parse(text) as { error?: string; job?: { id?: string } }
+    } catch {
+      parsed = {}
+    }
+  }
+  if (!response.ok) {
+    throw new Error(parsed.error || text.slice(0, 180) || `HTTP ${response.status}`)
+  }
+  return parsed
+}
+
+async function handleBookmarkImport(message: {
+  type?: string
+  jobId?: string
+  batchIndex?: number
+  items?: ImportItem[]
+}): Promise<{ ok: true; jobId?: string }> {
+  const origin = await readOriginOrThrow()
+  if (message.type === "importBookmarksStart") {
+    const body = (await postImport(origin, "/api/bookmarks/import/browser", {
+      source: "extension",
+    })) as { job?: { id?: string } }
+    const jobId = body.job?.id
+    if (!jobId) throw new Error("没有拿到导入任务")
+    return { ok: true, jobId }
+  }
+  if (message.type === "importBookmarksBatch") {
+    if (!message.jobId) throw new Error("缺少导入任务")
+    await postImport(origin, `/api/bookmarks/import/browser/jobs/${message.jobId}/batches`, {
+      batchIndex: message.batchIndex ?? 0,
+      items: Array.isArray(message.items) ? message.items : [],
+    })
+    return { ok: true, jobId: message.jobId }
+  }
+  if (!message.jobId) throw new Error("缺少导入任务")
+  await postImport(origin, `/api/bookmarks/import/browser/jobs/${message.jobId}/scan`, {})
+  await chrome.tabs.create({ url: `${origin}/import` })
+  return { ok: true, jobId: message.jobId }
+}
 
 void boot()

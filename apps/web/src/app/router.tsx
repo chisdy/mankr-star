@@ -12,6 +12,7 @@ import { FeedPage } from "@/features/feed/feed-page"
 import { TagsPage } from "@/features/tags/tags-page"
 import { RankingsPage } from "@/features/rankings/rankings-page"
 import { InsightsPage } from "@/features/insights/insights-page"
+import { ImportPage } from "@/features/import/import-page"
 import { SettingsPage } from "@/features/settings/settings-page"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import { loginUrlWithNext, useAuth } from "@/hooks/use-auth"
@@ -122,6 +123,7 @@ export const router = createBrowserRouter([
                 children: [
                   { path: "/insights", element: <InsightsPage /> },
                   { path: "/settings", element: <SettingsPage /> },
+                  { path: "/import", element: <ImportPage /> },
                 ],
               },
             ],

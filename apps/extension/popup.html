@@ -47,6 +47,12 @@
         font-weight: 600;
         cursor: pointer;
       }
+      button.secondary {
+        margin-top: 8px;
+        background: transparent;
+        color: inherit;
+        border: 1px solid rgba(128, 128, 128, 0.45);
+      }
       button:disabled {
         opacity: 0.5;
         cursor: default;
@@ -86,6 +92,9 @@
     <p id="title"></p>
 
     <button id="submit" disabled>在 Mankr Star 中添加</button>
+    <button id="import-bookmarks" class="secondary" type="button" hidden>
+      导入本机书签
+    </button>
 
     <p id="current"></p>
 

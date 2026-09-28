@@ -21,6 +21,7 @@ import enTags from "./resources/en/tags.json"
 import enInsights from "./resources/en/insights.json"
 import enKb from "./resources/en/kb.json"
 import enErrors from "./resources/en/errors.json"
+import enImport from "./resources/en/import.json"
 
 import zhCommon from "./resources/zh-CN/common.json"
 import zhNav from "./resources/zh-CN/nav.json"
@@ -33,6 +34,7 @@ import zhTags from "./resources/zh-CN/tags.json"
 import zhInsights from "./resources/zh-CN/insights.json"
 import zhKb from "./resources/zh-CN/kb.json"
 import zhErrors from "./resources/zh-CN/errors.json"
+import zhImport from "./resources/zh-CN/import.json"
 
 const resources = {
   en: {
@@ -47,6 +49,7 @@ const resources = {
     insights: enInsights,
     kb: enKb,
     errors: enErrors,
+    import: enImport,
   },
   "zh-CN": {
     common: zhCommon,
@@ -60,6 +63,7 @@ const resources = {
     insights: zhInsights,
     kb: zhKb,
     errors: zhErrors,
+    import: zhImport,
   },
 } as const
 
@@ -88,6 +92,7 @@ void i18n.use(initReactI18next).init({
     "insights",
     "kb",
     "errors",
+    "import",
   ],
   interpolation: { escapeValue: false },
   returnNull: false,

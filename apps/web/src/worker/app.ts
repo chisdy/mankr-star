@@ -8,6 +8,7 @@ import { folderRoutes } from "./routes/folders"
 import { exportRoutes } from "./routes/export"
 import { feedRoutes } from "./routes/feed"
 import { healthRoutes } from "./routes/health"
+import { browserImportRoutes } from "./routes/browser-import"
 import { importRoutes } from "./routes/import"
 import { insightsRoutes } from "./routes/insights"
 import { kbRoutes } from "./routes/kb"
@@ -33,6 +34,7 @@ app.route("/api", kbRoutes)
 app.route("/api", kbConversationRoutes)
 app.route("/api", settingsRoutes)
 app.route("/api", importRoutes)
+app.route("/api", browserImportRoutes)
 app.route("/api", exportRoutes)
 app.route("/api", apiTokenRoutes)
 app.route("/api", mcpRoutes)

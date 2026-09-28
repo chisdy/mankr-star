@@ -352,6 +352,8 @@ export async function runCronJobs(
     console.error("[cron] embedding backfill", err)
   }
   await continueStaleGithubImportJobs(env, ctx)
+  const { continueStaleBrowserImportJobs } = await import("../lib/browser-import-job")
+  await continueStaleBrowserImportJobs(env, ctx)
 }
 
 export { healthFromMeta, loadTrackingSettings }

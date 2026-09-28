@@ -4,9 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild src/background.ts --bundle --format=iife --outfile=background.js --platform=browser --target=chrome120"
+    "build": "esbuild src/background.ts --bundle --format=iife --outfile=background.js --platform=browser --target=chrome120",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "esbuild": "^0.25.11"
+    "@types/chrome": "^0.3.0",
+    "@types/filesystem": "^0.0.36",
+    "@types/har-format": "^1.2.16",
+    "esbuild": "^0.25.11",
+    "typescript": "^7.0.2"
   }
 }

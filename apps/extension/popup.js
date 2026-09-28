@@ -6,6 +6,7 @@ const STORAGE_KEY = "instanceUrl"
 
 const instanceInput = document.getElementById("instance")
 const submitButton = document.getElementById("submit")
+const importButton = document.getElementById("import-bookmarks")
 const currentLabel = document.getElementById("current")
 const statusLabel = document.getElementById("status")
 const titleLabel = document.getElementById("title")
@@ -39,6 +40,8 @@ function render() {
   const origin = normalizeInstance(instanceInput.value)
   const match = view.match
   const ready = Boolean(origin && permitted && view.origin === origin)
+  importButton.hidden = typeof chrome.permissions?.request !== "function"
+  importButton.disabled = !origin
   titleLabel.textContent = ready && match ? titleLabel.textContent : ""
   if (!ready) {
     statusLabel.textContent = ""
@@ -142,6 +145,100 @@ submitButton.addEventListener("click", async () => {
     : `${origin}/?add=${encodeURIComponent(currentUrl)}`
   await chrome.tabs.create({ url })
   window.close()
+})
+
+function flattenBookmarks(nodes, path, out) {
+  for (const node of nodes || []) {
+    const title = typeof node.title === "string" ? node.title.trim() : ""
+    if (node.url) {
+      if (/^https?:\/\//i.test(node.url)) {
+        out.push({ title: title || node.url, url: node.url, folderPath: path })
+      }
+      continue
+    }
+    if (node.children) {
+      flattenBookmarks(node.children, title ? path.concat(title) : path, out)
+    }
+  }
+}
+
+function dedupeBookmarks(items) {
+  const seen = new Set()
+  const kept = []
+  for (const item of items) {
+    if (seen.has(item.url)) continue
+    seen.add(item.url)
+    kept.push(item)
+  }
+  return kept
+}
+
+importButton.addEventListener("click", async () => {
+  const origin = normalizeInstance(instanceInput.value)
+  if (!origin) return
+
+  const grantedHost = await chrome.permissions.request({ origins: [`${origin}/*`] })
+  if (!grantedHost) return
+  await chrome.storage.sync.set({ [STORAGE_KEY]: origin })
+
+  const grantedBookmarks = await chrome.permissions.request({ permissions: ["bookmarks"] })
+  if (!grantedBookmarks) return
+  if (!chrome.bookmarks?.getTree) {
+    statusLabel.textContent = "这个浏览器不能直接读取书签，请在网页上导入 HTML。"
+    return
+  }
+
+  importButton.disabled = true
+  statusLabel.textContent = "正在读取书签…"
+  try {
+    const tree = await chrome.bookmarks.getTree()
+    const flat = []
+    flattenBookmarks(tree, [], flat)
+    const items = dedupeBookmarks(flat)
+    if (items.length === 0) {
+      statusLabel.textContent = "没有可导入的网页书签。"
+      importButton.disabled = false
+      return
+    }
+
+    statusLabel.textContent = "正在上传…"
+    const started = await chrome.runtime.sendMessage({ type: "importBookmarksStart" })
+    if (!started?.ok) {
+      statusLabel.textContent = started?.error || "上传失败"
+      importButton.disabled = false
+      return
+    }
+
+    const size = 200
+    for (let index = 0; index < items.length; index += size) {
+      const batch = await chrome.runtime.sendMessage({
+        type: "importBookmarksBatch",
+        jobId: started.jobId,
+        batchIndex: index / size,
+        items: items.slice(index, index + size),
+      })
+      if (!batch?.ok) {
+        statusLabel.textContent = batch?.error || "上传失败"
+        importButton.disabled = false
+        return
+      }
+      statusLabel.textContent = `正在上传 ${Math.min(items.length, index + size)} / ${items.length}`
+    }
+
+    const finished = await chrome.runtime.sendMessage({
+      type: "importBookmarksFinish",
+      jobId: started.jobId,
+    })
+    if (!finished?.ok) {
+      statusLabel.textContent = finished?.error || "检查失败"
+      importButton.disabled = false
+      return
+    }
+    window.close()
+  } catch (error) {
+    statusLabel.textContent = error instanceof Error ? error.message : "导入失败"
+    importButton.disabled = false
+  }
 })
 
 void init()

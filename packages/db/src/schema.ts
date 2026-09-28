@@ -469,6 +469,85 @@ export const kbMessages = sqliteTable(
   ],
 )
 
+/**
+ * 浏览器书签导入任务。
+ * uploading 等用户传完；probing / classifying / importing 可由定时任务续跑；
+ * awaiting_choice 必须停住，等用户选完再写收藏。
+ */
+export const browserImportJobs = sqliteTable(
+  "browser_import_jobs",
+  {
+    id: text("id").primaryKey(),
+    /** uploading | probing | awaiting_choice | classifying | importing | completed | failed | cancelled */
+    status: text("status").notNull().default("uploading"),
+    /** html | extension */
+    source: text("source").notNull().default("html"),
+    /** original | existing | ai_new */
+    placement: text("placement"),
+    /** skip | import */
+    deadPolicy: text("dead_policy"),
+    hasFolders: integer("has_folders", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    classified: integer("classified", { mode: "boolean" }).notNull().default(false),
+    total: integer("total").notNull().default(0),
+    processed: integer("processed").notNull().default(0),
+    imported: integer("imported").notNull().default(0),
+    skipped: integer("skipped").notNull().default(0),
+    failedCount: integer("failed_count").notNull().default(0),
+    summaryJson: text("summary_json").notNull().default("{}"),
+    currentTitle: text("current_title"),
+    lastError: text("last_error"),
+    continueToken: text("continue_token").notNull(),
+    leaseUntil: text("lease_until"),
+    startedAt: text("started_at"),
+    finishedAt: text("finished_at"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [index("browser_import_jobs_status_idx").on(t.status)],
+)
+
+export const browserImportItems = sqliteTable(
+  "browser_import_items",
+  {
+    id: text("id").primaryKey(),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => browserImportJobs.id, { onDelete: "cascade" }),
+    batchIndex: integer("batch_index").notNull(),
+    seq: integer("seq").notNull(),
+    title: text("title").notNull(),
+    url: text("url").notNull(),
+    folderPathJson: text("folder_path_json").notNull().default("[]"),
+    canonicalUrl: text("canonical_url"),
+    sourceType: text("source_type"),
+    externalId: text("external_id"),
+    owner: text("owner"),
+    /** pending | ok | dead | unknown | invalid | duplicate */
+    linkStatus: text("link_status").notNull().default("pending"),
+    httpStatus: integer("http_status"),
+    suggestedFolderId: text("suggested_folder_id"),
+    suggestedFolderJson: text("suggested_folder_json"),
+    aiDone: integer("ai_done", { mode: "boolean" }).notNull().default(false),
+    /** pending | import | skip */
+    decision: text("decision").notNull().default("pending"),
+    bookmarkId: text("bookmark_id"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [
+    uniqueIndex("browser_import_items_job_seq_uq").on(t.jobId, t.seq),
+    index("browser_import_items_job_batch_idx").on(t.jobId, t.batchIndex),
+    index("browser_import_items_job_status_idx").on(t.jobId, t.linkStatus),
+  ],
+)
+
 export type User = typeof users.$inferSelect
 export type Session = typeof sessions.$inferSelect
 export type ApiToken = typeof apiTokens.$inferSelect
@@ -479,5 +558,7 @@ export type UpdateEvent = typeof updateEvents.$inferSelect
 export type AiUsageLog = typeof aiUsageLogs.$inferSelect
 export type AiJob = typeof aiJobs.$inferSelect
 export type GithubImportJob = typeof githubImportJobs.$inferSelect
+export type BrowserImportJob = typeof browserImportJobs.$inferSelect
+export type BrowserImportItem = typeof browserImportItems.$inferSelect
 export type KbConversation = typeof kbConversations.$inferSelect
 export type KbMessageRow = typeof kbMessages.$inferSelect

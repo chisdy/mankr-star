@@ -28,6 +28,10 @@ import type {
   FeedResponse,
   FeedStatsResponse,
   Folder,
+  BrowserImportDeadPolicy,
+  BrowserImportItemInput,
+  BrowserImportJob,
+  BrowserImportPlacement,
   GithubImportParams,
   GithubImportJob,
   GithubImportStartResult,
@@ -1881,6 +1885,69 @@ export const api = {
   async cancelGithubImport(): Promise<{ job: GithubImportJob }> {
     return await request<{ job: GithubImportJob }>(
       "/api/bookmarks/import/github/cancel",
+      { method: "POST" },
+    )
+  },
+
+  async createBrowserImport(
+    source: "html" | "extension",
+  ): Promise<{ job: BrowserImportJob }> {
+    return await request<{ job: BrowserImportJob }>(
+      "/api/bookmarks/import/browser",
+      { method: "POST", body: JSON.stringify({ source }) },
+    )
+  },
+
+  async appendBrowserImportBatch(
+    jobId: string,
+    batchIndex: number,
+    items: BrowserImportItemInput[],
+  ): Promise<{ ok: boolean; accepted: number; duplicate: boolean }> {
+    return await request(
+      `/api/bookmarks/import/browser/jobs/${jobId}/batches`,
+      {
+        method: "POST",
+        body: JSON.stringify({ batchIndex, items }),
+      },
+    )
+  },
+
+  async scanBrowserImport(jobId: string): Promise<{ job: BrowserImportJob }> {
+    return await request<{ job: BrowserImportJob }>(
+      `/api/bookmarks/import/browser/jobs/${jobId}/scan`,
+      { method: "POST" },
+    )
+  },
+
+  async getBrowserImportActive(): Promise<{ job: BrowserImportJob | null }> {
+    return await request<{ job: BrowserImportJob | null }>(
+      "/api/bookmarks/import/browser/active",
+    )
+  },
+
+  async getBrowserImportJob(jobId: string): Promise<{ job: BrowserImportJob }> {
+    return await request<{ job: BrowserImportJob }>(
+      `/api/bookmarks/import/browser/jobs/${jobId}`,
+    )
+  },
+
+  async chooseBrowserImport(
+    jobId: string,
+    placement: BrowserImportPlacement,
+    deadPolicy: BrowserImportDeadPolicy,
+  ): Promise<{ job: BrowserImportJob }> {
+    return await request<{ job: BrowserImportJob }>(
+      `/api/bookmarks/import/browser/jobs/${jobId}/choice`,
+      {
+        method: "POST",
+        body: JSON.stringify({ placement, dead_policy: deadPolicy }),
+      },
+    )
+  },
+
+  async cancelBrowserImport(jobId: string): Promise<{ job: BrowserImportJob }> {
+    return await request<{ job: BrowserImportJob }>(
+      `/api/bookmarks/import/browser/jobs/${jobId}/cancel`,
       { method: "POST" },
     )
   },

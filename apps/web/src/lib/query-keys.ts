@@ -65,6 +65,8 @@ export const queryKeys = {
   },
   import: {
     githubActive: ["import", "github", "active"] as const,
+    browserActive: ["import", "browser", "active"] as const,
+    browserJob: (id: string) => ["import", "browser", "job", id] as const,
   },
   kb: {
     conversations: ["kb", "conversations"] as const,

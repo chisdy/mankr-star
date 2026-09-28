@@ -5,6 +5,7 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   PlusIcon,
+  UploadSimpleIcon,
   ListIcon,
   SparkleIcon,
 } from "@phosphor-icons/react"
@@ -44,6 +45,7 @@ const FOLDER_TREE_HIDDEN_PATHS = new Set([
   "/feed",
   "/insights",
   "/settings",
+  "/import",
 ])
 
 export function AppShell() {
@@ -181,6 +183,17 @@ function AppShellContent() {
                 className="h-8 w-full border-muted bg-muted/40 text-xs md:text-sm"
               />
             </form>
+
+            <Button
+              variant={location.pathname === "/import" ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => requireAuth(() => navigate("/import"))}
+              aria-label={t("importButton")}
+              className="gap-1.5 text-xs font-medium"
+            >
+              <UploadSimpleIcon className="size-4" />
+              <span className="hidden sm:inline">{t("importButton")}</span>
+            </Button>
 
             <Button
               size="sm"

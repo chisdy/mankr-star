@@ -284,6 +284,18 @@
   var INSTANCE_KEY = "instanceUrl";
   var INDEX_KEY = "bookmarkMatchIndex";
   var ALARM = "match-index";
+  var ICON_PLAIN = {
+    16: "icons/icon-16.png",
+    32: "icons/icon-32.png",
+    48: "icons/icon-48.png",
+    128: "icons/icon-128.png"
+  };
+  var ICON_SAVED = {
+    16: "icons/icon-saved-16.png",
+    32: "icons/icon-saved-32.png",
+    48: "icons/icon-saved-48.png",
+    128: "icons/icon-saved-128.png"
+  };
   var stored = null;
   var byGithub = /* @__PURE__ */ new Map();
   var byTweet = /* @__PURE__ */ new Map();
@@ -333,17 +345,12 @@
     indexItems(saved.items);
   }
   async function paintTab(tabId, url) {
-    if (!url || !/^https?:/i.test(url)) {
-      await chrome.action.setBadgeText({ tabId, text: "" });
-      return;
-    }
-    const hit = matchUrl(url);
-    if (!hit) {
-      await chrome.action.setBadgeText({ tabId, text: "" });
-      return;
-    }
-    await chrome.action.setBadgeBackgroundColor({ tabId, color: "#d97706" });
-    await chrome.action.setBadgeText({ tabId, text: "\u2605" });
+    const saved = Boolean(url && /^https?:/i.test(url) && matchUrl(url));
+    await chrome.action.setIcon({
+      tabId,
+      path: saved ? ICON_SAVED : ICON_PLAIN
+    });
+    await chrome.action.setBadgeText({ tabId, text: "" });
   }
   async function paintAllTabs() {
     const tabs = await chrome.tabs.query({});
@@ -356,9 +363,13 @@
   async function clearAllBadges() {
     const tabs = await chrome.tabs.query({});
     await Promise.all(
-      tabs.map(
-        (tab) => tab.id == null ? Promise.resolve() : chrome.action.setBadgeText({ tabId: tab.id, text: "" })
-      )
+      tabs.map((tab) => {
+        if (tab.id == null) return Promise.resolve();
+        return Promise.all([
+          chrome.action.setBadgeText({ tabId: tab.id, text: "" }),
+          chrome.action.setIcon({ tabId: tab.id, path: ICON_PLAIN })
+        ]);
+      })
     );
   }
   async function dropIndex() {
@@ -455,13 +466,75 @@
   });
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     const type = message && typeof message === "object" ? message.type : "";
-    if (type !== "getState" && type !== "refreshAndGetState") return;
-    void (async () => {
-      await boot();
-      if (type === "refreshAndGetState") await refresh();
-      sendResponse(await currentState());
-    })();
-    return true;
+    if (type === "getState" || type === "refreshAndGetState") {
+      void (async () => {
+        await boot();
+        if (type === "refreshAndGetState") await refresh();
+        sendResponse(await currentState());
+      })();
+      return true;
+    }
+    if (type === "importBookmarksStart" || type === "importBookmarksBatch" || type === "importBookmarksFinish") {
+      void handleBookmarkImport(message).then(sendResponse).catch((error) => {
+        sendResponse({
+          ok: false,
+          error: error instanceof Error ? error.message : "\u5BFC\u5165\u5931\u8D25"
+        });
+      });
+      return true;
+    }
+    return;
   });
+  async function readOriginOrThrow() {
+    const origin = await readOrigin();
+    if (!origin) throw new Error("\u8BF7\u5148\u586B\u5199\u5B9E\u4F8B\u5730\u5740");
+    const permitted = await chrome.permissions.contains({ origins: [`${origin}/*`] });
+    if (!permitted) throw new Error("\u8FD8\u6CA1\u6709\u6388\u6743\u8FD9\u4E2A\u5B9E\u4F8B");
+    return origin;
+  }
+  async function postImport(origin, path, body) {
+    const response = await fetch(`${origin}${path}`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const text = await response.text();
+    let parsed = {};
+    if (text) {
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = {};
+      }
+    }
+    if (!response.ok) {
+      throw new Error(parsed.error || text.slice(0, 180) || `HTTP ${response.status}`);
+    }
+    return parsed;
+  }
+  async function handleBookmarkImport(message) {
+    const origin = await readOriginOrThrow();
+    if (message.type === "importBookmarksStart") {
+      const body = await postImport(origin, "/api/bookmarks/import/browser", {
+        source: "extension"
+      });
+      const jobId = body.job?.id;
+      if (!jobId) throw new Error("\u6CA1\u6709\u62FF\u5230\u5BFC\u5165\u4EFB\u52A1");
+      return { ok: true, jobId };
+    }
+    if (message.type === "importBookmarksBatch") {
+      if (!message.jobId) throw new Error("\u7F3A\u5C11\u5BFC\u5165\u4EFB\u52A1");
+      await postImport(origin, `/api/bookmarks/import/browser/jobs/${message.jobId}/batches`, {
+        batchIndex: message.batchIndex ?? 0,
+        items: Array.isArray(message.items) ? message.items : []
+      });
+      return { ok: true, jobId: message.jobId };
+    }
+    if (!message.jobId) throw new Error("\u7F3A\u5C11\u5BFC\u5165\u4EFB\u52A1");
+    await postImport(origin, `/api/bookmarks/import/browser/jobs/${message.jobId}/scan`, {});
+    await chrome.tabs.create({ url: `${origin}/import` });
+    return { ok: true, jobId: message.jobId };
+  }
   void boot();
 })();
