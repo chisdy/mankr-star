@@ -4,8 +4,10 @@ import {
   DEFAULT_BOOKMARK_PAGINATION_MODE,
   bookmarkPaginationSettingsSchema,
   defaultSettingValue,
+  discoverySettingsResponseSchema,
   parseSettingJson,
   parseSettingValue,
+  updateDiscoverySettingsSchema,
 } from "../src/settings"
 import {
   DEFAULT_DEEPSEEK_MODEL,
@@ -31,6 +33,7 @@ describe("defaultSettingValue", () => {
     expect(defaultSettingValue("browsing")).toEqual({
       publicBrowsingEnabled: false,
     })
+    expect(defaultSettingValue("discovery")).toEqual({ enabled: false })
     expect(defaultSettingValue("cloudflare")).toEqual({
       accountId: "",
       apiTokenEncrypted: null,
@@ -39,6 +42,39 @@ describe("defaultSettingValue", () => {
     expect(defaultSettingValue("analytics")).toEqual({
       measurementId: null,
     })
+  })
+})
+
+describe("每日热点设置契约", () => {
+  it("持久化值损坏时关闭，合法布尔值原样读取", () => {
+    expect(parseSettingValue("discovery", { enabled: true })).toEqual({
+      enabled: true,
+    })
+    for (const value of [{}, { enabled: "true" }, { enabled: 1 }, null, []]) {
+      expect(parseSettingValue("discovery", value)).toEqual({ enabled: false })
+    }
+    expect(parseSettingJson("discovery", "{ invalid")).toEqual({
+      enabled: false,
+    })
+  })
+
+  it("写入只接受实际布尔值，响应需要 enabled 与 ready", () => {
+    for (const enabled of [true, false]) {
+      expect(updateDiscoverySettingsSchema.parse({ enabled })).toEqual({
+        enabled,
+      })
+    }
+    for (const enabled of ["true", "false", 1, 0, null, undefined]) {
+      expect(updateDiscoverySettingsSchema.safeParse({ enabled }).success).toBe(
+        false
+      )
+    }
+    expect(
+      discoverySettingsResponseSchema.parse({ enabled: true, ready: false })
+    ).toEqual({ enabled: true, ready: false })
+    expect(
+      discoverySettingsResponseSchema.safeParse({ enabled: true }).success
+    ).toBe(false)
   })
 })
 

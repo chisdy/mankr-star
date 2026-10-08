@@ -237,7 +237,7 @@ mankr-star/
 | `/feed` | 更新动态 | 登录 |
 | `/discover` | 固定四频道每日热点；不显示收藏搜索/文件夹树 | 登录或已有公开浏览开关允许的访客 |
 | `/insights` | 库洞察（规模 / 构成 / DeepSeek 用量 / Cloudflare Free 额度） | 登录 |
-| `/settings` | 账号、登出、GitHub PAT、**DeepSeek API Key / 模型**、导出 | 登录 |
+| `/settings` | 账号、登出、GitHub PAT、**DeepSeek API Key / 模型**、每日热点开关、导出 | 登录 |
 | `/bookmarks/:id` | 详情（或抽屉） | 登录 |
 
 - 未登录访问受保护路由 → 重定向 `/login`。
@@ -281,6 +281,7 @@ mankr-star/
 | PUT/PATCH | `/api/settings/cloudflare` | 保存 Cloudflare Account ID / API Token（加密） |
 | DELETE | `/api/settings/cloudflare` | 清除 Cloudflare 凭证 |
 | POST | `/api/settings/cloudflare/test` | 探测 Analytics 可读性 |
+| GET/PUT | `/api/settings/discovery` | 读取或保存实例每日热点开关，返回 `enabled` / `ready`；登录鉴权、`private,no-store` |
 | POST | `/api/bookmarks/import/github` | Stars 导入 |
 | PUT/PATCH | `/api/settings/deepseek` | 写入/更新 DeepSeek Key 与模型；清除 Key |
 | POST | `/api/settings/deepseek/test` | 测试连接（P1） |
@@ -382,7 +383,7 @@ Content-Type: application/json
 `scheduled` 按 `controller.cron` 精确分派，两个触发链独立：
 
 1. `*/10 * * * *`：原 `runCronJobs`，含仓库更新、AI 回填、向量回填、GitHub 与浏览器导入续跑，保持原行为。
-2. `5-55/10 * * * *`：`runDiscoveryScheduled`，仅在 `DISCOVERY_ENABLED` 开启时推进发现任务。北京时间 08:00 后首次调用创建日任务，延迟部署可在下一轮补建当天任务。
+2. `5-55/10 * * * *`：`runDiscoveryScheduled`，仅在实例每日热点有效开关开启时推进发现任务。优先读取保存的设置，缺记录才回退 `DISCOVERY_ENABLED`。北京时间 08:00 后首次调用创建日任务，延迟部署可在下一轮补建当天任务。开关读取并入现有模块状态查询，启用轮次不增加 SQL；关闭轮次执行一条计入预算的 SQL，外部请求为零。
 
 发现使用独立模块和来源租约，持久化游标、重试时间及规则快照；成功任务不重新写入，执行器不兼容的旧任务终止保旧。正常完成目标为启动后 6 小时，最迟提前 50 分钟开始来源终止、四频道发布和清理；第 32 轮与时间截止取更早者。触发延迟到期限后时停止采集和新版本发布、记录期限失败并保旧，清理在后续有界轮次恢复。每轮上限为 25 次出站、40 条 D1 SQL、3 个并发出站；模块实际调用日预算 320 次，重试与重定向计入。初始每片最多 10 个 GitHub/HN 候选，RSS 每片一个 Feed；平台 CPU 配额仍需实测，不能认为 Cron 自动绕过免费 CPU 限制。
 
@@ -400,13 +401,15 @@ GitHub 以数字仓库 ID 保持改名后的连续基线；各频道最多 20 �
 
 当前 D1 单轮有效配置范围为 16–40 条，低于可执行下限明确拒绝；配置下调时分片还须预留原子归并、发布和租约收尾语句。低预算只能减少实际推进量，不能突破上限或无限重试；不足以完成当日采集时按截止策略保旧或发布可用来源。
 
-`GET /api/discovery/channels` 返回固定频道、部署 `enabled` 及发布 `ready`；`GET /api/discovery?channel=ai` 返回最新版本、来源状态、当前任务状态及最多 20 条内容。复用 `requireAuthOrPublicRead`；访客省略私人收藏字段，登录后对当前内容和别名执行有界收藏匹配。`POST /api/bookmarks` 保持原唯一写入口，不增加公众或运维抓取接口。
+`GET /api/discovery/channels` 返回固定频道、实例有效 `enabled` 及发布 `ready`；`GET /api/discovery?channel=ai` 返回最新版本、来源状态、当前任务状态及最多 20 条内容。复用 `requireAuthOrPublicRead`；访客省略私人收藏字段，登录后对当前内容和别名执行有界收藏匹配。关闭功能时隐藏导航和热点读接口内容。`POST /api/bookmarks` 保持原唯一收藏写入口，不增加公众或运维抓取接口。
+
+设置页提供「每日热点」开关。复用现有 `settings` 存储，键 `discovery` 的值为 `{ enabled: boolean }`，无需 schema 迁移。明确保存的布尔值覆盖环境变量的两种取值；缺记录时才使用 `DISCOVERY_ENABLED` 初始值，注册不预写该键。`GET/PUT /api/settings/discovery` 返回有效 `enabled` 与 `ready`，使用登录鉴权及 `requireAuthWrite`，不允许公开浏览修改设置，响应为 `private,no-store`。保存只修改配置；后续专用 Cron 读取开关，不在设置请求中调用 GitHub/HN/RSS。关闭停止后续同步但不删除任务、版本或原收藏；开启后无首版时在设置页显示等待首次同步，原 `enabled && ready` 导航门禁继续生效。
 
 `/discover` 在频道内提供全部 / GitHub / Hacker News / RSS 单选按钮。页面 URL 的 `source` 参数（`github`、`hn` 或 `rss`）保存所选平台，默认全部省略参数，未知值回退全部，切换频道保留来源。前端从当前频道已发布的最多 20 条内容派生结果，按 `evidence` 中任一匹配平台过滤；归并条目不重复，保留原排名和全部证据。显示筛选数量，无匹配时提供恢复全部的操作。来源筛选不传入读接口、不增加请求或 Query key 维度，也不触发抓取或增加数据 API 费用。
 
 共享 Zod schema 位于 `packages/shared/src/discovery.ts`。带收藏状态的 Query key 放在 `bookmarks` 前缀下并包含频道、guest/用户 ID 与公开读状态；既有收藏失效逻辑能同步全部热点频道，登录/退出/401 不串用缓存。普通内容五分钟新鲜度，重新进入/聚焦刷新；Service Worker 继续不缓存 `/api`。导航要求 `enabled && ready`，未就绪可短暂轮询读状态，页面刷新始终不抓外部来源。
 
-上线顺序为确认目标数据库迁移记录及 Workers/D1 套餐 → 增量迁移 → 关闭开关部署 → 来源及完整 Cron 平台资源验证 → 开启开关 → 生产 Cron 发布首版 → 开放导航；回滚关闭开关，保留新增表。本地纯来源 sampled JS 的冷启动曾超过 Free 的 10 ms CPU 限制，不能宣称免费部署已验收；staging 未通过时保持关闭并评估 Paid Workers。更细的预算、恢复与验收以每日热点实施计划为准。
+上线顺序为确认目标数据库迁移记录及 Workers/D1 套餐 → 增量迁移 → 保持实例有效开关关闭部署 → 来源及完整 Cron 平台资源验证 → 在设置页开启 → 生产 Cron 发布首版 → 开放导航；回滚在设置页关闭，保留新增表。仅将环境变量设为 false 不能覆盖已保存的开启设置，运维须检查有效状态。本地开发也优先使用设置页，但仍须手动调用 scheduled 测试路径，`pnpm dev` 和保存开关均不自动抓取。本地纯来源 sampled JS 的冷启动曾超过 Free 的 10 ms CPU 限制，不能宣称免费部署已验收；staging 未通过时保持关闭并评估 Paid Workers。更细的预算、恢复与验收以每日热点实施计划为准。
 
 ---
 

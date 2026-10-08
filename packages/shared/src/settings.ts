@@ -27,6 +27,7 @@ export const SETTING_KEYS = [
   "github",
   "tracking",
   "browsing",
+  "discovery",
   "bookmarks",
   "cloudflare",
   "analytics",
@@ -110,6 +111,30 @@ export const browsingSettingsValueSchema = z.object({
 })
 export type BrowsingSettingsValue = z.infer<typeof browsingSettingsValueSchema>
 
+/** 实例级每日热点开关；损坏的持久化值关闭同步。 */
+export const discoverySettingsValueSchema = z.object({
+  enabled: z.boolean().catch(false).default(false),
+})
+export type DiscoverySettingsValue = z.infer<
+  typeof discoverySettingsValueSchema
+>
+
+/** 写入时只接受布尔值，避免字符串 "false" 被转换成开启。 */
+export const updateDiscoverySettingsSchema = z.object({
+  enabled: z.boolean(),
+})
+export type UpdateDiscoverySettingsInput = z.infer<
+  typeof updateDiscoverySettingsSchema
+>
+
+export const discoverySettingsResponseSchema = z.object({
+  enabled: z.boolean(),
+  ready: z.boolean(),
+})
+export type DiscoverySettingsResponse = z.infer<
+  typeof discoverySettingsResponseSchema
+>
+
 export const bookmarksSettingsValueSchema = z.object({
   paginationMode: z
     .enum(BOOKMARK_PAGINATION_MODES)
@@ -164,6 +189,7 @@ export const SETTINGS_SCHEMAS = {
   github: githubSettingsValueSchema,
   tracking: trackingSettingsValueSchema,
   browsing: browsingSettingsValueSchema,
+  discovery: discoverySettingsValueSchema,
   bookmarks: bookmarksSettingsValueSchema,
   cloudflare: cloudflareSettingsValueSchema,
   analytics: analyticsSettingsValueSchema,
@@ -175,6 +201,7 @@ export type SettingsValueMap = {
   github: GithubSettingsValue
   tracking: TrackingSettingsValue
   browsing: BrowsingSettingsValue
+  discovery: DiscoverySettingsValue
   bookmarks: BookmarksSettingsValue
   cloudflare: CloudflareSettingsValue
   analytics: AnalyticsSettingsValue

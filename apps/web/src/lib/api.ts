@@ -6,6 +6,7 @@ import {
   detectSourceType,
   discoveryChannelsResponseSchema,
   discoveryResponseSchema,
+  discoverySettingsResponseSchema,
   slugify,
   urlExternalId,
   type KbConversationDetail,
@@ -51,6 +52,7 @@ import type {
   DiscoveryChannelId,
   DiscoveryChannelsResponse,
   DiscoveryResponse,
+  DiscoverySettingsResponse,
 } from "./types"
 import { collectSubtreeFolderIds } from "./folder-utils"
 import {
@@ -377,6 +379,8 @@ interface MockDataStore {
   user: User | null
   /** 用户配置与登录会话分别保存，退出后仍保留实例的公开浏览设置。 */
   authenticated?: boolean
+  /** 旧 mock 数据没有该字段时沿用已开启的演示默认值。 */
+  discoveryEnabled?: boolean
   folders: Folder[]
   bookmarks: Bookmark[]
   tags: Tag[]
@@ -596,8 +600,8 @@ export const api = {
           throw new ApiError("未登录", 401, { code: "UNAUTHORIZED" })
         }
         return {
-          enabled: true,
-          ready: true,
+          enabled: store.discoveryEnabled ?? true,
+          ready: store.discoveryEnabled ?? true,
           channels: [
             { id: "ai" },
             { id: "frontend" },
@@ -625,6 +629,22 @@ export const api = {
         )
         if (!authenticated && !store.user?.public_browsing_enabled) {
           throw new ApiError("未登录", 401, { code: "UNAUTHORIZED" })
+        }
+        if (store.discoveryEnabled === false) {
+          return {
+            enabled: false,
+            channel,
+            state: "disabled",
+            edition: null,
+            items: [],
+            sources: [],
+            sync: {
+              state: "idle",
+              startedAt: null,
+              finishedAt: null,
+              errorCode: null,
+            },
+          }
         }
         return createMockDiscovery(channel, store.bookmarks, authenticated)
       }
@@ -2529,6 +2549,51 @@ export const api = {
           saveMockStore()
         }
         return { public_browsing_enabled: data.enabled }
+      }
+      throw err
+    }
+  },
+
+  async getDiscoverySettings(): Promise<DiscoverySettingsResponse> {
+    try {
+      return discoverySettingsResponseSchema.parse(
+        await request<unknown>("/api/settings/discovery"),
+      )
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        if (!store.user || store.authenticated === false) {
+          throw new ApiError("未登录", 401, { code: "UNAUTHORIZED" })
+        }
+        const enabled = store.discoveryEnabled ?? true
+        return discoverySettingsResponseSchema.parse({ enabled, ready: enabled })
+      }
+      throw err
+    }
+  },
+
+  async updateDiscoverySettings(data: {
+    enabled: boolean
+  }): Promise<DiscoverySettingsResponse> {
+    try {
+      return discoverySettingsResponseSchema.parse(
+        await request<unknown>("/api/settings/discovery", {
+          method: "PUT",
+          body: JSON.stringify(data),
+        }),
+      )
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        if (!store.user || store.authenticated === false) {
+          throw new ApiError("未登录", 401, { code: "UNAUTHORIZED" })
+        }
+        store.discoveryEnabled = data.enabled
+        saveMockStore()
+        return discoverySettingsResponseSchema.parse({
+          enabled: data.enabled,
+          ready: data.enabled,
+        })
       }
       throw err
     }

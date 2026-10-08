@@ -23,6 +23,7 @@ export type {
   DiscoveryEvidence,
   DiscoveryItem,
   DiscoveryResponse,
+  DiscoverySettingsResponse,
   DiscoverySource,
   DiscoverySourceStatus,
 } from "@mankr/shared"

@@ -3,10 +3,10 @@ import { Hono } from "hono"
 import type { AppEnv } from "../env"
 import { requireAuthOrPublicRead } from "../middleware/auth"
 import {
-  discoveryEnabled,
   readDiscovery,
   readDiscoveryChannels,
 } from "../lib/discovery/repository"
+import { readDiscoveryEnabled } from "../lib/discovery/settings"
 
 export const discoveryRoutes = new Hono<AppEnv>()
 discoveryRoutes.use("/discovery", requireAuthOrPublicRead)
@@ -16,7 +16,7 @@ discoveryRoutes.get("/discovery/channels", async (c) => {
   return c.json(
     await readDiscoveryChannels(
       c.env.DB,
-      discoveryEnabled(c.env.DISCOVERY_ENABLED)
+      await readDiscoveryEnabled(c.env.DB, c.env.DISCOVERY_ENABLED)
     )
   )
 })
@@ -34,7 +34,7 @@ discoveryRoutes.get("/discovery", async (c) => {
   return c.json(
     await readDiscovery(
       c.env.DB,
-      discoveryEnabled(c.env.DISCOVERY_ENABLED),
+      await readDiscoveryEnabled(c.env.DB, c.env.DISCOVERY_ENABLED),
       parsed.success ? parsed.data : "ai",
       !!c.get("userId") && !c.get("isPublicRead")
     )

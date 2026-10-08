@@ -1,6 +1,6 @@
 {
   "title": "Settings",
-  "description": "Account, DeepSeek AI, Cloudflare usage, GitHub PAT, and preferences",
+  "description": "Account, AI configuration, daily discovery, and data preferences",
   "toasts": {
     "deepseekSaved": "DeepSeek AI settings saved",
     "deepseekSaveFailed": "Failed to save settings",
@@ -134,8 +134,22 @@
     "eventStarsDelta": "Star surges",
     "eventMetaChange": "Metadata changes (description, language, rename)"
   },
+  "discovery": {
+    "section": "8. Daily discovery",
+    "description": "Daily highlights across AI, frontend, backend, and developer tools.",
+    "enable": "Enable daily discovery",
+    "sourceHint": "Sources are GitHub, Hacker News, and RSS. No API key is required; an optional saved GitHub PAT raises request limits.",
+    "disabledHint": "Turning this off stops future syncs and hides the menu entry. Published content and bookmarks are kept.",
+    "preparingHint": "Enabled. Waiting for the next sync; the menu entry will appear when content is ready.",
+    "readyHint": "Content is ready. Future updates will sync on schedule.",
+    "view": "View daily discovery",
+    "loadError": "Could not load daily discovery settings. Please retry.",
+    "retry": "Retry",
+    "enabledToast": "Daily discovery enabled",
+    "disabledToast": "Daily discovery disabled"
+  },
   "bookmarkList": {
-    "section": "8. Bookmark list",
+    "section": "9. Bookmark list",
     "description": "Instance-level setting: how the bookmarks page loads more items. Signed-in users and public visitors share the same configuration.",
     "modeLabel": "Pagination mode",
     "modeAuto": "Auto-load on scroll",
@@ -148,13 +162,13 @@
     "save": "Save pagination settings"
   },
   "visibility": {
-    "section": "9. Visibility",
+    "section": "10. Visibility",
     "description": "Control whether signed-out visitors can read-only browse bookmarks and feed.",
     "publicBrowsing": "Public browsing",
     "publicBrowsingDescription": "When enabled, anyone with the link can read bookmarks and feed; when disabled, sign-in is required. Adding bookmarks and creating folders still require sign-in. Private notes stay hidden from guests."
   },
   "analytics": {
-    "section": "10. Google Analytics",
+    "section": "11. Google Analytics",
     "description": "Enter a Google Analytics Measurement ID to inject tracking site-wide.",
     "measurementIdLabel": "Measurement ID",
     "measurementIdPlaceholder": "G-XXXXXXXXXX",
@@ -167,7 +181,7 @@
     "clearConfirm": "Clear the Google Analytics measurement ID?"
   },
   "export": {
-    "section": "11. Backup & export",
+    "section": "12. Backup & export",
     "description": "Export all bookmarks, folders, and tags as JSON. Site accounts and passwords are excluded.",
     "title": "Export full library JSON",
     "detail": "Includes private notes, AI summaries, tags, and timestamps — not site accounts or passwords",
@@ -177,7 +191,7 @@
     "mdButton": "Export Markdown"
   },
   "danger": {
-    "section": "12. Danger zone",
+    "section": "13. Danger zone",
     "description": "Irreversible actions. Proceed with care.",
     "clearTitle": "Clear all data",
     "foldersNote": "Removes all bookmarks, folders, tags, feed history, and chat archives. Your account and settings are kept, and preset folders return automatically after you sign back in.",
@@ -188,7 +202,7 @@
     "confirmButton": "Clear all data"
   },
   "appearance": {
-    "section": "13. Appearance",
+    "section": "14. Appearance",
     "description": "Theme and interface language",
     "themeDescription": "Light / dark theme",
     "system": "System",
@@ -206,6 +220,7 @@
     "github": "GitHub PAT",
     "import": "Import Stars",
     "tracking": "Tracking",
+    "discovery": "Daily discovery",
     "bookmarkList": "Bookmark list",
     "visibility": "Visibility",
     "analytics": "Analytics",

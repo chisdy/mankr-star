@@ -31,12 +31,12 @@ import {
   DiscoveryLimitError,
   DiscoveryRepository,
   EXECUTION_SCHEMA_VERSION,
-  discoveryEnabled,
   parseStored,
   shanghaiDay,
   type DiscoveryJob,
   type DiscoveryLease,
 } from "../lib/discovery/repository"
+import { resolveDiscoveryEnabled } from "../lib/discovery/settings"
 import {
   SourceFetchError,
   type DiscoveryCandidate,
@@ -415,7 +415,6 @@ export async function runDiscoveryScheduled(
     candidatesWritten: 0,
     identityConflicts: 0,
   }
-  if (!discoveryEnabled(env.DISCOVERY_ENABLED)) return result
   let module: DiscoveryLease | null = null,
     lease: DiscoveryLease | null = null,
     job: DiscoveryJob | undefined
@@ -480,10 +479,12 @@ export async function runDiscoveryScheduled(
     return next
   }
   try {
+    const { settingValue, module: existingModule } = await repo.moduleState(day)
+    if (!resolveDiscoveryEnabled(settingValue, env.DISCOVERY_ENABLED))
+      return result
     const currentConfig = validateDiscoveryConfig(
       options.config ?? DISCOVERY_CONFIG
     )
-    const existingModule = await repo.moduleJob(day)
     let actualBudget: DiscoveryModuleBudget | null = existingModule
       ? parseModuleBudget(
           existingModule.config_snapshot_json,

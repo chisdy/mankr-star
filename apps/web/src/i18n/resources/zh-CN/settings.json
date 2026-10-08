@@ -1,6 +1,6 @@
 {
   "title": "设置",
-  "description": "账号管理、DeepSeek AI、Cloudflare 用量、GitHub PAT 与数据偏好",
+  "description": "账号管理、AI 配置、每日热点与数据偏好",
   "toasts": {
     "deepseekSaved": "已保存 DeepSeek AI 配置",
     "deepseekSaveFailed": "配置保存失败",
@@ -134,8 +134,22 @@
     "eventStarsDelta": "Star 明显变化",
     "eventMetaChange": "元信息变更（简介、语言、改名）"
   },
+  "discovery": {
+    "section": "8. 每日热点",
+    "description": "汇总 AI、前端、后端和开发工具的每日热点。",
+    "enable": "开启每日热点",
+    "sourceHint": "来源为 GitHub、Hacker News 和 RSS，无需填写 API Key；GitHub 可选用已保存的 PAT 提高请求额度。",
+    "disabledHint": "关闭时停止后续同步并隐藏菜单入口，已生成内容和收藏会保留。",
+    "preparingHint": "已开启。等待下一轮同步，内容准备完成后会显示左侧入口。",
+    "readyHint": "内容已准备好，后续将按计划自动同步。",
+    "view": "查看每日热点",
+    "loadError": "每日热点设置加载失败，请重试。",
+    "retry": "重试",
+    "enabledToast": "已开启每日热点",
+    "disabledToast": "已关闭每日热点"
+  },
   "bookmarkList": {
-    "section": "8. 收藏列表",
+    "section": "9. 收藏列表",
     "description": "实例级设置：决定收藏页如何加载更多内容，登录用户与公开访客看到的是同一套配置。",
     "modeLabel": "分页方式",
     "modeAuto": "滚动到底自动加载",
@@ -148,13 +162,13 @@
     "save": "保存分页设置"
   },
   "visibility": {
-    "section": "9. 可见性",
+    "section": "10. 可见性",
     "description": "控制未登录访客能否只读查看本实例的收藏与动态。",
     "publicBrowsing": "公开浏览",
     "publicBrowsingDescription": "开启后，任何人可通过本实例链接只读查看收藏与动态；关闭后必须登录才能访问。添加收藏、新建文件夹等操作仍需登录。私人笔记始终不对访客可见。"
   },
   "analytics": {
-    "section": "10. Google 统计",
+    "section": "11. Google 统计",
     "description": "填写 Google Analytics Measurement ID，全站自动注入统计脚本。",
     "measurementIdLabel": "Measurement ID",
     "measurementIdPlaceholder": "G-XXXXXXXXXX",
@@ -167,7 +181,7 @@
     "clearConfirm": "确定清除 Google 统计代码？"
   },
   "export": {
-    "section": "11. 数据备份与导出",
+    "section": "12. 数据备份与导出",
     "description": "导出全部收藏、分类与标签数据为 JSON 格式。不含站点账号与密码。",
     "title": "导出全库 JSON",
     "detail": "包含私有笔记、AI 摘要、标签与时间戳；不含站点账号与密码",
@@ -177,7 +191,7 @@
     "mdButton": "导出 Markdown"
   },
   "danger": {
-    "section": "12. 危险操作",
+    "section": "13. 危险操作",
     "description": "以下操作不可撤销，请谨慎操作。",
     "clearTitle": "清空全部数据",
     "foldersNote": "将删除全部收藏、文件夹、标签、动态历史与对话存档。账号与设置会保留，重新登录后预置文件夹会自动恢复。",
@@ -188,7 +202,7 @@
     "confirmButton": "清空全部数据"
   },
   "appearance": {
-    "section": "13. 外观与语言",
+    "section": "14. 外观与语言",
     "description": "主题与界面语言",
     "themeDescription": "自适应浅色 / 深色界面主题",
     "system": "跟随系统",
@@ -206,6 +220,7 @@
     "github": "GitHub PAT",
     "import": "导入 Stars",
     "tracking": "更新跟踪",
+    "discovery": "每日热点",
     "bookmarkList": "收藏列表",
     "visibility": "可见性",
     "analytics": "Google 统计",

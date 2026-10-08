@@ -203,6 +203,17 @@ export class DiscoveryRepository {
       [day]
     )
   }
+  /** Read the switch with the existing module lookup to preserve the 16-statement budget. */
+  async moduleState(day: string) {
+    const row = await this.first<
+      DiscoveryJob & { setting_value: string | null }
+    >(
+      "SELECT j.*, (SELECT value FROM settings WHERE key='discovery') AS setting_value FROM (SELECT 1) LEFT JOIN discovery_sync_jobs j ON j.edition_day=? AND j.partition_key='__budget__'",
+      [day]
+    )
+    const { setting_value: settingValue, ...module } = row!
+    return { settingValue, module: module.id ? module : null }
+  }
   async acquireModule(
     day: string,
     snapshot: DiscoveryModuleBudget = moduleBudget(DISCOVERY_CONFIG),

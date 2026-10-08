@@ -13,7 +13,7 @@
 | 每日热点 | `/discover`：AI、前端、后端 / 基础设施、开发工具四个固定频道；GitHub 候选仓库、HN 热门与经过验证的 RSS 更新；支持来源平台筛选和手动收藏 |
 | 洞察 | 来源 / 语言 / 健康分布、AI 用量、Cloudflare Free 额度、同步问题 |
 | KB Chat | 基于收藏库检索 + 可选 AnySearch 联网；SSE 流式回答 |
-| 设置 | DeepSeek / AnySearch / Cloudflare Analytics / GitHub PAT、**API Token（MCP）**、跟踪阈值与动态订阅、公开浏览、JSON / Markdown 导出 |
+| 设置 | DeepSeek / AnySearch / Cloudflare Analytics / GitHub PAT、**API Token（MCP）**、每日热点开关、跟踪阈值与动态订阅、公开浏览、JSON / Markdown 导出 |
 | MCP | `POST /api/mcp`（Bearer Token）；工具：search / get / list folders·tags / save / update |
 | PWA | 可安装到桌面/主屏；Service Worker 只缓存应用外壳与构建产物，`/api` 不走缓存 |
 | 浏览器扩展 | `apps/extension`（MV3）：一键把当前标签页带到收藏弹窗，见 [扩展说明](apps/extension/README.md) |
@@ -59,11 +59,13 @@ Worker 环境变量见 `apps/web/wrangler.jsonc`（`APP_NAME` 等）。本地开
 
 ## 每日热点的启用与运维
 
-`DISCOVERY_ENABLED` 默认关闭。部署前先核对目标 D1 的迁移记录，应用新增迁移，再保持开关关闭部署代码；完成来源验证、测试和目标套餐的完整 Cron 资源验收后才设为 `"true"`。热点不调用付费 AI，也不需要新的数据 API Key；已有 GitHub PAT 可提高配额。API 免费不代表 Workers / D1 的计算和存储没有成本。
+登录后，在 **设置 → 每日热点** 打开或关闭功能。保存只更新配置，后续专用 Cron 按开关推进同步；开启后尚无已发布内容时，设置页显示等待首次同步，首版就绪后才出现导航。关闭会隐藏入口和热点读接口内容、停止后续同步，保留已发布榜单及原收藏。热点不调用付费 AI，也不需要新的数据 API Key；已有 GitHub PAT 可提高配额。API 免费不代表 Workers / D1 的计算和存储没有成本。
+
+设置保存在实例的 D1 中，无需修改部署配置或新增迁移。尚未保存每日热点设置时，使用 `DISCOVERY_ENABLED` 环境变量作为初始值，默认关闭；明确保存的设置优先于环境变量，开启和关闭都能覆盖它。新账号注册不会预先写入这项设置。生产启用前仍须核对目标 D1 的迁移记录、来源和完整 Cron 的目标套餐资源证据；这些条件未满足时保持功能关闭。
 
 原业务触发器 `*/10 * * * *` 保持不变，热点使用 `5-55/10 * * * *` 单独推进。每天北京时间 08:00 后创建当天任务，每轮推进有预算的分片，显示实际发布时间。生产初始化由热点 Cron 完成；`GET /api/discovery/channels` 的 `enabled` 与 `ready` 都为 true 后才显示导航，首次失败时查看 Worker 日志及发现读接口状态。网页刷新只读已发布数据，不能触发抓取。
 
-本地预览在 `apps/web/.dev.vars` 设置 `DISCOVERY_ENABLED=true`，不会改变生产默认关闭的开关。`pnpm dev` 不会自动运行 Cron；在北京时间 08:00 后用以下命令推进一个热点分片，后续按同一命令续跑。已有成功频道发布、channels API 返回 `ready=true` 后，刷新页面即可看到「每日热点」导航；首次采样没有昨日增长是正常状态。上游限流时按任务重试时间等待，不通过高频空调用耗尽分片轮次。
+本地预览建议登录后在 **设置 → 每日热点** 开启；保存的是本地 D1 配置。`apps/web/.dev.vars` 的 `DISCOVERY_ENABLED=true` 只作为未保存设置时的初始值，不会改动生产配置。`pnpm dev` 不会自动运行 Cron，设置开关也不会立即抓取；在北京时间 08:00 后用以下命令推进一个热点分片，后续按同一命令续跑。已有成功频道发布、channels API 返回 `ready=true` 后，刷新页面即可看到「每日热点」导航；首次采样没有昨日增长是正常状态。上游限流时按任务重试时间等待，不通过高频空调用耗尽分片轮次。
 
 ```bash
 curl -G 'http://localhost:5173/cdn-cgi/local/scheduled' \

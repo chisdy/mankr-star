@@ -205,6 +205,106 @@ describe("发现 API mock 共用收藏存储", () => {
     vi.unstubAllEnvs()
   })
 
+  it("每日热点开关持久化并控制读接口，重新开启保留原内容与收藏", async () => {
+    expect(await mockApi.getDiscoverySettings()).toEqual({
+      enabled: true,
+      ready: true,
+    })
+    const before = await mockApi.getDiscovery("tools")
+    const saved = await mockApi.createBookmark({ url: before.items[0]!.url })
+    expect(await mockApi.updateDiscoverySettings({ enabled: false })).toEqual({
+      enabled: false,
+      ready: false,
+    })
+    expect(await mockApi.getDiscoveryChannels()).toMatchObject({
+      enabled: false,
+      ready: false,
+    })
+    expect(await mockApi.getDiscovery("tools")).toMatchObject({
+      enabled: false,
+      state: "disabled",
+      edition: null,
+      items: [],
+      sources: [],
+    })
+
+    vi.resetModules()
+    mockApi = (await import("../src/lib/api")).api
+    expect(await mockApi.getDiscoverySettings()).toEqual({
+      enabled: false,
+      ready: false,
+    })
+    expect(await mockApi.updateDiscoverySettings({ enabled: true })).toEqual({
+      enabled: true,
+      ready: true,
+    })
+    const restored = await mockApi.getDiscovery("tools")
+    expect(restored.items.map((item) => item.id)).toEqual(
+      before.items.map((item) => item.id),
+    )
+    expect(restored.items[0]!.savedBookmarkId).toBe(saved.id)
+    expect((await mockApi.getDiscoveryChannels()).ready).toBe(true)
+  })
+
+  it("公开浏览允许读热点，但访客不能读取或修改每日热点设置", async () => {
+    await mockApi.updatePublicBrowsing({ enabled: true })
+    await mockApi.logout()
+    expect((await mockApi.getDiscovery("ai")).enabled).toBe(true)
+    await expect(mockApi.getDiscoverySettings()).rejects.toMatchObject({
+      status: 401,
+      code: "UNAUTHORIZED",
+    })
+    await expect(
+      mockApi.updateDiscoverySettings({ enabled: false }),
+    ).rejects.toMatchObject({ status: 401, code: "UNAUTHORIZED" })
+    await mockApi.login({ username: "demo_user", password: "mock" })
+    expect((await mockApi.getDiscoverySettings()).enabled).toBe(true)
+  })
+
+  it("每日热点设置使用真实 GET/PUT 契约并拒绝错误响应而不回退 mock", async () => {
+    const fetch = vi.fn(async (_endpoint: string, options?: RequestInit) =>
+      new Response(
+        JSON.stringify({ enabled: options?.method !== "PUT", ready: false }),
+        { headers: { "content-type": "application/json" } },
+      ),
+    )
+    vi.stubGlobal("fetch", fetch)
+    expect(await mockApi.getDiscoverySettings()).toEqual({
+      enabled: true,
+      ready: false,
+    })
+    expect(fetch.mock.calls[0]![0]).toBe("/api/settings/discovery")
+    expect(await mockApi.updateDiscoverySettings({ enabled: false })).toEqual({
+      enabled: false,
+      ready: false,
+    })
+    expect(fetch.mock.calls[1]![1]).toMatchObject({
+      method: "PUT",
+      body: '{"enabled":false}',
+      credentials: "include",
+    })
+
+    vi.stubGlobal("fetch", async () =>
+      new Response(JSON.stringify({ enabled: "true", ready: false }), {
+        headers: { "content-type": "application/json" },
+      }),
+    )
+    await expect(mockApi.getDiscoverySettings()).rejects.toThrow()
+    await expect(
+      mockApi.updateDiscoverySettings({ enabled: true }),
+    ).rejects.toThrow()
+    vi.stubGlobal("fetch", async () =>
+      new Response(JSON.stringify({ error: "expired", code: "UNAUTHORIZED" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      }),
+    )
+    await expect(mockApi.getDiscoverySettings()).rejects.toMatchObject({
+      status: 401,
+      code: "UNAUTHORIZED",
+    })
+  })
+
   it("GitHub 收藏保留原返回形状；重复和删除立即反映到发现", async () => {
     const response = await mockApi.getDiscovery("tools")
     const item = response.items.find(

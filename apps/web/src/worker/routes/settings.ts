@@ -28,6 +28,7 @@ import {
   recomputeActivityHealth,
   trackingSettingsSchema,
   updateAnalyticsSettingsSchema,
+  updateDiscoverySettingsSchema,
   updatePublicBrowsingSchema,
   type HealthStatus,
 } from "@mankr/shared"
@@ -40,6 +41,8 @@ import { testCloudflareAnalyticsAccess, clearCloudflareQuotaCache } from "../lib
 import { decryptSecret, encryptSecret, last4 } from "../lib/crypto"
 import { recordAiUsage } from "../lib/ai-usage"
 import { testDeepSeekConnection } from "../lib/deepseek"
+import { readDiscoveryChannels } from "../lib/discovery/repository"
+import { readDiscoveryEnabled } from "../lib/discovery/settings"
 import { hashPassword, verifyPassword } from "../lib/password"
 import { rateLimit } from "../lib/rate-limit"
 import { bumpBookmarkMatchRevision } from "../lib/bookmark-match-revision"
@@ -49,7 +52,7 @@ import { requireAuthWrite } from "../middleware/auth"
 
 export const settingsRoutes = new Hono<AppEnv>()
 
-/** Settings 全是写操作；read-only Bearer 禁止 */
+/** 设置管理仅限登录并有写权限的账号；read-only Bearer 禁止。 */
 settingsRoutes.use("/settings", requireAuthWrite)
 settingsRoutes.use("/settings/*", requireAuthWrite)
 
@@ -718,6 +721,38 @@ settingsRoutes.put("/settings/public-browsing", async (c) => {
   return c.json({ public_browsing_enabled: parsed.data.enabled })
 })
 
+settingsRoutes.get("/settings/discovery", async (c) => {
+  c.header("Cache-Control", "private, no-store")
+  const enabled = await readDiscoveryEnabled(c.env.DB, c.env.DISCOVERY_ENABLED)
+  const { ready } = await readDiscoveryChannels(c.env.DB, enabled)
+  return c.json({ enabled, ready })
+})
+
+settingsRoutes.put("/settings/discovery", async (c) => {
+  c.header("Cache-Control", "private, no-store")
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: "无效的 JSON", code: "BAD_REQUEST" }, 400)
+  }
+  const parsed = updateDiscoverySettingsSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: parsed.error.flatten(),
+      },
+      400,
+    )
+  }
+  const enabled = parsed.data.enabled
+  await writeSetting(c.get("db"), "discovery", { enabled })
+  const { ready } = await readDiscoveryChannels(c.env.DB, enabled)
+  return c.json({ enabled, ready })
+})
+
 /** 实例级 Google Analytics Measurement ID；公开下发到 /auth/status */
 settingsRoutes.put("/settings/analytics", async (c) => {
   let body: unknown
@@ -821,4 +856,3 @@ settingsRoutes.post("/settings/clear-data", async (c) => {
 
   return c.json({ ok: true })
 })
-

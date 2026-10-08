@@ -37,6 +37,7 @@ import { ApiTokensSection } from "./api-tokens-section"
 import { ClearDataSection } from "./clear-data-section"
 import { CloudflareSettingsSection } from "./cloudflare-settings-section"
 import { EmbeddingSettingsSection } from "./embedding-settings-section"
+import { DiscoverySettingsSection } from "./discovery-settings-section"
 import { GithubImportSection } from "./github-import-section"
 import { GoogleAnalyticsSection } from "./google-analytics-section"
 
@@ -57,6 +58,7 @@ const SECTION_NAV_KEYS = [
   { id: "github", labelKey: "nav.github" },
   { id: "import", labelKey: "nav.import" },
   { id: "tracking", labelKey: "nav.tracking" },
+  { id: "discovery", labelKey: "nav.discovery" },
   { id: "bookmark-list", labelKey: "nav.bookmarkList" },
   { id: "visibility", labelKey: "nav.visibility" },
   { id: "analytics", labelKey: "nav.analytics" },
@@ -846,6 +848,8 @@ export function SettingsPage() {
           ))}
         </div>
       </section>
+
+      <DiscoverySettingsSection />
 
       {/* Section 7: Bookmark list pagination */}
       <BookmarkListSection user={user} />

@@ -76,6 +76,7 @@ export const queryKeys = {
   settings: {
     deepseek: ["settings", "deepseek"] as const,
     cloudflare: ["settings", "cloudflare"] as const,
+    discovery: ["settings", "discovery"] as const,
   },
   apiTokens: {
     all: ["api-tokens"] as const,

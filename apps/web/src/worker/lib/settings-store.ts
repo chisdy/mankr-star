@@ -35,6 +35,7 @@ export async function readAllSettings(db: Db): Promise<SettingsValueMap> {
     github: parseSettingJson("github", byKey.get("github")),
     tracking: parseSettingJson("tracking", byKey.get("tracking")),
     browsing: parseSettingJson("browsing", byKey.get("browsing")),
+    discovery: parseSettingJson("discovery", byKey.get("discovery")),
     bookmarks: parseSettingJson("bookmarks", byKey.get("bookmarks")),
     cloudflare: parseSettingJson("cloudflare", byKey.get("cloudflare")),
     analytics: parseSettingJson("analytics", byKey.get("analytics")),
@@ -79,6 +80,8 @@ export async function writeSetting<K extends SettingKey>(
 export async function initializeSettings(db: Db): Promise<void> {
   const now = nowIso()
   for (const key of SETTING_KEYS) {
+    // 缺行表示继承部署默认值；只有用户保存开关才建立显式覆盖。
+    if (key === "discovery") continue
     await db
       .insert(settings)
       .values({

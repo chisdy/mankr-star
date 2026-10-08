@@ -2,7 +2,7 @@
 
 日期：2026-10-08
 
-状态：2026-10-08 已按用户授权完成开发实现及最终本地验收，结果见 §13/§16。四频道、GitHub 80 / HN 40 / 三个 RSS 的原范围保留，R1–R7、R9–R15 的开发补项已落实。§12/§14/§15 保留各轮评审的历史起点与发现。生产开关仍为 false；R8 的目标套餐、生产迁移 ledger 及完整 Cron 平台 CPU 验证仍是启用前门槛，本地开发完成不等于生产已启用或免费运行已验收。
+状态：2026-10-08 已按用户授权完成此前开发实现及最终本地验收，结果见 §13/§16；新增设置页运行时开关见 §21，该增补的本轮验收待完成。四频道、GitHub 80 / HN 40 / 三个 RSS 的原范围保留，R1–R7、R9–R15 的开发补项已落实。§12/§14/§15 保留各轮评审的历史起点与发现。生产环境初始值仍为 false；R8 的目标套餐、生产迁移 ledger 及完整 Cron 平台 CPU 验证仍是启用前门槛，本地开发完成不等于生产已启用或免费运行已验收。
 
 ## 1. 已确认范围
 
@@ -129,6 +129,7 @@ GitHub 内容在 `discovery_items.github_repo_id` 上增加 nullable UNIQUE 约�
 - 展示最后发布时间及来源状态。当天更新尚未完成时保留上一版；部分来源沿用旧内容时逐来源显示最后成功日期，超过 7 天的旧来源结果不再混入新榜单。
 - 区分首次初始化、频道确实无结果、同步进行中、部分失败、有旧结果的失败、完全没有可用结果。
 - 页面刷新只重新读取已发布数据，不触发外部抓取。
+- **补充于设置页增补（§21）：** 登录用户在「设置 → 每日热点」保存实例开关。开启但无首版时设置页显示等待首次同步，导航仍要求 `enabled && ready`；保存开关和刷新均不触发抓取。关闭隐藏入口及热点读接口内容，停止后续同步，保留已发布榜单与原收藏。
 
 ## 5. 持久化设计
 
@@ -165,6 +166,7 @@ GitHub 内容在 `discovery_items.github_repo_id` 上增加 nullable UNIQUE 约�
 
 - 保留现有 `*/10 * * * *`，新增 `5-55/10 * * * *`，使热点调用与原任务在时间上错开 5 分钟。
 - Worker `scheduled` 根据 `controller.cron` 精确分派。原 Cron 只调用 `runCronJobs`，新增 Cron 只调用 `runDiscoveryScheduled`。
+- **补充于设置页增补（§21）：** 新 Cron 先读取实例的有效热点开关：已保存 `settings.discovery.enabled` 优先，缺记录才回退 `DISCOVERY_ENABLED`。设置读取合并在现有模块状态查询中，启用轮次不增加 SQL；关闭轮次执行一条计入预算的 SQL，不启动或续跑热点同步，外部请求为零。仍须重新验证 D1=16 的推进和收尾。
 - 新 Cron 在北京时间 08:00 后首次触发时创建当天任务，正常起点约 08:05；全部日期由明确的 `Asia/Shanghai` 计算，Cloudflare 的 cron 表达式按 UTC 调度。
 - 同一天任务依靠数据库唯一键只创建一次，之后各轮只续跑未完成任务。首次部署在当天 08:00 之后，由下一个热点轮次补建当天任务；不自动回补多个历史日期。
 - 未到 08:00 时仅恢复上一日尚未到终止期限的任务。一次更新从启动起以 6 小时为完成目标，采集必须提前为来源终止、四频道发布和清理预留时间；未完成来源按失败保旧处理，避免无限等待。下一日创建新任务。具体收尾与错过触发策略见 R14。
@@ -200,7 +202,7 @@ P3 必须用最大池规模和真实资源统计验证期限。**补充于第三
 
 **补充于复审 R8（P5，上线阻塞）：** 当前不能判定本功能可按 Workers Free 稳定启用。本地 workerd profiler 的 30 条 RSS 冷启动 sampled JS 为 Hugging Face 11.352 ms、Cloudflare 18.748 ms；仅将 RSS 限额改为 10/5 条的对照中，Cloudflare 仍为 14.469/15.686 ms。采样有噪声、未包含 D1，不能等同平台 CPU 账单或证明生产必然超限，但不足以通过免费版 10 ms 门槛。[Workers CPU 限制与观测方式](https://developers.cloudflare.com/workers/platform/limits/#cpu-time)
 
-P5 先记录目标账户 Workers/D1 套餐及限额，再在独立 staging 使用完整 Cron（含配置解析、来源、安全检查、持久化、发布、清理）覆盖冷/暖启动和最大输入；保存平台 invocation CPU、wall time、outcome、真实出站请求、D1 statements 与 rows read/write。Free 验收至少覆盖两个完整模拟日及冷启动，所有阶段不得出现 `exceededCpu`/资源中止，并需在 10 ms 内留有余量；本地 `elapsedMs`、纯来源 profiler 或小样本不能代替该证据。目标套餐不满足时继续保持 `DISCOVERY_ENABLED=false`，记录 Paid Workers 的费用及完整 Cron 复验路径；不在本次评审购买套餐、部署或开启生产。任何缩候选/停用来源的降级须明确记录范围变化并重新做容量验收，不能当作原规模验收通过。
+P5 先记录目标账户 Workers/D1 套餐及限额，再在独立 staging 使用完整 Cron（含设置读取、配置解析、来源、安全检查、持久化、发布、清理）覆盖冷/暖启动和最大输入；保存平台 invocation CPU、wall time、outcome、真实出站请求、D1 statements 与 rows read/write。Free 验收至少覆盖两个完整模拟日及冷启动，所有阶段不得出现 `exceededCpu`/资源中止，并需在 10 ms 内留有余量；本地 `elapsedMs`、纯来源 profiler 或小样本不能代替该证据。目标套餐不满足时继续保持有效开关关闭：已保存设置时明确保存 `enabled=false`，缺记录时使用 `DISCOVERY_ENABLED=false`，记录 Paid Workers 的费用及完整 Cron 复验路径；不在本次增补购买套餐、部署或开启生产。任何缩候选/停用来源的降级须明确记录范围变化并重新做容量验收，不能当作原规模验收通过。
 
 现有采样由 `scripts/discovery-resource-smoke.mjs` 生成；临时报告为 `/tmp/mankr-discovery-resource-report.json`、`/tmp/mankr-discovery-resource-rss10.json`、`/tmp/mankr-discovery-resource-rss5.json`。摘要已写入本计划，后续 staging 报告需保存输入 fixture 的 hash、规则版本、完整轮次与平台指标，避免只引用临时文件。复现命令（先按脚本说明准备完整 XML 样本）：
 
@@ -225,8 +227,9 @@ node scripts/discovery-resource-smoke.mjs --fixtures-dir /tmp --rss-limit 5 --ou
 
 | 方法 / 路径                     | 契约                                                                                                                                                    |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/discovery/channels`   | 四个固定频道及功能启用状态，不包含可编辑规则；**补充于评审 R6：** `enabled` 对应部署开关，`ready` 表示已有至少一个已发布频道版本，导航要求两者均为 true |
+| `GET /api/discovery/channels`   | 四个固定频道及功能启用状态，不包含可编辑规则；`enabled` 对应实例有效开关，`ready` 表示发布就绪，导航要求两者均为 true |
 | `GET /api/discovery?channel=ai` | 最新已发布频道版本、最多 20 个条目、来源新旧时间、当前任务状态；不接收 `q`、关键词、自定义 URL                                                          |
+| `GET/PUT /api/settings/discovery` | 登录用户读取或保存 `{ enabled: boolean }`，返回有效 `enabled` / `ready`；使用 `requireAuthWrite`、`private,no-store`，无公开写权限，保存不发起来源抓取 |
 | `POST /api/bookmarks`           | 继续使用现有 URL 收藏接口，不新建另一条写入收藏路径                                                                                                     |
 
 读接口复用 `requireAuthOrPublicRead`。当前收藏/已收藏状态通过规范化身份与已有收藏匹配能力批量计算，不逐条查库；访客不返回私人收藏状态，收藏按钮触发既有登录引导。响应契约用共享 Zod schema，错误格式与当前 API 一致。
@@ -251,8 +254,8 @@ node scripts/discovery-resource-smoke.mjs --fixtures-dir /tmp --rss-limit 5 --ou
 | 数据库         | 修改 `packages/db/src/schema.ts`；新增 discovery migration 与对应 Drizzle metadata                                                                                                                                                                                    |
 | 后端规则与来源 | 新增 `apps/web/src/worker/lib/discovery/{types,channels,config,http,github,hacker-news,rss,normalize,ranking,repository}.ts`；R9 运行时配置 schema 放在发现层                                                                                                         |
 | 调度           | 新增 `apps/web/src/worker/cron/discovery.ts`；修改 `worker/index.ts`、`worker/env.ts`、`wrangler.jsonc`                                                                                                                                                               |
-| 路由           | 新增 `apps/web/src/worker/routes/discovery.ts`；注册到 `worker/app.ts`                                                                                                                                                                                                |
-| 页面           | 新增 `apps/web/src/features/discovery/{discovery-page,discovery-card,use-discovery,discovery-access,mock-data,format-discovery-time}.tsx/ts`                                                                                                                          |
+| 路由           | 新增 `apps/web/src/worker/routes/discovery.ts`；注册到 `worker/app.ts`；§21 在现有设置路由增加 discovery GET/PUT                                                                                                                                                         |
+| 页面           | 新增 `apps/web/src/features/discovery/{discovery-page,discovery-card,use-discovery,discovery-access,mock-data,format-discovery-time}.tsx/ts`；§21 在现有设置页增加开关及等待状态                                                                                      |
 | 客户端         | 修改 `apps/web/src/lib/{api,types,query-keys}.ts`，兼顾现有 mock 数据模式                                                                                                                                                                                             |
 | 导航与应用壳   | 修改 `app/router.tsx`、`components/app-sidebar.tsx`、`components/app-shell.tsx`；隐藏热点页的收藏搜索和文件夹工具                                                                                                                                                     |
 | 国际化         | 新增中英文 `discovery.json`，注册 `i18n/index.ts` namespace，修改两种语言 `nav.json`                                                                                                                                                                                  |
@@ -260,7 +263,7 @@ node scripts/discovery-resource-smoke.mjs --fixtures-dir /tmp --rss-limit 5 --ou
 | 验证工具       | **补充于复审（当前变更面）：** `scripts/discovery-resource-smoke.mjs` 与来源顺序 fixture；`packages/eslint-config`、web ESLint 配置/依赖及 lock，将 lint 的兼容 TypeScript 6 工具隔离，应用编译器仍为 TypeScript 7，不关闭规则或排除既有业务；全量失败按 §10 基线核对 |
 | 文档           | 更新 `README.md`、`docs/PRD.md`、`docs/TECHNICAL_DESIGN.md` 对应章节，说明频道规则、热度口径和恢复流程                                                                                                                                                                |
 
-`DISCOVERY_ENABLED` 作为部署级开关，缺失或关闭时不调度热点；API 返回启用状态供导航隐藏入口。它不提供用户分类编辑能力。现有 GitHub 设置、收藏分类与 AI Jobs 不作签名或契约变更。
+每日热点使用实例设置开关，复用现有 `settings` 存储，键 `discovery` 的值为 `{ enabled: boolean }`。明确保存的 true/false 均覆盖部署环境初始值；没有该行时才回退 `DISCOVERY_ENABLED`，缺失环境变量按关闭处理。注册不预写 discovery 行，以保留已有安装的环境初始值。设置无需新增迁移或密钥，不提供用户分类编辑能力；API 返回有效状态供导航隐藏入口。现有 GitHub 设置、收藏分类与 AI Jobs 不作签名或契约变更。
 
 **补充于评审 R4：** Worker 测试虽自动应用迁移，但 `test/setup.ts` 的 `beforeEach` 仅删除显式列表中的表；新增发现表必须先按 FK 顺序清理 `discovery_edition_items` → `discovery_editions` → `discovery_observations` → `discovery_sync_jobs` → `discovery_items`，再执行原有清理列表。若 items 存在自引用归并关系，清理方案还须覆盖它，不能通过关闭外键约束掩盖错误。使用两个独立用例以相同日期/分区创建任务，验证第二个用例读不到第一个用例的数据。
 
@@ -286,9 +289,10 @@ node scripts/discovery-resource-smoke.mjs --fixtures-dir /tmp --rss-limit 5 --ou
 - P3（补充于第三轮评审 R14/R15）：明确六个收尾时间片或有预算证据的合并步骤；以部分成功和全失败检查少调用/延迟触发后的截止时间及保旧。D1=15 明确拒绝，D1=16 的非空最大输入、归并与发布完整验证；低请求/片大小按计划终止而非饥饿或无限等待。
 - P4（R1/R5）：访客在同一频道打开登录弹窗后立即获得登录后的收藏状态；退出及会话 401 不沿用私人状态；切频道、其他入口新增/删除/批量删除/恢复、外部写入后重新进入页面均刷新状态；真实后端与 mock 均覆盖普通 URL 和 GitHub 收藏。
 - P5（R6）：核对目标库迁移 ledger；开关关闭时原业务照常、入口隐藏；开启但首版未发布时 `enabled=true/ready=false`，入口仍隐藏；生产 Cron 产出首个版本后 `ready=true` 才显示入口，直达其余频道可显示初始化状态；初始化失败能由读接口/日志定位并保持入口隐藏。
+- 设置页增补（§21）：验证缺记录时环境 true/false 回退、注册不预写、保存 true/false 的双向覆盖、公开浏览无设置写权限；关闭后的读接口与后续 Cron、已有版本/收藏保留，首次启用等待及门禁、保存不抓取、前后端/mock/中英文和桌面手机行为。设置读取合并到模块查询后复跑默认及 D1=16 完整链路，确认全部物理 SQL 已计数、仍遵守预算和期限。
 - P5（R8）：取得目标套餐和完整 Cron 的平台资源证据后才解除上线阻塞；阶段测试与本地 profiler 不替代此门槛。失败时关闭开关保旧，付费选项另行评估。
 
-**补充于评审 R6（上线顺序）：** 迁移先于依赖表的后端代码部署，首次发布保持 `DISCOVERY_ENABLED=false`。P1 的新增存储可先独立交付，P2/P3 后端与调度仍关开关交付，P4 前端通过 `enabled/ready` 门禁交付。代码、目标库迁移、来源和资源验证全部通过后启用开关；由生产下一次热点 Cron 自动初始化并续跑，首个已发布版本出现后开放导航。首次初始化没有可用版本时，频道清单可短暂轮询 readiness，成功后恢复普通缓存；不开启公众抓取或临时写入接口。
+**补充于评审 R6（上线顺序，§21 更新开关操作）：** 迁移先于依赖表的后端代码部署，首次发布保持实例有效开关关闭。P1 的新增存储可先独立交付，P2/P3 后端与调度仍关开关交付，P4 前端通过 `enabled/ready` 门禁交付。代码、目标库迁移、来源和资源验证全部通过后，在设置页开启功能；由生产下一次热点 Cron 自动初始化并续跑，首个已发布版本出现后开放导航。首次初始化没有可用版本时，设置页显示等待状态，频道清单可短暂轮询 readiness，成功后恢复普通缓存；不开启公众抓取或临时抓取接口。已保存的开启设置不会被环境 false 覆盖，回滚须关闭有效实例设置。
 
 回滚优先关闭热点开关与入口，保留新增表；不回滚或删除原收藏数据。代码可以回退到旧版本，新增表留待后续处置；不用 destructive down migration 作为普通回滚。
 
@@ -571,3 +575,27 @@ R8 保持待验证：目标账户的 Workers/D1 套餐和生产迁移 ledger 未
 - `git diff --check` 通过；提交范围检查未发现真实 Key、Token、运行时数据库或临时产物。全量 lint 沿用 §16 的原有失败基线，本轮未重跑或宣称通过。
 
 本轮只提交代码并推送，不执行远程迁移、部署、套餐购买或生产开关启用；§16 的 R8 生产验收条件保持有效。
+
+## 21. 设置页每日热点开关（2026-10-08）
+
+用户要求通过设置控制每日热点。此前 §16–§20 的实现及检查记录保留；本节是后续增补，设置开关及本地验收已完成。
+
+实现约定：
+
+- 登录用户在「设置 → 每日热点」保存开关，复用现有 `settings` 表的 `discovery` 键及 `{ enabled: boolean }` 值，不新增 migration 或数据 API Key。已有可选 GitHub PAT 继续沿用。
+- 有明确保存值时，true/false 都优先于 `DISCOVERY_ENABLED`；没有该行时才采用环境初始值。注册不预先插入 discovery 设置，生产环境初始值仍为 false。
+- 登录鉴权的 `GET/PUT /api/settings/discovery` 返回有效 `enabled` 和 `ready`，使用 `requireAuthWrite`，响应为 `private,no-store`。公开浏览不授权修改设置。
+- 保存开关只更新配置，不调用来源接口。后续专用 Cron 按有效开关启动或续跑；本地 `pnpm dev` 不自动运行 Cron，仍用 README 中的 scheduled 命令推进。
+- 关闭隐藏热点导航和读接口内容、停止后续同步，保留既有版本、观察、任务和原收藏。首次开启但尚无已发布版本时，设置页显示等待首次同步；导航继续要求 `enabled && ready`。
+- 每轮 Cron 通过 `repo.moduleState(day)` 将设置读取与现有模块状态查询合并，启用轮次不增加 SQL；关闭轮次执行一条计入预算的 SQL、零出站。所有物理 SQL 仍计数，默认上限和 D1=16 可执行下限保持原约束，须重新证明推进、发布及租约收尾不超预算；最终资源结果以本轮检查为准。
+
+本轮验收结果：
+
+- `pnpm test:worker`：43 文件、611 用例通过，覆盖原业务及来源/后端/完整容量回归。新增设置集成测试 17 项、客户端测试 3 项，覆盖鉴权与只读 Token、输入校验、环境回退与双向覆盖、注册不预写、损坏值关闭、关闭后的读取/调度与数据保留、保存不抓取、首版 readiness 和 mock 状态保留。
+- `pnpm test:shared`：9 文件、104 用例通过；`pnpm typecheck`：5 个任务成功；`pnpm --filter web build`：退出 0，保留原动态导入及大包提示。
+- 最低 D1=16 的完整容量用例仍通过，包含昨日保留池的 80 仓库、40 HN、90 RSS、身份归并、四频道发布与清理；次日实际请求保持 141，SQL 上限和请求预算不变。
+- 新增组件及改动 API/query/type、Worker 设置/同步/读取模块的定向 ESLint 通过。设置主页仍有 3 项原有 React effect lint 错误；本轮没有宣称全量 lint 通过。`git diff --check` 通过。
+- 使用用户现有应用内浏览器和真实本地数据验证中文桌面设置：关闭后导航即时隐藏、channels API 返回 `enabled=false/ready=false`；重新开启导航恢复，刷新后仍开启；「查看每日热点」进入原有已发布 AI 榜单并显示 20 条。浏览器 error/warn 日志为空，当前本地开关保存为开启。没有切换公开浏览或其他设置，没有重置数据库。
+- 中英文文案均已补齐；首次未准备好、权限和 mock 行为通过自动化验证，本轮未调整用户浏览器视口或额外执行手机操作。留存截图：[每日热点设置](/Users/chisdy/.codex/visualizations/2026/10/08/01a119ad-77c6-7272-af77-746c0b9ed8e9/daily-discovery-settings.png)。
+
+R8 生产条件保持待验证：此设置功能不代表 Free 套餐已验收；目标套餐、生产迁移记录及完整 Cron 平台资源须在启用前确认。本轮不购买套餐、不执行远程迁移或部署。运维回退使用设置页关闭有效开关，不能仅改环境 false 而忽略已有开启记录。
