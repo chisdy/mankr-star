@@ -1,0 +1,4382 @@
+{
+  "sourceId": "huggingface",
+  "url": "https://huggingface.co/blog/feed.xml",
+  "verifiedAt": "2026-10-08T05:48:23.476409+00:00",
+  "bytes": 258028,
+  "sha256": "1b5f063cfe4030aeee376e8f80f92a7969bc9e98d62e1fd0c5215f1443d76d3c",
+  "entryCount": 874,
+  "newestFirst": true,
+  "orderViolations": [],
+  "entries": [
+    {
+      "id": "https://huggingface.co/blog/LiquidAI/open-d1",
+      "date": "Wed, 07 Oct 2026 16:54:33 GMT",
+      "url": "https://huggingface.co/blog/LiquidAI/open-d1"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/nemotron-ioi-and-imo-2026",
+      "date": "Wed, 07 Oct 2026 12:45:31 GMT",
+      "url": "https://huggingface.co/blog/nvidia/nemotron-ioi-and-imo-2026"
+    },
+    {
+      "id": "https://huggingface.co/blog/microsoft/thinkingbox",
+      "date": "Sat, 03 Oct 2026 22:56:48 GMT",
+      "url": "https://huggingface.co/blog/microsoft/thinkingbox"
+    },
+    {
+      "id": "https://huggingface.co/blog/allenai/astabrief",
+      "date": "Fri, 02 Oct 2026 15:19:50 GMT",
+      "url": "https://huggingface.co/blog/allenai/astabrief"
+    },
+    {
+      "id": "https://huggingface.co/blog/ServiceNow-AI/autosynthdata",
+      "date": "Fri, 02 Oct 2026 04:01:31 GMT",
+      "url": "https://huggingface.co/blog/ServiceNow-AI/autosynthdata"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-tts-leaderboard",
+      "date": "Wed, 30 Sep 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/open-tts-leaderboard"
+    },
+    {
+      "id": "https://huggingface.co/blog/MultiverseComputingCAI/getting-the-source-right-not-just-the-fact-source",
+      "date": "Tue, 29 Sep 2026 13:07:00 GMT",
+      "url": "https://huggingface.co/blog/MultiverseComputingCAI/getting-the-source-right-not-just-the-fact-source"
+    },
+    {
+      "id": "https://huggingface.co/blog/Hcompany/holo4",
+      "date": "Mon, 28 Sep 2026 09:44:05 GMT",
+      "url": "https://huggingface.co/blog/Hcompany/holo4"
+    },
+    {
+      "id": "https://huggingface.co/blog/rl-environments",
+      "date": "Mon, 28 Sep 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/rl-environments"
+    },
+    {
+      "id": "https://huggingface.co/blog/evaleval-aisi",
+      "date": "Tue, 22 Sep 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/evaleval-aisi"
+    },
+    {
+      "id": "https://huggingface.co/blog/transformers-llama-cpp-quants",
+      "date": "Tue, 22 Sep 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/transformers-llama-cpp-quants"
+    },
+    {
+      "id": "https://huggingface.co/blog/omlx",
+      "date": "Tue, 22 Sep 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/omlx"
+    },
+    {
+      "id": "https://huggingface.co/blog/tokenizers-v1",
+      "date": "Mon, 21 Sep 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tokenizers-v1"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-research/altk-evolve-consistency",
+      "date": "Tue, 15 Sep 2026 16:00:44 GMT",
+      "url": "https://huggingface.co/blog/ibm-research/altk-evolve-consistency"
+    },
+    {
+      "id": "https://huggingface.co/blog/asyncgrpo-lora-hfjobs",
+      "date": "Thu, 10 Sep 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/asyncgrpo-lora-hfjobs"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-workflow-1111",
+      "date": "Thu, 10 Sep 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-workflow-1111"
+    },
+    {
+      "id": "https://huggingface.co/blog/Hcompany/neomme",
+      "date": "Thu, 03 Sep 2026 13:13:48 GMT",
+      "url": "https://huggingface.co/blog/Hcompany/neomme"
+    },
+    {
+      "id": "https://huggingface.co/blog/grpo-with-trl-ifstruct",
+      "date": "Thu, 03 Sep 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/grpo-with-trl-ifstruct"
+    },
+    {
+      "id": "https://huggingface.co/blog/funes",
+      "date": "Thu, 03 Sep 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/funes"
+    },
+    {
+      "id": "https://huggingface.co/blog/train-to-paint-with-code",
+      "date": "Thu, 03 Sep 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/train-to-paint-with-code"
+    },
+    {
+      "id": "https://huggingface.co/blog/allenai/benchmirt",
+      "date": "Tue, 01 Sep 2026 21:39:07 GMT",
+      "url": "https://huggingface.co/blog/allenai/benchmirt"
+    },
+    {
+      "id": "https://huggingface.co/blog/webgpu-kernels",
+      "date": "Tue, 01 Sep 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/webgpu-kernels"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-asr-leaderboard-global-south",
+      "date": "Fri, 28 Aug 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/open-asr-leaderboard-global-south"
+    },
+    {
+      "id": "https://huggingface.co/blog/train-multi-vector-encoder",
+      "date": "Wed, 26 Aug 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/train-multi-vector-encoder"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-granite/granite-4-2",
+      "date": "Tue, 25 Aug 2026 15:14:14 GMT",
+      "url": "https://huggingface.co/blog/ibm-granite/granite-4-2"
+    },
+    {
+      "id": "https://huggingface.co/blog/MultiverseComputingCAI/quantization-aware-healing",
+      "date": "Tue, 25 Aug 2026 11:39:24 GMT",
+      "url": "https://huggingface.co/blog/MultiverseComputingCAI/quantization-aware-healing"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-workflow-guide",
+      "date": "Tue, 25 Aug 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-workflow-guide"
+    },
+    {
+      "id": "https://huggingface.co/blog/pwc-search",
+      "date": "Fri, 21 Aug 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/pwc-search"
+    },
+    {
+      "id": "https://huggingface.co/blog/asr-benchmark-optimization",
+      "date": "Fri, 21 Aug 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/asr-benchmark-optimization"
+    },
+    {
+      "id": "https://huggingface.co/blog/LiquidAI/lfm25-dspark",
+      "date": "Thu, 20 Aug 2026 16:52:57 GMT",
+      "url": "https://huggingface.co/blog/LiquidAI/lfm25-dspark"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-research/altk-evolve-hmm",
+      "date": "Tue, 18 Aug 2026 18:09:38 GMT",
+      "url": "https://huggingface.co/blog/ibm-research/altk-evolve-hmm"
+    },
+    {
+      "id": "https://huggingface.co/blog/multi-vector-encoder",
+      "date": "Tue, 18 Aug 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/multi-vector-encoder"
+    },
+    {
+      "id": "https://huggingface.co/blog/Dharma-AI/gpu-management-pt2",
+      "date": "Mon, 17 Aug 2026 19:46:21 GMT",
+      "url": "https://huggingface.co/blog/Dharma-AI/gpu-management-pt2"
+    },
+    {
+      "id": "https://huggingface.co/blog/state-of-open-models-summer-2026",
+      "date": "Fri, 14 Aug 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/state-of-open-models-summer-2026"
+    },
+    {
+      "id": "https://huggingface.co/blog/amazon/strands-lerobot-streaming-data-loop",
+      "date": "Thu, 13 Aug 2026 17:16:04 GMT",
+      "url": "https://huggingface.co/blog/amazon/strands-lerobot-streaming-data-loop"
+    },
+    {
+      "id": "https://huggingface.co/blog/icml-2026-open-reproductions",
+      "date": "Thu, 13 Aug 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/icml-2026-open-reproductions"
+    },
+    {
+      "id": "https://huggingface.co/blog/allenai/olmoearth-embeddings",
+      "date": "Wed, 12 Aug 2026 16:14:36 GMT",
+      "url": "https://huggingface.co/blog/allenai/olmoearth-embeddings"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-research/altk-evolve-sldd",
+      "date": "Tue, 11 Aug 2026 13:37:10 GMT",
+      "url": "https://huggingface.co/blog/ibm-research/altk-evolve-sldd"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/magpie-tts-multilingual-voice-agents",
+      "date": "Mon, 10 Aug 2026 16:25:36 GMT",
+      "url": "https://huggingface.co/blog/nvidia/magpie-tts-multilingual-voice-agents"
+    },
+    {
+      "id": "https://huggingface.co/blog/MultiverseComputingCAI/efficient-knowledge-distillation",
+      "date": "Mon, 10 Aug 2026 10:05:36 GMT",
+      "url": "https://huggingface.co/blog/MultiverseComputingCAI/efficient-knowledge-distillation"
+    },
+    {
+      "id": "https://huggingface.co/blog/muse-glimmer",
+      "date": "Mon, 10 Aug 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/muse-glimmer"
+    },
+    {
+      "id": "https://huggingface.co/blog/baseten",
+      "date": "Thu, 06 Aug 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/baseten"
+    },
+    {
+      "id": "https://huggingface.co/blog/Dharma-AI/gpu-management",
+      "date": "Thu, 30 Jul 2026 15:09:09 GMT",
+      "url": "https://huggingface.co/blog/Dharma-AI/gpu-management"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/cosmos-h-dreams",
+      "date": "Mon, 27 Jul 2026 09:32:20 GMT",
+      "url": "https://huggingface.co/blog/nvidia/cosmos-h-dreams"
+    },
+    {
+      "id": "https://huggingface.co/blog/agent-intrusion-technical-timeline",
+      "date": "Mon, 27 Jul 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/agent-intrusion-technical-timeline"
+    },
+    {
+      "id": "https://huggingface.co/blog/nunchaku-diffusers",
+      "date": "Thu, 23 Jul 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/nunchaku-diffusers"
+    },
+    {
+      "id": "https://huggingface.co/blog/grabette",
+      "date": "Tue, 21 Jul 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/grabette"
+    },
+    {
+      "id": "https://huggingface.co/blog/Dharma-AI/newer-models-same-advantages",
+      "date": "Thu, 16 Jul 2026 11:49:48 GMT",
+      "url": "https://huggingface.co/blog/Dharma-AI/newer-models-same-advantages"
+    },
+    {
+      "id": "https://huggingface.co/blog/security-incident-july-2026",
+      "date": "Thu, 16 Jul 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/security-incident-july-2026"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-research/model-routing-is-simple-until-it-isnt",
+      "date": "Wed, 15 Jul 2026 17:27:01 GMT",
+      "url": "https://huggingface.co/blog/ibm-research/model-routing-is-simple-until-it-isnt"
+    },
+    {
+      "id": "https://huggingface.co/blog/thinkingmachines-inkling",
+      "date": "Wed, 15 Jul 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/thinkingmachines-inkling"
+    },
+    {
+      "id": "https://huggingface.co/blog/real-world-voiceeq",
+      "date": "Wed, 15 Jul 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/real-world-voiceeq"
+    },
+    {
+      "id": "https://huggingface.co/blog/torch-attention-profile",
+      "date": "Fri, 10 Jul 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/torch-attention-profile"
+    },
+    {
+      "id": "https://huggingface.co/blog/native-speed-vllm-transformers-backend",
+      "date": "Wed, 08 Jul 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/native-speed-vllm-transformers-backend"
+    },
+    {
+      "id": "https://huggingface.co/blog/amazon/one-click-to-sagemaker-studio",
+      "date": "Tue, 07 Jul 2026 21:15:33 GMT",
+      "url": "https://huggingface.co/blog/amazon/one-click-to-sagemaker-studio"
+    },
+    {
+      "id": "https://huggingface.co/blog/microsoft/foundry-managed-compute",
+      "date": "Tue, 07 Jul 2026 15:20:06 GMT",
+      "url": "https://huggingface.co/blog/microsoft/foundry-managed-compute"
+    },
+    {
+      "id": "https://huggingface.co/blog/skypilot-hf-storage",
+      "date": "Tue, 07 Jul 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/skypilot-hf-storage"
+    },
+    {
+      "id": "https://huggingface.co/blog/lerobot-release-v060",
+      "date": "Tue, 07 Jul 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lerobot-release-v060"
+    },
+    {
+      "id": "https://huggingface.co/blog/Photoroom/prx-part4-data",
+      "date": "Mon, 06 Jul 2026 15:30:55 GMT",
+      "url": "https://huggingface.co/blog/Photoroom/prx-part4-data"
+    },
+    {
+      "id": "https://huggingface.co/blog/revamped-kernels",
+      "date": "Mon, 06 Jul 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/revamped-kernels"
+    },
+    {
+      "id": "https://huggingface.co/blog/cerebras-gemma4-voice-ai",
+      "date": "Wed, 01 Jul 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/cerebras-gemma4-voice-ai"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-research/scarfbench",
+      "date": "Tue, 30 Jun 2026 18:32:50 GMT",
+      "url": "https://huggingface.co/blog/ibm-research/scarfbench"
+    },
+    {
+      "id": "https://huggingface.co/blog/Dharma-AI/why-specialization-is-inevitable",
+      "date": "Tue, 30 Jun 2026 14:39:11 GMT",
+      "url": "https://huggingface.co/blog/Dharma-AI/why-specialization-is-inevitable"
+    },
+    {
+      "id": "https://huggingface.co/blog/eee-community-evals",
+      "date": "Tue, 30 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/eee-community-evals"
+    },
+    {
+      "id": "https://huggingface.co/blog/allenai/discoformer",
+      "date": "Mon, 29 Jun 2026 18:02:48 GMT",
+      "url": "https://huggingface.co/blog/allenai/discoformer"
+    },
+    {
+      "id": "https://huggingface.co/blog/vllm-jobs",
+      "date": "Fri, 26 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/vllm-jobs"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/accelerating-fine-tuning-nvidia-nemo-automodel",
+      "date": "Wed, 24 Jun 2026 16:00:13 GMT",
+      "url": "https://huggingface.co/blog/nvidia/accelerating-fine-tuning-nvidia-nemo-automodel"
+    },
+    {
+      "id": "https://huggingface.co/blog/ffasr-leaderboard",
+      "date": "Wed, 24 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ffasr-leaderboard"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface-hub-release-ci",
+      "date": "Tue, 23 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/huggingface-hub-release-ci"
+    },
+    {
+      "id": "https://huggingface.co/blog/cross-origin-storage",
+      "date": "Tue, 23 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/cross-origin-storage"
+    },
+    {
+      "id": "https://huggingface.co/blog/PaddlePaddle/pp-ocrv6",
+      "date": "Mon, 22 Jun 2026 13:18:56 GMT",
+      "url": "https://huggingface.co/blog/PaddlePaddle/pp-ocrv6"
+    },
+    {
+      "id": "https://huggingface.co/blog/local-models-pr-triage",
+      "date": "Mon, 22 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/local-models-pr-triage"
+    },
+    {
+      "id": "https://huggingface.co/blog/ServiceNow/mosaicleaks",
+      "date": "Thu, 18 Jun 2026 18:13:13 GMT",
+      "url": "https://huggingface.co/blog/ServiceNow/mosaicleaks"
+    },
+    {
+      "id": "https://huggingface.co/blog/peft-beyond-lora",
+      "date": "Thu, 18 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/peft-beyond-lora"
+    },
+    {
+      "id": "https://huggingface.co/blog/is-it-agentic-enough",
+      "date": "Thu, 18 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/is-it-agentic-enough"
+    },
+    {
+      "id": "https://huggingface.co/blog/amazon/strands-lerobot-hub-to-hardware",
+      "date": "Wed, 17 Jun 2026 10:18:05 GMT",
+      "url": "https://huggingface.co/blog/amazon/strands-lerobot-hub-to-hardware"
+    },
+    {
+      "id": "https://huggingface.co/blog/zai-org/glm-52-blog",
+      "date": "Wed, 17 Jun 2026 09:01:25 GMT",
+      "url": "https://huggingface.co/blog/zai-org/glm-52-blog"
+    },
+    {
+      "id": "https://huggingface.co/blog/agentic-resource-discovery-launch",
+      "date": "Wed, 17 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/agentic-resource-discovery-launch"
+    },
+    {
+      "id": "https://huggingface.co/blog/torch-mlp-fusion",
+      "date": "Thu, 11 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/torch-mlp-fusion"
+    },
+    {
+      "id": "https://huggingface.co/blog/mishig/spaces-agents-md",
+      "date": "Tue, 09 Jun 2026 10:46:19 GMT",
+      "url": "https://huggingface.co/blog/mishig/spaces-agents-md"
+    },
+    {
+      "id": "https://huggingface.co/blog/github-ci-hf-jobs",
+      "date": "Tue, 09 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/github-ci-hf-jobs"
+    },
+    {
+      "id": "https://huggingface.co/blog/openenv-agentic-rl",
+      "date": "Mon, 08 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/openenv-agentic-rl"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/nemotron-3-5-content-safety",
+      "date": "Thu, 04 Jun 2026 18:57:45 GMT",
+      "url": "https://huggingface.co/blog/nvidia/nemotron-3-5-content-safety"
+    },
+    {
+      "id": "https://huggingface.co/blog/hf-cli-for-agents",
+      "date": "Thu, 04 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hf-cli-for-agents"
+    },
+    {
+      "id": "https://huggingface.co/blog/Dharma-AI/direct-preference-optimization-beyond-chatbots",
+      "date": "Wed, 03 Jun 2026 12:55:11 GMT",
+      "url": "https://huggingface.co/blog/Dharma-AI/direct-preference-optimization-beyond-chatbots"
+    },
+    {
+      "id": "https://huggingface.co/blog/adding-mcp-tools-to-reachy-mini",
+      "date": "Wed, 03 Jun 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/adding-mcp-tools-to-reachy-mini"
+    },
+    {
+      "id": "https://huggingface.co/blog/Hcompany/holo31",
+      "date": "Tue, 02 Jun 2026 14:13:23 GMT",
+      "url": "https://huggingface.co/blog/Hcompany/holo31"
+    },
+    {
+      "id": "https://huggingface.co/blog/JetBrains/mellum2-launch",
+      "date": "Mon, 01 Jun 2026 15:45:17 GMT",
+      "url": "https://huggingface.co/blog/JetBrains/mellum2-launch"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-research/agent-logic-and-scalable-ai-adoption",
+      "date": "Mon, 01 Jun 2026 13:51:18 GMT",
+      "url": "https://huggingface.co/blog/ibm-research/agent-logic-and-scalable-ai-adoption"
+    },
+    {
+      "id": "https://huggingface.co/blog/torch-profiler",
+      "date": "Fri, 29 May 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/torch-profiler"
+    },
+    {
+      "id": "https://huggingface.co/blog/local-reachy-mini-conversation",
+      "date": "Wed, 27 May 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/local-reachy-mini-conversation"
+    },
+    {
+      "id": "https://huggingface.co/blog/delta-weight-sync",
+      "date": "Wed, 27 May 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/delta-weight-sync"
+    },
+    {
+      "id": "https://huggingface.co/blog/agent-glossary",
+      "date": "Mon, 25 May 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/agent-glossary"
+    },
+    {
+      "id": "https://huggingface.co/blog/allenai/olmoearth-v1-1",
+      "date": "Tue, 19 May 2026 18:38:09 GMT",
+      "url": "https://huggingface.co/blog/allenai/olmoearth-v1-1"
+    },
+    {
+      "id": "https://huggingface.co/blog/ettin-reranker",
+      "date": "Tue, 19 May 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ettin-reranker"
+    },
+    {
+      "id": "https://huggingface.co/blog/PaddlePaddle/paddleocr-transformers",
+      "date": "Mon, 18 May 2026 15:12:46 GMT",
+      "url": "https://huggingface.co/blog/PaddlePaddle/paddleocr-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-granite/granite-embedding-multilingual-r2",
+      "date": "Thu, 14 May 2026 18:55:01 GMT",
+      "url": "https://huggingface.co/blog/ibm-granite/granite-embedding-multilingual-r2"
+    },
+    {
+      "id": "https://huggingface.co/blog/continuous_async",
+      "date": "Thu, 14 May 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/continuous_async"
+    },
+    {
+      "id": "https://huggingface.co/blog/amazon/foundation-model-building-blocks",
+      "date": "Mon, 11 May 2026 23:18:26 GMT",
+      "url": "https://huggingface.co/blog/amazon/foundation-model-building-blocks"
+    },
+    {
+      "id": "https://huggingface.co/blog/ServiceNow-AI/correctness-before-corrections",
+      "date": "Wed, 06 May 2026 19:06:55 GMT",
+      "url": "https://huggingface.co/blog/ServiceNow-AI/correctness-before-corrections"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-asr-leaderboard-private-data",
+      "date": "Wed, 06 May 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/open-asr-leaderboard-private-data"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-granite/granite-4-1",
+      "date": "Wed, 29 Apr 2026 15:01:48 GMT",
+      "url": "https://huggingface.co/blog/ibm-granite/granite-4-1"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-providers-deepinfra",
+      "date": "Wed, 29 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-providers-deepinfra"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/nemotron-3-nano-omni-multimodal-intelligence",
+      "date": "Tue, 28 Apr 2026 15:58:57 GMT",
+      "url": "https://huggingface.co/blog/nvidia/nemotron-3-nano-omni-multimodal-intelligence"
+    },
+    {
+      "id": "https://huggingface.co/blog/openai-privacy-filter-web-apps",
+      "date": "Mon, 27 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/openai-privacy-filter-web-apps"
+    },
+    {
+      "id": "https://huggingface.co/blog/deepseekv4",
+      "date": "Fri, 24 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deepseekv4"
+    },
+    {
+      "id": "https://huggingface.co/blog/transformersjs-chrome-extension",
+      "date": "Thu, 23 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/transformersjs-chrome-extension"
+    },
+    {
+      "id": "https://huggingface.co/blog/tiiuae/qimma-arabic-leaderboard",
+      "date": "Tue, 21 Apr 2026 10:09:58 GMT",
+      "url": "https://huggingface.co/blog/tiiuae/qimma-arabic-leaderboard"
+    },
+    {
+      "id": "https://huggingface.co/blog/cybersecurity-openness",
+      "date": "Tue, 21 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/cybersecurity-openness"
+    },
+    {
+      "id": "https://huggingface.co/blog/ecom-rlve",
+      "date": "Thu, 16 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ecom-rlve"
+    },
+    {
+      "id": "https://huggingface.co/blog/transformers-to-mlx",
+      "date": "Thu, 16 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/transformers-to-mlx"
+    },
+    {
+      "id": "https://huggingface.co/blog/train-multimodal-sentence-transformers",
+      "date": "Thu, 16 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/train-multimodal-sentence-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-research/vakra-benchmark-analysis",
+      "date": "Wed, 15 Apr 2026 12:07:25 GMT",
+      "url": "https://huggingface.co/blog/ibm-research/vakra-benchmark-analysis"
+    },
+    {
+      "id": "https://huggingface.co/blog/Hcompany/holotab",
+      "date": "Wed, 15 Apr 2026 09:25:20 GMT",
+      "url": "https://huggingface.co/blog/Hcompany/holotab"
+    },
+    {
+      "id": "https://huggingface.co/blog/waypoint-1-5",
+      "date": "Thu, 09 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/waypoint-1-5"
+    },
+    {
+      "id": "https://huggingface.co/blog/multimodal-sentence-transformers",
+      "date": "Thu, 09 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/multimodal-sentence-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/safetensors-joins-pytorch-foundation",
+      "date": "Wed, 08 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/safetensors-joins-pytorch-foundation"
+    },
+    {
+      "id": "https://huggingface.co/blog/gemma4",
+      "date": "Thu, 02 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gemma4"
+    },
+    {
+      "id": "https://huggingface.co/blog/tiiuae/falcon-perception",
+      "date": "Wed, 01 Apr 2026 07:13:20 GMT",
+      "url": "https://huggingface.co/blog/tiiuae/falcon-perception"
+    },
+    {
+      "id": "https://huggingface.co/blog/introducing-gradio-server",
+      "date": "Wed, 01 Apr 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/introducing-gradio-server"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-granite/granite-4-vision",
+      "date": "Tue, 31 Mar 2026 15:10:41 GMT",
+      "url": "https://huggingface.co/blog/ibm-granite/granite-4-vision"
+    },
+    {
+      "id": "https://huggingface.co/blog/OpenMed/training-mrna-models-25-species",
+      "date": "Tue, 31 Mar 2026 08:23:44 GMT",
+      "url": "https://huggingface.co/blog/OpenMed/training-mrna-models-25-species"
+    },
+    {
+      "id": "https://huggingface.co/blog/trl-v1",
+      "date": "Tue, 31 Mar 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/trl-v1"
+    },
+    {
+      "id": "https://huggingface.co/blog/liberate-your-openclaw",
+      "date": "Fri, 27 Mar 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/liberate-your-openclaw"
+    },
+    {
+      "id": "https://huggingface.co/blog/ServiceNow-AI/eva",
+      "date": "Tue, 24 Mar 2026 02:01:52 GMT",
+      "url": "https://huggingface.co/blog/ServiceNow-AI/eva"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/domain-specific-embedding-finetune",
+      "date": "Fri, 20 Mar 2026 19:38:16 GMT",
+      "url": "https://huggingface.co/blog/nvidia/domain-specific-embedding-finetune"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface/state-of-os-hf-spring-2026",
+      "date": "Tue, 17 Mar 2026 16:37:55 GMT",
+      "url": "https://huggingface.co/blog/huggingface/state-of-os-hf-spring-2026"
+    },
+    {
+      "id": "https://huggingface.co/blog/Hcompany/holotron-12b",
+      "date": "Tue, 17 Mar 2026 12:33:39 GMT",
+      "url": "https://huggingface.co/blog/Hcompany/holotron-12b"
+    },
+    {
+      "id": "https://huggingface.co/blog/storage-buckets",
+      "date": "Tue, 10 Mar 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/storage-buckets"
+    },
+    {
+      "id": "https://huggingface.co/blog/async-rl-training-landscape",
+      "date": "Tue, 10 Mar 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/async-rl-training-landscape"
+    },
+    {
+      "id": "https://huggingface.co/blog/ulysses-sp",
+      "date": "Mon, 09 Mar 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ulysses-sp"
+    },
+    {
+      "id": "https://huggingface.co/blog/lerobot-release-v050",
+      "date": "Mon, 09 Mar 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lerobot-release-v050"
+    },
+    {
+      "id": "https://huggingface.co/blog/nxp/bringing-robotics-ai-to-embedded-platforms",
+      "date": "Thu, 05 Mar 2026 14:16:49 GMT",
+      "url": "https://huggingface.co/blog/nxp/bringing-robotics-ai-to-embedded-platforms"
+    },
+    {
+      "id": "https://huggingface.co/blog/modular-diffusers",
+      "date": "Thu, 05 Mar 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/modular-diffusers"
+    },
+    {
+      "id": "https://huggingface.co/blog/Photoroom/prx-part3",
+      "date": "Tue, 03 Mar 2026 16:50:49 GMT",
+      "url": "https://huggingface.co/blog/Photoroom/prx-part3"
+    },
+    {
+      "id": "https://huggingface.co/blog/moe-transformers",
+      "date": "Thu, 26 Feb 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/moe-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/ggml-joins-hf",
+      "date": "Fri, 20 Feb 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ggml-joins-hf"
+    },
+    {
+      "id": "https://huggingface.co/blog/unsloth-jobs",
+      "date": "Fri, 20 Feb 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/unsloth-jobs"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-research/itbenchandmast",
+      "date": "Wed, 18 Feb 2026 16:15:45 GMT",
+      "url": "https://huggingface.co/blog/ibm-research/itbenchandmast"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-html-one-shot-apps",
+      "date": "Wed, 18 Feb 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-html-one-shot-apps"
+    },
+    {
+      "id": "https://huggingface.co/blog/custom-cuda-kernels-agent-skills",
+      "date": "Fri, 13 Feb 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/custom-cuda-kernels-agent-skills"
+    },
+    {
+      "id": "https://huggingface.co/blog/openenv-turing",
+      "date": "Thu, 12 Feb 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/openenv-turing"
+    },
+    {
+      "id": "https://huggingface.co/blog/transformersjs-v4",
+      "date": "Mon, 09 Feb 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/transformersjs-v4"
+    },
+    {
+      "id": "https://huggingface.co/blog/ServiceNow-AI/sygra-studio",
+      "date": "Thu, 05 Feb 2026 16:52:28 GMT",
+      "url": "https://huggingface.co/blog/ServiceNow-AI/sygra-studio"
+    },
+    {
+      "id": "https://huggingface.co/blog/community-evals",
+      "date": "Wed, 04 Feb 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/community-evals"
+    },
+    {
+      "id": "https://huggingface.co/blog/Hcompany/introducing-holo2-235b-a22b",
+      "date": "Tue, 03 Feb 2026 17:40:14 GMT",
+      "url": "https://huggingface.co/blog/Hcompany/introducing-holo2-235b-a22b"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface/one-year-since-the-deepseek-moment-blog-3",
+      "date": "Tue, 03 Feb 2026 15:03:19 GMT",
+      "url": "https://huggingface.co/blog/huggingface/one-year-since-the-deepseek-moment-blog-3"
+    },
+    {
+      "id": "https://huggingface.co/blog/Photoroom/prx-part2",
+      "date": "Tue, 03 Feb 2026 11:25:53 GMT",
+      "url": "https://huggingface.co/blog/Photoroom/prx-part2"
+    },
+    {
+      "id": "https://huggingface.co/blog/daggr",
+      "date": "Thu, 29 Jan 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/daggr"
+    },
+    {
+      "id": "https://huggingface.co/blog/upskill",
+      "date": "Wed, 28 Jan 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/upskill"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface/one-year-since-the-deepseek-moment-blog-2",
+      "date": "Tue, 27 Jan 2026 15:01:45 GMT",
+      "url": "https://huggingface.co/blog/huggingface/one-year-since-the-deepseek-moment-blog-2"
+    },
+    {
+      "id": "https://huggingface.co/blog/tiiuae/emirati-benchmarks",
+      "date": "Tue, 27 Jan 2026 10:26:42 GMT",
+      "url": "https://huggingface.co/blog/tiiuae/emirati-benchmarks"
+    },
+    {
+      "id": "https://huggingface.co/blog/LinkedIn/gpt-oss-agentic-rl",
+      "date": "Tue, 27 Jan 2026 01:53:15 GMT",
+      "url": "https://huggingface.co/blog/LinkedIn/gpt-oss-agentic-rl"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-research/assetopsbench-playground-on-hugging-face",
+      "date": "Wed, 21 Jan 2026 06:25:31 GMT",
+      "url": "https://huggingface.co/blog/ibm-research/assetopsbench-playground-on-hugging-face"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface/one-year-since-the-deepseek-moment",
+      "date": "Tue, 20 Jan 2026 15:02:10 GMT",
+      "url": "https://huggingface.co/blog/huggingface/one-year-since-the-deepseek-moment"
+    },
+    {
+      "id": "https://huggingface.co/blog/microsoft/diff-attn-v2",
+      "date": "Tue, 20 Jan 2026 03:20:57 GMT",
+      "url": "https://huggingface.co/blog/microsoft/diff-attn-v2"
+    },
+    {
+      "id": "https://huggingface.co/blog/waypoint-1",
+      "date": "Tue, 20 Jan 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/waypoint-1"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-responses",
+      "date": "Thu, 15 Jan 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/open-responses"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/nvidia-cosmos-reason-2-brings-advanced-reasoning",
+      "date": "Mon, 05 Jan 2026 22:56:51 GMT",
+      "url": "https://huggingface.co/blog/nvidia/nvidia-cosmos-reason-2-brings-advanced-reasoning"
+    },
+    {
+      "id": "https://huggingface.co/blog/tiiuae/falcon-h1-arabic",
+      "date": "Mon, 05 Jan 2026 09:16:51 GMT",
+      "url": "https://huggingface.co/blog/tiiuae/falcon-h1-arabic"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia-reachy-mini",
+      "date": "Mon, 05 Jan 2026 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/nvidia-reachy-mini"
+    },
+    {
+      "id": "https://huggingface.co/blog/ServiceNow-AI/aprielguard",
+      "date": "Tue, 23 Dec 2025 14:07:35 GMT",
+      "url": "https://huggingface.co/blog/ServiceNow-AI/aprielguard"
+    },
+    {
+      "id": "https://huggingface.co/blog/tokenizers",
+      "date": "Thu, 18 Dec 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tokenizers"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/nemotron-3-nano-evaluation-recipe",
+      "date": "Wed, 17 Dec 2025 13:22:18 GMT",
+      "url": "https://huggingface.co/blog/nvidia/nemotron-3-nano-evaluation-recipe"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-research/cuga-on-hugging-face",
+      "date": "Mon, 15 Dec 2025 16:01:04 GMT",
+      "url": "https://huggingface.co/blog/ibm-research/cuga-on-hugging-face"
+    },
+    {
+      "id": "https://huggingface.co/blog/ggml-org/model-management-in-llamacpp",
+      "date": "Thu, 11 Dec 2025 15:47:44 GMT",
+      "url": "https://huggingface.co/blog/ggml-org/model-management-in-llamacpp"
+    },
+    {
+      "id": "https://huggingface.co/blog/hf-skills-training-codex",
+      "date": "Thu, 11 Dec 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hf-skills-training-codex"
+    },
+    {
+      "id": "https://huggingface.co/blog/swift-huggingface",
+      "date": "Fri, 05 Dec 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/swift-huggingface"
+    },
+    {
+      "id": "https://huggingface.co/blog/intel-deepmath",
+      "date": "Thu, 04 Dec 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/intel-deepmath"
+    },
+    {
+      "id": "https://huggingface.co/blog/hf-skills-training",
+      "date": "Thu, 04 Dec 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hf-skills-training"
+    },
+    {
+      "id": "https://huggingface.co/blog/transformers-v5",
+      "date": "Mon, 01 Dec 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/transformers-v5"
+    },
+    {
+      "id": "https://huggingface.co/blog/flux-2",
+      "date": "Tue, 25 Nov 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/flux-2"
+    },
+    {
+      "id": "https://huggingface.co/blog/continuous_batching",
+      "date": "Tue, 25 Nov 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/continuous_batching"
+    },
+    {
+      "id": "https://huggingface.co/blog/Tavily/tavily-deep-research",
+      "date": "Mon, 24 Nov 2025 17:40:14 GMT",
+      "url": "https://huggingface.co/blog/Tavily/tavily-deep-research"
+    },
+    {
+      "id": "https://huggingface.co/blog/OVHcloud/inference-providers-ovhcloud",
+      "date": "Mon, 24 Nov 2025 16:08:47 GMT",
+      "url": "https://huggingface.co/blog/OVHcloud/inference-providers-ovhcloud"
+    },
+    {
+      "id": "https://huggingface.co/blog/rapidfireai",
+      "date": "Fri, 21 Nov 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/rapidfireai"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-asr-leaderboard",
+      "date": "Fri, 21 Nov 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/open-asr-leaderboard"
+    },
+    {
+      "id": "https://huggingface.co/blog/anylanguagemodel",
+      "date": "Thu, 20 Nov 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/anylanguagemodel"
+    },
+    {
+      "id": "https://huggingface.co/blog/ServiceNow-AI/apriel-h1",
+      "date": "Wed, 19 Nov 2025 05:19:07 GMT",
+      "url": "https://huggingface.co/blog/ServiceNow-AI/apriel-h1"
+    },
+    {
+      "id": "https://huggingface.co/blog/build-rocm-kernels",
+      "date": "Mon, 17 Nov 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/build-rocm-kernels"
+    },
+    {
+      "id": "https://huggingface.co/blog/amd/openroboticshackathon",
+      "date": "Thu, 13 Nov 2025 21:37:26 GMT",
+      "url": "https://huggingface.co/blog/amd/openroboticshackathon"
+    },
+    {
+      "id": "https://huggingface.co/blog/google-cloud",
+      "date": "Thu, 13 Nov 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/google-cloud"
+    },
+    {
+      "id": "https://huggingface.co/blog/MiniMax-AI/aligning-to-what",
+      "date": "Thu, 30 Oct 2025 10:03:45 GMT",
+      "url": "https://huggingface.co/blog/MiniMax-AI/aligning-to-what"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface/shifting-compute-landscape",
+      "date": "Wed, 29 Oct 2025 13:56:45 GMT",
+      "url": "https://huggingface.co/blog/huggingface/shifting-compute-landscape"
+    },
+    {
+      "id": "https://huggingface.co/blog/lerobotxnvidia-healthcare",
+      "date": "Wed, 29 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lerobotxnvidia-healthcare"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/nvidia-isaac-for-healthcare",
+      "date": "Tue, 28 Oct 2025 20:42:35 GMT",
+      "url": "https://huggingface.co/blog/nvidia/nvidia-isaac-for-healthcare"
+    },
+    {
+      "id": "https://huggingface.co/blog/ibm-granite/granite-4-nano",
+      "date": "Tue, 28 Oct 2025 14:59:38 GMT",
+      "url": "https://huggingface.co/blog/ibm-granite/granite-4-nano"
+    },
+    {
+      "id": "https://huggingface.co/blog/voice-consent-gate",
+      "date": "Tue, 28 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/voice-consent-gate"
+    },
+    {
+      "id": "https://huggingface.co/blog/streaming-datasets",
+      "date": "Mon, 27 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/streaming-datasets"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface-hub-v1",
+      "date": "Mon, 27 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/huggingface-hub-v1"
+    },
+    {
+      "id": "https://huggingface.co/blog/lerobot-release-v040",
+      "date": "Fri, 24 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lerobot-release-v040"
+    },
+    {
+      "id": "https://huggingface.co/blog/openenv",
+      "date": "Thu, 23 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/openenv"
+    },
+    {
+      "id": "https://huggingface.co/blog/virustotal",
+      "date": "Wed, 22 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/virustotal"
+    },
+    {
+      "id": "https://huggingface.co/blog/sentence-transformers-joins-hf",
+      "date": "Wed, 22 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sentence-transformers-joins-hf"
+    },
+    {
+      "id": "https://huggingface.co/blog/ocr-open-models",
+      "date": "Tue, 21 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ocr-open-models"
+    },
+    {
+      "id": "https://huggingface.co/blog/aisheets-unlock-images",
+      "date": "Tue, 21 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/aisheets-unlock-images"
+    },
+    {
+      "id": "https://huggingface.co/blog/hugging-science/ai-for-food-allergies",
+      "date": "Thu, 16 Oct 2025 22:38:11 GMT",
+      "url": "https://huggingface.co/blog/hugging-science/ai-for-food-allergies"
+    },
+    {
+      "id": "https://huggingface.co/blog/gpt-oss-on-intel-xeon",
+      "date": "Thu, 16 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gpt-oss-on-intel-xeon"
+    },
+    {
+      "id": "https://huggingface.co/blog/openvino-vlm",
+      "date": "Wed, 15 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/openvino-vlm"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/nemotron-personas-india",
+      "date": "Mon, 13 Oct 2025 23:00:42 GMT",
+      "url": "https://huggingface.co/blog/nvidia/nemotron-personas-india"
+    },
+    {
+      "id": "https://huggingface.co/blog/Arm/arm-at-pytorch-conference",
+      "date": "Fri, 10 Oct 2025 17:35:04 GMT",
+      "url": "https://huggingface.co/blog/Arm/arm-at-pytorch-conference"
+    },
+    {
+      "id": "https://huggingface.co/blog/bigcode/arena",
+      "date": "Tue, 07 Oct 2025 09:37:25 GMT",
+      "url": "https://huggingface.co/blog/bigcode/arena"
+    },
+    {
+      "id": "https://huggingface.co/blog/dots-ocr-ne",
+      "date": "Thu, 02 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/dots-ocr-ne"
+    },
+    {
+      "id": "https://huggingface.co/blog/rteb",
+      "date": "Wed, 01 Oct 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/rteb"
+    },
+    {
+      "id": "https://huggingface.co/blog/intel-qwen3-agent",
+      "date": "Mon, 29 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/intel-qwen3-agent"
+    },
+    {
+      "id": "https://huggingface.co/blog/vibegame",
+      "date": "Mon, 29 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/vibegame"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/nemotron-personas-japan-ja",
+      "date": "Fri, 26 Sep 2025 06:25:50 GMT",
+      "url": "https://huggingface.co/blog/nvidia/nemotron-personas-japan-ja"
+    },
+    {
+      "id": "https://huggingface.co/blog/swift-transformers",
+      "date": "Fri, 26 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/swift-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/smol2operator",
+      "date": "Tue, 23 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/smol2operator"
+    },
+    {
+      "id": "https://huggingface.co/blog/ServiceNow-AI/sygra-data-gen-framework",
+      "date": "Mon, 22 Sep 2025 06:45:05 GMT",
+      "url": "https://huggingface.co/blog/ServiceNow-AI/sygra-data-gen-framework"
+    },
+    {
+      "id": "https://huggingface.co/blog/gaia2",
+      "date": "Mon, 22 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gaia2"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-providers-scaleway",
+      "date": "Fri, 19 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-providers-scaleway"
+    },
+    {
+      "id": "https://huggingface.co/blog/riskrubric",
+      "date": "Thu, 18 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/riskrubric"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-providers-publicai",
+      "date": "Wed, 17 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-providers-publicai"
+    },
+    {
+      "id": "https://huggingface.co/blog/lerobot-datasets-v3",
+      "date": "Tue, 16 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lerobot-datasets-v3"
+    },
+    {
+      "id": "https://huggingface.co/blog/watermarking-with-gradio",
+      "date": "Mon, 15 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/watermarking-with-gradio"
+    },
+    {
+      "id": "https://huggingface.co/blog/Writer/announcing-palmyra-mini",
+      "date": "Thu, 11 Sep 2025 20:04:44 GMT",
+      "url": "https://huggingface.co/blog/Writer/announcing-palmyra-mini"
+    },
+    {
+      "id": "https://huggingface.co/blog/faster-transformers",
+      "date": "Thu, 11 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/faster-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/togethercomputer/together-ft",
+      "date": "Wed, 10 Sep 2025 17:04:36 GMT",
+      "url": "https://huggingface.co/blog/togethercomputer/together-ft"
+    },
+    {
+      "id": "https://huggingface.co/blog/jupyter-agent-2",
+      "date": "Wed, 10 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/jupyter-agent-2"
+    },
+    {
+      "id": "https://huggingface.co/blog/mmbert",
+      "date": "Tue, 09 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/mmbert"
+    },
+    {
+      "id": "https://huggingface.co/blog/embeddinggemma",
+      "date": "Thu, 04 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/embeddinggemma"
+    },
+    {
+      "id": "https://huggingface.co/blog/SandboxAQ/sair-data-accelerating-drug-discovery-with-ai",
+      "date": "Tue, 02 Sep 2025 16:54:29 GMT",
+      "url": "https://huggingface.co/blog/SandboxAQ/sair-data-accelerating-drug-discovery-with-ai"
+    },
+    {
+      "id": "https://huggingface.co/blog/zerogpu-aoti",
+      "date": "Tue, 02 Sep 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/zerogpu-aoti"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/multilingual-reasoning-v1",
+      "date": "Wed, 20 Aug 2025 22:13:18 GMT",
+      "url": "https://huggingface.co/blog/nvidia/multilingual-reasoning-v1"
+    },
+    {
+      "id": "https://huggingface.co/blog/claude-and-mcp",
+      "date": "Tue, 19 Aug 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/claude-and-mcp"
+    },
+    {
+      "id": "https://huggingface.co/blog/kernel-builder",
+      "date": "Mon, 18 Aug 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/kernel-builder"
+    },
+    {
+      "id": "https://huggingface.co/blog/mcp-for-research",
+      "date": "Mon, 18 Aug 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/mcp-for-research"
+    },
+    {
+      "id": "https://huggingface.co/blog/AI-MO/kimina-prover-rl",
+      "date": "Thu, 14 Aug 2025 12:13:01 GMT",
+      "url": "https://huggingface.co/blog/AI-MO/kimina-prover-rl"
+    },
+    {
+      "id": "https://huggingface.co/blog/Arm/executorch-0-dot-7",
+      "date": "Wed, 13 Aug 2025 14:55:10 GMT",
+      "url": "https://huggingface.co/blog/Arm/executorch-0-dot-7"
+    },
+    {
+      "id": "https://huggingface.co/blog/Arm/neural-super-sampling",
+      "date": "Tue, 12 Aug 2025 14:52:08 GMT",
+      "url": "https://huggingface.co/blog/Arm/neural-super-sampling"
+    },
+    {
+      "id": "https://huggingface.co/blog/textquests",
+      "date": "Tue, 12 Aug 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/textquests"
+    },
+    {
+      "id": "https://huggingface.co/blog/filbench",
+      "date": "Tue, 12 Aug 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/filbench"
+    },
+    {
+      "id": "https://huggingface.co/blog/aisheets",
+      "date": "Fri, 08 Aug 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/aisheets"
+    },
+    {
+      "id": "https://huggingface.co/blog/accelerate-nd-parallel",
+      "date": "Fri, 08 Aug 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/accelerate-nd-parallel"
+    },
+    {
+      "id": "https://huggingface.co/blog/trl-vlm-alignment",
+      "date": "Thu, 07 Aug 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/trl-vlm-alignment"
+    },
+    {
+      "id": "https://huggingface.co/blog/welcome-openai-gpt-oss",
+      "date": "Tue, 05 Aug 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/welcome-openai-gpt-oss"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/ai-q-top-ranking-open-portable-deep-research-agent",
+      "date": "Mon, 04 Aug 2025 19:51:50 GMT",
+      "url": "https://huggingface.co/blog/nvidia/ai-q-top-ranking-open-portable-deep-research-agent"
+    },
+    {
+      "id": "https://huggingface.co/blog/tiiuae/3lm-benchmark",
+      "date": "Fri, 01 Aug 2025 14:25:21 GMT",
+      "url": "https://huggingface.co/blog/tiiuae/3lm-benchmark"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-vton-mcp",
+      "date": "Thu, 31 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-vton-mcp"
+    },
+    {
+      "id": "https://huggingface.co/blog/trackio",
+      "date": "Tue, 29 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/trackio"
+    },
+    {
+      "id": "https://huggingface.co/blog/hf-cli",
+      "date": "Fri, 25 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hf-cli"
+    },
+    {
+      "id": "https://huggingface.co/blog/parquet-cdc",
+      "date": "Fri, 25 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/parquet-cdc"
+    },
+    {
+      "id": "https://huggingface.co/blog/timescope-video-lmm-benchmark",
+      "date": "Wed, 23 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/timescope-video-lmm-benchmark"
+    },
+    {
+      "id": "https://huggingface.co/blog/lora-fast",
+      "date": "Wed, 23 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lora-fast"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/multi-llm-nim",
+      "date": "Mon, 21 Jul 2025 18:01:30 GMT",
+      "url": "https://huggingface.co/blog/nvidia/multi-llm-nim"
+    },
+    {
+      "id": "https://huggingface.co/blog/virtual-cell-challenge",
+      "date": "Fri, 18 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/virtual-cell-challenge"
+    },
+    {
+      "id": "https://huggingface.co/blog/consilium-multi-llm",
+      "date": "Thu, 17 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/consilium-multi-llm"
+    },
+    {
+      "id": "https://huggingface.co/blog/futurebench",
+      "date": "Thu, 17 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/futurebench"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-mcp-updates",
+      "date": "Thu, 17 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-mcp-updates"
+    },
+    {
+      "id": "https://huggingface.co/blog/ettin",
+      "date": "Wed, 16 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ettin"
+    },
+    {
+      "id": "https://huggingface.co/blog/migrating-the-hub-to-xet",
+      "date": "Tue, 15 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/migrating-the-hub-to-xet"
+    },
+    {
+      "id": "https://huggingface.co/blog/AI-MO/kimina-prover",
+      "date": "Thu, 10 Jul 2025 12:54:19 GMT",
+      "url": "https://huggingface.co/blog/AI-MO/kimina-prover"
+    },
+    {
+      "id": "https://huggingface.co/blog/async-robot-inference",
+      "date": "Thu, 10 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/async-robot-inference"
+    },
+    {
+      "id": "https://huggingface.co/blog/screenenv",
+      "date": "Thu, 10 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/screenenv"
+    },
+    {
+      "id": "https://huggingface.co/blog/building-hf-mcp",
+      "date": "Thu, 10 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/building-hf-mcp"
+    },
+    {
+      "id": "https://huggingface.co/blog/reachy-mini",
+      "date": "Wed, 09 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/reachy-mini"
+    },
+    {
+      "id": "https://huggingface.co/blog/mi300kernels",
+      "date": "Wed, 09 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/mi300kernels"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-mcp-servers",
+      "date": "Wed, 09 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-mcp-servers"
+    },
+    {
+      "id": "https://huggingface.co/blog/smollm3",
+      "date": "Tue, 08 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/smollm3"
+    },
+    {
+      "id": "https://huggingface.co/blog/infrastructure-alerting",
+      "date": "Tue, 08 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/infrastructure-alerting"
+    },
+    {
+      "id": "https://huggingface.co/blog/mmdp",
+      "date": "Tue, 08 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/mmdp"
+    },
+    {
+      "id": "https://huggingface.co/blog/tiiuae/e2lm-competition",
+      "date": "Fri, 04 Jul 2025 12:25:00 GMT",
+      "url": "https://huggingface.co/blog/tiiuae/e2lm-competition"
+    },
+    {
+      "id": "https://huggingface.co/blog/train-sparse-encoder",
+      "date": "Tue, 01 Jul 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/train-sparse-encoder"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/llama-nemotron-nano-vl",
+      "date": "Fri, 27 Jun 2025 21:09:27 GMT",
+      "url": "https://huggingface.co/blog/nvidia/llama-nemotron-nano-vl"
+    },
+    {
+      "id": "https://huggingface.co/blog/gemma3n",
+      "date": "Thu, 26 Jun 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gemma3n"
+    },
+    {
+      "id": "https://huggingface.co/blog/transformers-backend-sglang",
+      "date": "Mon, 23 Jun 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/transformers-backend-sglang"
+    },
+    {
+      "id": "https://huggingface.co/blog/flux-qlora",
+      "date": "Thu, 19 Jun 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/flux-qlora"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-providers-groq",
+      "date": "Mon, 16 Jun 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-providers-groq"
+    },
+    {
+      "id": "https://huggingface.co/blog/tngtech/llm-performance-blocked-by-long-prompts",
+      "date": "Thu, 12 Jun 2025 08:00:13 GMT",
+      "url": "https://huggingface.co/blog/tngtech/llm-performance-blocked-by-long-prompts"
+    },
+    {
+      "id": "https://huggingface.co/blog/hello-hf-kernels",
+      "date": "Thu, 12 Jun 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hello-hf-kernels"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-providers-featherless",
+      "date": "Thu, 12 Jun 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-providers-featherless"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/gr00t-n1-5-so101-tuning",
+      "date": "Wed, 11 Jun 2025 18:27:22 GMT",
+      "url": "https://huggingface.co/blog/nvidia/gr00t-n1-5-so101-tuning"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia-training-cluster",
+      "date": "Wed, 11 Jun 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/nvidia-training-cluster"
+    },
+    {
+      "id": "https://huggingface.co/blog/screensuite",
+      "date": "Fri, 06 Jun 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/screensuite"
+    },
+    {
+      "id": "https://huggingface.co/blog/kv-cache",
+      "date": "Wed, 04 Jun 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/kv-cache"
+    },
+    {
+      "id": "https://huggingface.co/blog/Arm/ai-sound-gen-on-arm",
+      "date": "Tue, 03 Jun 2025 15:04:36 GMT",
+      "url": "https://huggingface.co/blog/Arm/ai-sound-gen-on-arm"
+    },
+    {
+      "id": "https://huggingface.co/blog/Hcompany/holo1",
+      "date": "Tue, 03 Jun 2025 13:27:59 GMT",
+      "url": "https://huggingface.co/blog/Hcompany/holo1"
+    },
+    {
+      "id": "https://huggingface.co/blog/smolvla",
+      "date": "Tue, 03 Jun 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/smolvla"
+    },
+    {
+      "id": "https://huggingface.co/blog/vllm-colocate",
+      "date": "Tue, 03 Jun 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/vllm-colocate"
+    },
+    {
+      "id": "https://huggingface.co/blog/structured-codeagent",
+      "date": "Wed, 28 May 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/structured-codeagent"
+    },
+    {
+      "id": "https://huggingface.co/blog/liger-grpo",
+      "date": "Sun, 25 May 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/liger-grpo"
+    },
+    {
+      "id": "https://huggingface.co/blog/dell-ai-applications",
+      "date": "Fri, 23 May 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/dell-ai-applications"
+    },
+    {
+      "id": "https://huggingface.co/blog/python-tiny-agents",
+      "date": "Fri, 23 May 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/python-tiny-agents"
+    },
+    {
+      "id": "https://huggingface.co/blog/tiiuae/falcon-h1",
+      "date": "Wed, 21 May 2025 06:52:13 GMT",
+      "url": "https://huggingface.co/blog/tiiuae/falcon-h1"
+    },
+    {
+      "id": "https://huggingface.co/blog/tiiuae/falcon-arabic",
+      "date": "Wed, 21 May 2025 06:35:36 GMT",
+      "url": "https://huggingface.co/blog/tiiuae/falcon-arabic"
+    },
+    {
+      "id": "https://huggingface.co/blog/diffusers-quantization",
+      "date": "Wed, 21 May 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/diffusers-quantization"
+    },
+    {
+      "id": "https://huggingface.co/blog/nanovlm",
+      "date": "Wed, 21 May 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/nanovlm"
+    },
+    {
+      "id": "https://huggingface.co/blog/azure-ai-foundry",
+      "date": "Mon, 19 May 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/azure-ai-foundry"
+    },
+    {
+      "id": "https://huggingface.co/blog/tiiuae/falcon-edge",
+      "date": "Thu, 15 May 2025 13:13:45 GMT",
+      "url": "https://huggingface.co/blog/tiiuae/falcon-edge"
+    },
+    {
+      "id": "https://huggingface.co/blog/transformers-model-definition",
+      "date": "Thu, 15 May 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/transformers-model-definition"
+    },
+    {
+      "id": "https://huggingface.co/blog/kaggle-integration",
+      "date": "Wed, 14 May 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/kaggle-integration"
+    },
+    {
+      "id": "https://huggingface.co/blog/fast-whisper-endpoints",
+      "date": "Tue, 13 May 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fast-whisper-endpoints"
+    },
+    {
+      "id": "https://huggingface.co/blog/vlms-2025",
+      "date": "Mon, 12 May 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/vlms-2025"
+    },
+    {
+      "id": "https://huggingface.co/blog/lerobot-datasets",
+      "date": "Sun, 11 May 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lerobot-datasets"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-mcp",
+      "date": "Wed, 30 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-mcp"
+    },
+    {
+      "id": "https://huggingface.co/blog/qwen-3-chat-template-deep-dive",
+      "date": "Wed, 30 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/qwen-3-chat-template-deep-dive"
+    },
+    {
+      "id": "https://huggingface.co/blog/llama-guard-4",
+      "date": "Tue, 29 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/llama-guard-4"
+    },
+    {
+      "id": "https://huggingface.co/blog/autoround",
+      "date": "Tue, 29 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/autoround"
+    },
+    {
+      "id": "https://huggingface.co/blog/ServiceNow/pipelinerl",
+      "date": "Fri, 25 Apr 2025 22:37:16 GMT",
+      "url": "https://huggingface.co/blog/ServiceNow/pipelinerl"
+    },
+    {
+      "id": "https://huggingface.co/blog/tiny-agents",
+      "date": "Fri, 25 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tiny-agents"
+    },
+    {
+      "id": "https://huggingface.co/blog/tngtech/finetuning-olmocr-to-be-a-faithful-ocr-engine",
+      "date": "Tue, 22 Apr 2025 18:33:09 GMT",
+      "url": "https://huggingface.co/blog/tngtech/finetuning-olmocr-to-be-a-faithful-ocr-engine"
+    },
+    {
+      "id": "https://huggingface.co/blog/tngtech/llm-performance-prefill-decode-concurrent-requests",
+      "date": "Wed, 16 Apr 2025 10:10:58 GMT",
+      "url": "https://huggingface.co/blog/tngtech/llm-performance-prefill-decode-concurrent-requests"
+    },
+    {
+      "id": "https://huggingface.co/blog/why-gradio-stands-out",
+      "date": "Wed, 16 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/why-gradio-stands-out"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-providers-cohere",
+      "date": "Wed, 16 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-providers-cohere"
+    },
+    {
+      "id": "https://huggingface.co/blog/helmet",
+      "date": "Wed, 16 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/helmet"
+    },
+    {
+      "id": "https://huggingface.co/blog/hugging-face-pollen-robotics-acquisition",
+      "date": "Mon, 14 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hugging-face-pollen-robotics-acquisition"
+    },
+    {
+      "id": "https://huggingface.co/blog/pai-6-month",
+      "date": "Mon, 14 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/pai-6-month"
+    },
+    {
+      "id": "https://huggingface.co/blog/BSC-LT/visualsalamandra7b",
+      "date": "Fri, 11 Apr 2025 14:21:56 GMT",
+      "url": "https://huggingface.co/blog/BSC-LT/visualsalamandra7b"
+    },
+    {
+      "id": "https://huggingface.co/blog/fastrtc-cloudflare",
+      "date": "Wed, 09 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fastrtc-cloudflare"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-3c3h-aragen-ifeval",
+      "date": "Tue, 08 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-3c3h-aragen-ifeval"
+    },
+    {
+      "id": "https://huggingface.co/blog/llama4-release",
+      "date": "Sat, 05 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/llama4-release"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-1m",
+      "date": "Fri, 04 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-1m"
+    },
+    {
+      "id": "https://huggingface.co/blog/llm-course",
+      "date": "Thu, 03 Apr 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/llm-course"
+    },
+    {
+      "id": "https://huggingface.co/blog/tngtech/llm-performance-request-queueing",
+      "date": "Wed, 02 Apr 2025 13:33:53 GMT",
+      "url": "https://huggingface.co/blog/tngtech/llm-performance-request-queueing"
+    },
+    {
+      "id": "https://huggingface.co/blog/scaling-secrets-management",
+      "date": "Mon, 31 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/scaling-secrets-management"
+    },
+    {
+      "id": "https://huggingface.co/blog/intel-gaudi-backend-for-tgi",
+      "date": "Fri, 28 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/intel-gaudi-backend-for-tgi"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-r1/update-4",
+      "date": "Wed, 26 Mar 2025 18:47:29 GMT",
+      "url": "https://huggingface.co/blog/open-r1/update-4"
+    },
+    {
+      "id": "https://huggingface.co/blog/train-reranker",
+      "date": "Wed, 26 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/train-reranker"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-dataframe-upgrade",
+      "date": "Mon, 24 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-dataframe-upgrade"
+    },
+    {
+      "id": "https://huggingface.co/blog/endpoint-analytics",
+      "date": "Fri, 21 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/endpoint-analytics"
+    },
+    {
+      "id": "https://huggingface.co/blog/olympic-coder-lmstudio",
+      "date": "Thu, 20 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/olympic-coder-lmstudio"
+    },
+    {
+      "id": "https://huggingface.co/blog/ai-action-wh-2025",
+      "date": "Wed, 19 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ai-action-wh-2025"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia-physical-ai",
+      "date": "Tue, 18 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/nvidia-physical-ai"
+    },
+    {
+      "id": "https://huggingface.co/blog/xet-on-the-hub",
+      "date": "Tue, 18 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/xet-on-the-hub"
+    },
+    {
+      "id": "https://huggingface.co/blog/gemma3",
+      "date": "Wed, 12 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gemma3"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-r1/update-3",
+      "date": "Tue, 11 Mar 2025 20:40:47 GMT",
+      "url": "https://huggingface.co/blog/open-r1/update-3"
+    },
+    {
+      "id": "https://huggingface.co/blog/lerobot-goes-to-driving-school",
+      "date": "Tue, 11 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lerobot-goes-to-driving-school"
+    },
+    {
+      "id": "https://huggingface.co/blog/llm-inference-on-edge",
+      "date": "Fri, 07 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/llm-inference-on-edge"
+    },
+    {
+      "id": "https://huggingface.co/blog/jfrog",
+      "date": "Tue, 04 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/jfrog"
+    },
+    {
+      "id": "https://huggingface.co/blog/aya-vision",
+      "date": "Tue, 04 Mar 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/aya-vision"
+    },
+    {
+      "id": "https://huggingface.co/blog/smolagents-phoenix",
+      "date": "Fri, 28 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/smolagents-phoenix"
+    },
+    {
+      "id": "https://huggingface.co/blog/iisc-huggingface-collab",
+      "date": "Thu, 27 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/iisc-huggingface-collab"
+    },
+    {
+      "id": "https://huggingface.co/blog/fastrtc",
+      "date": "Tue, 25 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fastrtc"
+    },
+    {
+      "id": "https://huggingface.co/blog/remote_vae",
+      "date": "Mon, 24 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/remote_vae"
+    },
+    {
+      "id": "https://huggingface.co/blog/siglip2",
+      "date": "Fri, 21 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/siglip2"
+    },
+    {
+      "id": "https://huggingface.co/blog/smolvlm2",
+      "date": "Thu, 20 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/smolvlm2"
+    },
+    {
+      "id": "https://huggingface.co/blog/paligemma2mix",
+      "date": "Wed, 19 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/paligemma2mix"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-providers-nebius-novita-hyperbolic",
+      "date": "Tue, 18 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-providers-nebius-novita-hyperbolic"
+    },
+    {
+      "id": "https://huggingface.co/blog/fireworks-ai",
+      "date": "Fri, 14 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fireworks-ai"
+    },
+    {
+      "id": "https://huggingface.co/blog/math_verify_leaderboard",
+      "date": "Fri, 14 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/math_verify_leaderboard"
+    },
+    {
+      "id": "https://huggingface.co/blog/billion-classifications",
+      "date": "Thu, 13 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/billion-classifications"
+    },
+    {
+      "id": "https://huggingface.co/blog/from-chunks-to-blocks",
+      "date": "Wed, 12 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/from-chunks-to-blocks"
+    },
+    {
+      "id": "https://huggingface.co/blog/vid_ds_scripts",
+      "date": "Wed, 12 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/vid_ds_scripts"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-r1/update-2",
+      "date": "Mon, 10 Feb 2025 16:10:47 GMT",
+      "url": "https://huggingface.co/blog/open-r1/update-2"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-arabic-v2",
+      "date": "Mon, 10 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-arabic-v2"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-deep-research",
+      "date": "Tue, 04 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/open-deep-research"
+    },
+    {
+      "id": "https://huggingface.co/blog/pi0",
+      "date": "Tue, 04 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/pi0"
+    },
+    {
+      "id": "https://huggingface.co/blog/dabstep",
+      "date": "Tue, 04 Feb 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/dabstep"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-r1/update-1",
+      "date": "Sun, 02 Feb 2025 00:04:28 GMT",
+      "url": "https://huggingface.co/blog/open-r1/update-1"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-r1/mini-r1-contdown-game",
+      "date": "Fri, 31 Jan 2025 10:29:40 GMT",
+      "url": "https://huggingface.co/blog/open-r1/mini-r1-contdown-game"
+    },
+    {
+      "id": "https://huggingface.co/blog/ai-art-newsletter-jan-25",
+      "date": "Fri, 31 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ai-art-newsletter-jan-25"
+    },
+    {
+      "id": "https://huggingface.co/blog/deepseek-r1-aws",
+      "date": "Thu, 30 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deepseek-r1-aws"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-providers",
+      "date": "Tue, 28 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-providers"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-r1",
+      "date": "Tue, 28 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/open-r1"
+    },
+    {
+      "id": "https://huggingface.co/blog/video_gen",
+      "date": "Mon, 27 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/video_gen"
+    },
+    {
+      "id": "https://huggingface.co/blog/smolagents-can-see",
+      "date": "Fri, 24 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/smolagents-can-see"
+    },
+    {
+      "id": "https://huggingface.co/blog/nvidia/kvpress",
+      "date": "Thu, 23 Jan 2025 08:03:03 GMT",
+      "url": "https://huggingface.co/blog/nvidia/kvpress"
+    },
+    {
+      "id": "https://huggingface.co/blog/smolervlm",
+      "date": "Thu, 23 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/smolervlm"
+    },
+    {
+      "id": "https://huggingface.co/blog/friendliai-partnership",
+      "date": "Wed, 22 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/friendliai-partnership"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface/blog-articles-for-orgs",
+      "date": "Mon, 20 Jan 2025 18:58:24 GMT",
+      "url": "https://huggingface.co/blog/huggingface/blog-articles-for-orgs"
+    },
+    {
+      "id": "https://huggingface.co/blog/timm-transformers",
+      "date": "Thu, 16 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/timm-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/tgi-multi-backend",
+      "date": "Thu, 16 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tgi-multi-backend"
+    },
+    {
+      "id": "https://huggingface.co/blog/static-embeddings",
+      "date": "Wed, 15 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/static-embeddings"
+    },
+    {
+      "id": "https://huggingface.co/blog/ethics-soc-7",
+      "date": "Mon, 13 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ethics-soc-7"
+    },
+    {
+      "id": "https://huggingface.co/blog/vdr-2b-multilingual",
+      "date": "Fri, 10 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/vdr-2b-multilingual"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-emissions-analysis",
+      "date": "Thu, 09 Jan 2025 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-emissions-analysis"
+    },
+    {
+      "id": "https://huggingface.co/blog/smolagents",
+      "date": "Tue, 31 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/smolagents"
+    },
+    {
+      "id": "https://huggingface.co/blog/train_memory",
+      "date": "Tue, 24 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/train_memory"
+    },
+    {
+      "id": "https://huggingface.co/blog/logits-processor-zoo",
+      "date": "Mon, 23 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/logits-processor-zoo"
+    },
+    {
+      "id": "https://huggingface.co/blog/big-bench-audio-release",
+      "date": "Fri, 20 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/big-bench-audio-release"
+    },
+    {
+      "id": "https://huggingface.co/blog/modernbert",
+      "date": "Thu, 19 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/modernbert"
+    },
+    {
+      "id": "https://huggingface.co/blog/bamba",
+      "date": "Wed, 18 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/bamba"
+    },
+    {
+      "id": "https://huggingface.co/blog/falcon3",
+      "date": "Tue, 17 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/falcon3"
+    },
+    {
+      "id": "https://huggingface.co/blog/intel-gcp-c4",
+      "date": "Tue, 17 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/intel-gcp-c4"
+    },
+    {
+      "id": "https://huggingface.co/blog/synthetic-data-generator",
+      "date": "Mon, 16 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/synthetic-data-generator"
+    },
+    {
+      "id": "https://huggingface.co/blog/lematerial",
+      "date": "Tue, 10 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lematerial"
+    },
+    {
+      "id": "https://huggingface.co/blog/bedrock-marketplace",
+      "date": "Mon, 09 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/bedrock-marketplace"
+    },
+    {
+      "id": "https://huggingface.co/blog/image-preferences",
+      "date": "Mon, 09 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/image-preferences"
+    },
+    {
+      "id": "https://huggingface.co/blog/paligemma2",
+      "date": "Thu, 05 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/paligemma2"
+    },
+    {
+      "id": "https://huggingface.co/blog/keras-chatbot-arena",
+      "date": "Thu, 05 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/keras-chatbot-arena"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-3c3h-aragen",
+      "date": "Wed, 04 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-3c3h-aragen"
+    },
+    {
+      "id": "https://huggingface.co/blog/cfm-case-study",
+      "date": "Tue, 03 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/cfm-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/eu-ai-act-for-oss-developers",
+      "date": "Mon, 02 Dec 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/eu-ai-act-for-oss-developers"
+    },
+    {
+      "id": "https://huggingface.co/blog/rearchitecting-uploads-and-downloads",
+      "date": "Tue, 26 Nov 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/rearchitecting-uploads-and-downloads"
+    },
+    {
+      "id": "https://huggingface.co/blog/smolvlm",
+      "date": "Tue, 26 Nov 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/smolvlm"
+    },
+    {
+      "id": "https://huggingface.co/blog/designing-positional-encoding",
+      "date": "Mon, 25 Nov 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/designing-positional-encoding"
+    },
+    {
+      "id": "https://huggingface.co/blog/debate",
+      "date": "Wed, 20 Nov 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/debate"
+    },
+    {
+      "id": "https://huggingface.co/blog/from-files-to-chunks",
+      "date": "Wed, 20 Nov 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/from-files-to-chunks"
+    },
+    {
+      "id": "https://huggingface.co/blog/layerskip",
+      "date": "Wed, 20 Nov 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/layerskip"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-japanese",
+      "date": "Wed, 20 Nov 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-japanese"
+    },
+    {
+      "id": "https://huggingface.co/blog/arena-atla",
+      "date": "Tue, 19 Nov 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/arena-atla"
+    },
+    {
+      "id": "https://huggingface.co/blog/researcher-dataset-sharing",
+      "date": "Tue, 12 Nov 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/researcher-dataset-sharing"
+    },
+    {
+      "id": "https://huggingface.co/blog/pycharm-integration",
+      "date": "Tue, 05 Nov 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/pycharm-integration"
+    },
+    {
+      "id": "https://huggingface.co/blog/argilla-ui-hub",
+      "date": "Mon, 04 Nov 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/argilla-ui-hub"
+    },
+    {
+      "id": "https://huggingface.co/blog/universal_assisted_generation",
+      "date": "Tue, 29 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/universal_assisted_generation"
+    },
+    {
+      "id": "https://huggingface.co/blog/digital-green-llm-judge",
+      "date": "Mon, 28 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/digital-green-llm-judge"
+    },
+    {
+      "id": "https://huggingface.co/blog/aya-expanse",
+      "date": "Thu, 24 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/aya-expanse"
+    },
+    {
+      "id": "https://huggingface.co/blog/synthid-text",
+      "date": "Wed, 23 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/synthid-text"
+    },
+    {
+      "id": "https://huggingface.co/blog/hugs",
+      "date": "Wed, 23 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hugs"
+    },
+    {
+      "id": "https://huggingface.co/blog/cinepile2",
+      "date": "Wed, 23 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/cinepile2"
+    },
+    {
+      "id": "https://huggingface.co/blog/protectai",
+      "date": "Tue, 22 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/protectai"
+    },
+    {
+      "id": "https://huggingface.co/blog/transformersjs-v3",
+      "date": "Tue, 22 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/transformersjs-v3"
+    },
+    {
+      "id": "https://huggingface.co/blog/sd3-5",
+      "date": "Tue, 22 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sd3-5"
+    },
+    {
+      "id": "https://huggingface.co/blog/outlines-core",
+      "date": "Tue, 22 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/outlines-core"
+    },
+    {
+      "id": "https://huggingface.co/blog/s2s_endpoint",
+      "date": "Tue, 22 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/s2s_endpoint"
+    },
+    {
+      "id": "https://huggingface.co/blog/keras-llama-32",
+      "date": "Mon, 21 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/keras-llama-32"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradient_accumulation",
+      "date": "Wed, 16 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradient_accumulation"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface-amd-turin",
+      "date": "Thu, 10 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/huggingface-amd-turin"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-5-security",
+      "date": "Thu, 10 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-5-security"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-5",
+      "date": "Wed, 09 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-5"
+    },
+    {
+      "id": "https://huggingface.co/blog/dask-scaling",
+      "date": "Wed, 09 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/dask-scaling"
+    },
+    {
+      "id": "https://huggingface.co/blog/dynamic_speculation_lookahead",
+      "date": "Tue, 08 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/dynamic_speculation_lookahead"
+    },
+    {
+      "id": "https://huggingface.co/blog/improve_parquet_dedupe",
+      "date": "Sat, 05 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/improve_parquet_dedupe"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-finbench",
+      "date": "Fri, 04 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-finbench"
+    },
+    {
+      "id": "https://huggingface.co/blog/chinese-ai-expansion",
+      "date": "Thu, 03 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/chinese-ai-expansion"
+    },
+    {
+      "id": "https://huggingface.co/blog/benczechmark",
+      "date": "Tue, 01 Oct 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/benczechmark"
+    },
+    {
+      "id": "https://huggingface.co/blog/vertex-colored-to-textured-mesh",
+      "date": "Mon, 30 Sep 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/vertex-colored-to-textured-mesh"
+    },
+    {
+      "id": "https://huggingface.co/blog/llama32",
+      "date": "Wed, 25 Sep 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/llama32"
+    },
+    {
+      "id": "https://huggingface.co/blog/fine-video",
+      "date": "Mon, 23 Sep 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fine-video"
+    },
+    {
+      "id": "https://huggingface.co/blog/daily-papers",
+      "date": "Mon, 23 Sep 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/daily-papers"
+    },
+    {
+      "id": "https://huggingface.co/blog/deploy-with-openvino",
+      "date": "Fri, 20 Sep 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deploy-with-openvino"
+    },
+    {
+      "id": "https://huggingface.co/blog/1_58_llm_extreme_quantization",
+      "date": "Wed, 18 Sep 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/1_58_llm_extreme_quantization"
+    },
+    {
+      "id": "https://huggingface.co/blog/sql-console",
+      "date": "Tue, 17 Sep 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sql-console"
+    },
+    {
+      "id": "https://huggingface.co/blog/community-tools",
+      "date": "Mon, 16 Sep 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/community-tools"
+    },
+    {
+      "id": "https://huggingface.co/blog/accelerate-v1",
+      "date": "Fri, 13 Sep 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/accelerate-v1"
+    },
+    {
+      "id": "https://huggingface.co/blog/trufflesecurity-partnership",
+      "date": "Wed, 04 Sep 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/trufflesecurity-partnership"
+    },
+    {
+      "id": "https://huggingface.co/blog/video-encoding",
+      "date": "Tue, 27 Aug 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/video-encoding"
+    },
+    {
+      "id": "https://huggingface.co/blog/unsung-heroes",
+      "date": "Thu, 22 Aug 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/unsung-heroes"
+    },
+    {
+      "id": "https://huggingface.co/blog/packing-with-FA2",
+      "date": "Wed, 21 Aug 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/packing-with-FA2"
+    },
+    {
+      "id": "https://huggingface.co/blog/llama31-on-vertex-ai",
+      "date": "Mon, 19 Aug 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/llama31-on-vertex-ai"
+    },
+    {
+      "id": "https://huggingface.co/blog/infini-attention",
+      "date": "Wed, 14 Aug 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/infini-attention"
+    },
+    {
+      "id": "https://huggingface.co/blog/introduction-to-ggml",
+      "date": "Tue, 13 Aug 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/introduction-to-ggml"
+    },
+    {
+      "id": "https://huggingface.co/blog/falconmamba",
+      "date": "Mon, 12 Aug 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/falconmamba"
+    },
+    {
+      "id": "https://huggingface.co/blog/unified-tool-use",
+      "date": "Mon, 12 Aug 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/unified-tool-use"
+    },
+    {
+      "id": "https://huggingface.co/blog/xethub-joins-hf",
+      "date": "Thu, 08 Aug 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/xethub-joins-hf"
+    },
+    {
+      "id": "https://huggingface.co/blog/2024-security-features",
+      "date": "Tue, 06 Aug 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/2024-security-features"
+    },
+    {
+      "id": "https://huggingface.co/blog/doc_aug_hf_alb",
+      "date": "Tue, 06 Aug 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/doc_aug_hf_alb"
+    },
+    {
+      "id": "https://huggingface.co/blog/gemma-july-update",
+      "date": "Wed, 31 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gemma-july-update"
+    },
+    {
+      "id": "https://huggingface.co/blog/quanto-diffusers",
+      "date": "Tue, 30 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/quanto-diffusers"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-dgx-cloud",
+      "date": "Mon, 29 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-dgx-cloud"
+    },
+    {
+      "id": "https://huggingface.co/blog/zero-shot-vqa-docmatix",
+      "date": "Thu, 25 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/zero-shot-vqa-docmatix"
+    },
+    {
+      "id": "https://huggingface.co/blog/llama31",
+      "date": "Tue, 23 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/llama31"
+    },
+    {
+      "id": "https://huggingface.co/blog/mistral-coreml",
+      "date": "Mon, 22 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/mistral-coreml"
+    },
+    {
+      "id": "https://huggingface.co/blog/docmatix",
+      "date": "Thu, 18 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/docmatix"
+    },
+    {
+      "id": "https://huggingface.co/blog/multi-lora-serving",
+      "date": "Thu, 18 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/multi-lora-serving"
+    },
+    {
+      "id": "https://huggingface.co/blog/smollm",
+      "date": "Tue, 16 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/smollm"
+    },
+    {
+      "id": "https://huggingface.co/blog/argilla-chatbot",
+      "date": "Tue, 16 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/argilla-chatbot"
+    },
+    {
+      "id": "https://huggingface.co/blog/winning-aimo-progress-prize",
+      "date": "Thu, 11 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/winning-aimo-progress-prize"
+    },
+    {
+      "id": "https://huggingface.co/blog/keras-hub-integration",
+      "date": "Wed, 10 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/keras-hub-integration"
+    },
+    {
+      "id": "https://huggingface.co/blog/presidio-pii-detection",
+      "date": "Wed, 10 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/presidio-pii-detection"
+    },
+    {
+      "id": "https://huggingface.co/blog/dpo_vlm",
+      "date": "Wed, 10 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/dpo_vlm"
+    },
+    {
+      "id": "https://huggingface.co/blog/tpu-inference-endpoints-spaces",
+      "date": "Tue, 09 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tpu-inference-endpoints-spaces"
+    },
+    {
+      "id": "https://huggingface.co/blog/sovereign-data-solution-case-study",
+      "date": "Tue, 09 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sovereign-data-solution-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/datasets-filters",
+      "date": "Mon, 08 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/datasets-filters"
+    },
+    {
+      "id": "https://huggingface.co/blog/intel-protein-language-model-protst",
+      "date": "Wed, 03 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/intel-protein-language-model-protst"
+    },
+    {
+      "id": "https://huggingface.co/blog/beating-gaia",
+      "date": "Mon, 01 Jul 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/beating-gaia"
+    },
+    {
+      "id": "https://huggingface.co/blog/gemma2",
+      "date": "Thu, 27 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gemma2"
+    },
+    {
+      "id": "https://huggingface.co/blog/xlscout-case-study",
+      "date": "Tue, 25 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/xlscout-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/finetune-florence2",
+      "date": "Mon, 24 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/finetune-florence2"
+    },
+    {
+      "id": "https://huggingface.co/blog/ethics-soc-6",
+      "date": "Mon, 24 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ethics-soc-6"
+    },
+    {
+      "id": "https://huggingface.co/blog/dibt",
+      "date": "Thu, 20 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/dibt"
+    },
+    {
+      "id": "https://huggingface.co/blog/prezi-case-study",
+      "date": "Wed, 19 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/prezi-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-bigcodebench",
+      "date": "Tue, 18 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-bigcodebench"
+    },
+    {
+      "id": "https://huggingface.co/blog/deepspeed-to-fsdp-and-back",
+      "date": "Thu, 13 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deepspeed-to-fsdp-and-back"
+    },
+    {
+      "id": "https://huggingface.co/blog/sd3",
+      "date": "Wed, 12 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sd3"
+    },
+    {
+      "id": "https://huggingface.co/blog/putting_rl_back_in_rlhf_with_rloo",
+      "date": "Wed, 12 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/putting_rl_back_in_rlhf_with_rloo"
+    },
+    {
+      "id": "https://huggingface.co/blog/transformers-docs-redesign",
+      "date": "Fri, 07 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/transformers-docs-redesign"
+    },
+    {
+      "id": "https://huggingface.co/blog/sagemaker-huggingface-embedding",
+      "date": "Fri, 07 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sagemaker-huggingface-embedding"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-artificial-analysis2",
+      "date": "Thu, 06 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-artificial-analysis2"
+    },
+    {
+      "id": "https://huggingface.co/blog/npc-gigax-cubzh",
+      "date": "Wed, 05 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/npc-gigax-cubzh"
+    },
+    {
+      "id": "https://huggingface.co/blog/assisted-generation-support-gaudi",
+      "date": "Tue, 04 Jun 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/assisted-generation-support-gaudi"
+    },
+    {
+      "id": "https://huggingface.co/blog/space-secrets-disclosure",
+      "date": "Fri, 31 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/space-secrets-disclosure"
+    },
+    {
+      "id": "https://huggingface.co/blog/tgi-benchmarking",
+      "date": "Wed, 29 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tgi-benchmarking"
+    },
+    {
+      "id": "https://huggingface.co/blog/train-sentence-transformers",
+      "date": "Tue, 28 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/train-sentence-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/falcon2-11b",
+      "date": "Fri, 24 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/falcon2-11b"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-llamaguard",
+      "date": "Fri, 24 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-llamaguard"
+    },
+    {
+      "id": "https://huggingface.co/blog/inferentia-inference-endpoints",
+      "date": "Wed, 22 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inferentia-inference-endpoints"
+    },
+    {
+      "id": "https://huggingface.co/blog/spaces-dev-mode",
+      "date": "Tue, 21 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/spaces-dev-mode"
+    },
+    {
+      "id": "https://huggingface.co/blog/dell-enterprise-hub",
+      "date": "Tue, 21 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/dell-enterprise-hub"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface-amd-mi300",
+      "date": "Tue, 21 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/huggingface-amd-mi300"
+    },
+    {
+      "id": "https://huggingface.co/blog/microsoft-collaboration",
+      "date": "Tue, 21 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/microsoft-collaboration"
+    },
+    {
+      "id": "https://huggingface.co/blog/kv-cache-quantization",
+      "date": "Thu, 16 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/kv-cache-quantization"
+    },
+    {
+      "id": "https://huggingface.co/blog/paligemma",
+      "date": "Tue, 14 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/paligemma"
+    },
+    {
+      "id": "https://huggingface.co/blog/langchain",
+      "date": "Tue, 14 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/langchain"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-arabic",
+      "date": "Tue, 14 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-arabic"
+    },
+    {
+      "id": "https://huggingface.co/blog/agents",
+      "date": "Mon, 13 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/agents"
+    },
+    {
+      "id": "https://huggingface.co/blog/enterprise-hub-aws-marketplace",
+      "date": "Thu, 09 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/enterprise-hub-aws-marketplace"
+    },
+    {
+      "id": "https://huggingface.co/blog/cost-efficient-rag-applications-with-intel",
+      "date": "Thu, 09 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/cost-efficient-rag-applications-with-intel"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-hebrew",
+      "date": "Sun, 05 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-hebrew"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-artificial-analysis",
+      "date": "Fri, 03 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-artificial-analysis"
+    },
+    {
+      "id": "https://huggingface.co/blog/asr-diarization",
+      "date": "Wed, 01 May 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/asr-diarization"
+    },
+    {
+      "id": "https://huggingface.co/blog/evaluation-structured-outputs",
+      "date": "Tue, 30 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/evaluation-structured-outputs"
+    },
+    {
+      "id": "https://huggingface.co/blog/sc2-instruct",
+      "date": "Mon, 29 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sc2-instruct"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-cot",
+      "date": "Tue, 23 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-cot"
+    },
+    {
+      "id": "https://huggingface.co/blog/jat",
+      "date": "Mon, 22 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/jat"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-medicalllm",
+      "date": "Fri, 19 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-medicalllm"
+    },
+    {
+      "id": "https://huggingface.co/blog/llama3",
+      "date": "Thu, 18 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/llama3"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-reload",
+      "date": "Tue, 16 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-reload"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-livecodebench",
+      "date": "Tue, 16 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-livecodebench"
+    },
+    {
+      "id": "https://huggingface.co/blog/fhe-endpoints",
+      "date": "Tue, 16 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fhe-endpoints"
+    },
+    {
+      "id": "https://huggingface.co/blog/ryght-case-study",
+      "date": "Tue, 16 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ryght-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/idefics2",
+      "date": "Mon, 15 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/idefics2"
+    },
+    {
+      "id": "https://huggingface.co/blog/vlms",
+      "date": "Thu, 11 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/vlms"
+    },
+    {
+      "id": "https://huggingface.co/blog/google-cloud-model-garden",
+      "date": "Wed, 10 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/google-cloud-model-garden"
+    },
+    {
+      "id": "https://huggingface.co/blog/codegemma",
+      "date": "Tue, 09 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/codegemma"
+    },
+    {
+      "id": "https://huggingface.co/blog/policy-blog",
+      "date": "Mon, 08 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/policy-blog"
+    },
+    {
+      "id": "https://huggingface.co/blog/hugging-face-wiz-security-blog",
+      "date": "Thu, 04 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hugging-face-wiz-security-blog"
+    },
+    {
+      "id": "https://huggingface.co/blog/duckdb-nsql-7b",
+      "date": "Thu, 04 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/duckdb-nsql-7b"
+    },
+    {
+      "id": "https://huggingface.co/blog/setfit-optimum-intel",
+      "date": "Wed, 03 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/setfit-optimum-intel"
+    },
+    {
+      "id": "https://huggingface.co/blog/cloudflare-workers-ai",
+      "date": "Tue, 02 Apr 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/cloudflare-workers-ai"
+    },
+    {
+      "id": "https://huggingface.co/blog/pollen-vision",
+      "date": "Mon, 25 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/pollen-vision"
+    },
+    {
+      "id": "https://huggingface.co/blog/noob_intro_transformers",
+      "date": "Fri, 22 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/noob_intro_transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/embedding-quantization",
+      "date": "Fri, 22 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/embedding-quantization"
+    },
+    {
+      "id": "https://huggingface.co/blog/arena-lighthouz",
+      "date": "Thu, 21 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/arena-lighthouz"
+    },
+    {
+      "id": "https://huggingface.co/blog/phi2-intel-meteor-lake",
+      "date": "Wed, 20 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/phi2-intel-meteor-lake"
+    },
+    {
+      "id": "https://huggingface.co/blog/cosmopedia",
+      "date": "Wed, 20 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/cosmopedia"
+    },
+    {
+      "id": "https://huggingface.co/blog/galore",
+      "date": "Wed, 20 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/galore"
+    },
+    {
+      "id": "https://huggingface.co/blog/train-dgx-cloud",
+      "date": "Mon, 18 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/train-dgx-cloud"
+    },
+    {
+      "id": "https://huggingface.co/blog/quanto-introduction",
+      "date": "Mon, 18 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/quanto-introduction"
+    },
+    {
+      "id": "https://huggingface.co/blog/intel-fast-embedding",
+      "date": "Fri, 15 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/intel-fast-embedding"
+    },
+    {
+      "id": "https://huggingface.co/blog/websight",
+      "date": "Fri, 15 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/websight"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-contextual",
+      "date": "Tue, 05 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-contextual"
+    },
+    {
+      "id": "https://huggingface.co/blog/community-datasets",
+      "date": "Mon, 04 Mar 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/community-datasets"
+    },
+    {
+      "id": "https://huggingface.co/blog/textgen-pipe-gaudi",
+      "date": "Thu, 29 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/textgen-pipe-gaudi"
+    },
+    {
+      "id": "https://huggingface.co/blog/starcoder2",
+      "date": "Wed, 28 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/starcoder2"
+    },
+    {
+      "id": "https://huggingface.co/blog/arena-tts",
+      "date": "Tue, 27 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/arena-tts"
+    },
+    {
+      "id": "https://huggingface.co/blog/watermarking",
+      "date": "Mon, 26 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/watermarking"
+    },
+    {
+      "id": "https://huggingface.co/blog/gemma-peft",
+      "date": "Fri, 23 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gemma-peft"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-haizelab",
+      "date": "Fri, 23 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-haizelab"
+    },
+    {
+      "id": "https://huggingface.co/blog/matryoshka",
+      "date": "Fri, 23 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/matryoshka"
+    },
+    {
+      "id": "https://huggingface.co/blog/gemma",
+      "date": "Wed, 21 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gemma"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-upstage",
+      "date": "Tue, 20 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-upstage"
+    },
+    {
+      "id": "https://huggingface.co/blog/peft_merging",
+      "date": "Mon, 19 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/peft_merging"
+    },
+    {
+      "id": "https://huggingface.co/blog/synthetic-data-save-costs",
+      "date": "Fri, 16 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/synthetic-data-save-costs"
+    },
+    {
+      "id": "https://huggingface.co/blog/amd_pervasive_developer_ai_contest",
+      "date": "Wed, 14 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/amd_pervasive_developer_ai_contest"
+    },
+    {
+      "id": "https://huggingface.co/blog/tgi-messages-api",
+      "date": "Thu, 08 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tgi-messages-api"
+    },
+    {
+      "id": "https://huggingface.co/blog/segmoe",
+      "date": "Sat, 03 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/segmoe"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-nphardeval",
+      "date": "Fri, 02 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-nphardeval"
+    },
+    {
+      "id": "https://huggingface.co/blog/constitutional_ai",
+      "date": "Thu, 01 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/constitutional_ai"
+    },
+    {
+      "id": "https://huggingface.co/blog/text-generation-inference-on-inferentia2",
+      "date": "Thu, 01 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/text-generation-inference-on-inferentia2"
+    },
+    {
+      "id": "https://huggingface.co/blog/patchtst",
+      "date": "Thu, 01 Feb 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/patchtst"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-patronus",
+      "date": "Wed, 31 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-patronus"
+    },
+    {
+      "id": "https://huggingface.co/blog/intel-starcoder-quantization",
+      "date": "Tue, 30 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/intel-starcoder-quantization"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-hallucinations",
+      "date": "Mon, 29 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-hallucinations"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-decodingtrust",
+      "date": "Fri, 26 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-decodingtrust"
+    },
+    {
+      "id": "https://huggingface.co/blog/gcp-partnership",
+      "date": "Thu, 25 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gcp-partnership"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-source-llms-as-agents",
+      "date": "Wed, 24 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/open-source-llms-as-agents"
+    },
+    {
+      "id": "https://huggingface.co/blog/fine-tune-w2v2-bert",
+      "date": "Fri, 19 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fine-tune-w2v2-bert"
+    },
+    {
+      "id": "https://huggingface.co/blog/patchtsmixer",
+      "date": "Fri, 19 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/patchtsmixer"
+    },
+    {
+      "id": "https://huggingface.co/blog/pref-tuning",
+      "date": "Thu, 18 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/pref-tuning"
+    },
+    {
+      "id": "https://huggingface.co/blog/sdxl_ort_inference",
+      "date": "Mon, 15 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sdxl_ort_inference"
+    },
+    {
+      "id": "https://huggingface.co/blog/run-comfyui-workflows-on-spaces",
+      "date": "Sun, 14 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/run-comfyui-workflows-on-spaces"
+    },
+    {
+      "id": "https://huggingface.co/blog/leaderboard-vectara",
+      "date": "Fri, 12 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/leaderboard-vectara"
+    },
+    {
+      "id": "https://huggingface.co/blog/unsloth-trl",
+      "date": "Wed, 10 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/unsloth-trl"
+    },
+    {
+      "id": "https://huggingface.co/blog/amused",
+      "date": "Thu, 04 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/amused"
+    },
+    {
+      "id": "https://huggingface.co/blog/sdxl_lora_advanced_script",
+      "date": "Tue, 02 Jan 2024 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sdxl_lora_advanced_script"
+    },
+    {
+      "id": "https://huggingface.co/blog/whisper-speculative-decoding",
+      "date": "Wed, 20 Dec 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/whisper-speculative-decoding"
+    },
+    {
+      "id": "https://huggingface.co/blog/2023-in-llms",
+      "date": "Mon, 18 Dec 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/2023-in-llms"
+    },
+    {
+      "id": "https://huggingface.co/blog/mixtral",
+      "date": "Mon, 11 Dec 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/mixtral"
+    },
+    {
+      "id": "https://huggingface.co/blog/moe",
+      "date": "Mon, 11 Dec 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/moe"
+    },
+    {
+      "id": "https://huggingface.co/blog/setfit-absa",
+      "date": "Wed, 06 Dec 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/setfit-absa"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface-and-optimum-amd",
+      "date": "Tue, 05 Dec 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/huggingface-and-optimum-amd"
+    },
+    {
+      "id": "https://huggingface.co/blog/optimum-nvidia",
+      "date": "Tue, 05 Dec 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/optimum-nvidia"
+    },
+    {
+      "id": "https://huggingface.co/blog/lora-adapters-dynamic-loading",
+      "date": "Tue, 05 Dec 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lora-adapters-dynamic-loading"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-llm-leaderboard-drop",
+      "date": "Fri, 01 Dec 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/open-llm-leaderboard-drop"
+    },
+    {
+      "id": "https://huggingface.co/blog/lcm_lora",
+      "date": "Thu, 09 Nov 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lcm_lora"
+    },
+    {
+      "id": "https://huggingface.co/blog/inferentia-llama2",
+      "date": "Tue, 07 Nov 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inferentia-llama2"
+    },
+    {
+      "id": "https://huggingface.co/blog/prodigy-hf",
+      "date": "Tue, 07 Nov 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/prodigy-hf"
+    },
+    {
+      "id": "https://huggingface.co/blog/Lora-for-sequence-classification-with-Roberta-Llama-Mistral",
+      "date": "Tue, 07 Nov 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/Lora-for-sequence-classification-with-Roberta-Llama-Mistral"
+    },
+    {
+      "id": "https://huggingface.co/blog/regions",
+      "date": "Fri, 03 Nov 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/regions"
+    },
+    {
+      "id": "https://huggingface.co/blog/personal-copilot",
+      "date": "Fri, 27 Oct 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/personal-copilot"
+    },
+    {
+      "id": "https://huggingface.co/blog/scalable-data-inspection",
+      "date": "Wed, 25 Oct 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/scalable-data-inspection"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-endpoints-embeddings",
+      "date": "Tue, 24 Oct 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-endpoints-embeddings"
+    },
+    {
+      "id": "https://huggingface.co/blog/the_n_implementation_details_of_rlhf_with_ppo",
+      "date": "Tue, 24 Oct 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/the_n_implementation_details_of_rlhf_with_ppo"
+    },
+    {
+      "id": "https://huggingface.co/blog/simple_sdxl_optimizations",
+      "date": "Tue, 24 Oct 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/simple_sdxl_optimizations"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-lite",
+      "date": "Thu, 19 Oct 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-lite"
+    },
+    {
+      "id": "https://huggingface.co/blog/ort-accelerating-hf-models",
+      "date": "Wed, 04 Oct 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ort-accelerating-hf-models"
+    },
+    {
+      "id": "https://huggingface.co/blog/sdxl_jax",
+      "date": "Tue, 03 Oct 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sdxl_jax"
+    },
+    {
+      "id": "https://huggingface.co/blog/chat-templates",
+      "date": "Tue, 03 Oct 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/chat-templates"
+    },
+    {
+      "id": "https://huggingface.co/blog/ai-comic-factory",
+      "date": "Mon, 02 Oct 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ai-comic-factory"
+    },
+    {
+      "id": "https://huggingface.co/blog/ethics-soc-5",
+      "date": "Fri, 29 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ethics-soc-5"
+    },
+    {
+      "id": "https://huggingface.co/blog/trl-ddpo",
+      "date": "Fri, 29 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/trl-ddpo"
+    },
+    {
+      "id": "https://huggingface.co/blog/Llama2-for-non-engineers",
+      "date": "Thu, 28 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/Llama2-for-non-engineers"
+    },
+    {
+      "id": "https://huggingface.co/blog/llama-sagemaker-benchmark",
+      "date": "Tue, 26 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/llama-sagemaker-benchmark"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-pro",
+      "date": "Fri, 22 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-pro"
+    },
+    {
+      "id": "https://huggingface.co/blog/rocketmoney-case-study",
+      "date": "Tue, 19 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/rocketmoney-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/gaussian-splatting",
+      "date": "Mon, 18 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gaussian-splatting"
+    },
+    {
+      "id": "https://huggingface.co/blog/object-detection-leaderboard",
+      "date": "Mon, 18 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/object-detection-leaderboard"
+    },
+    {
+      "id": "https://huggingface.co/blog/optimize-llm",
+      "date": "Fri, 15 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/optimize-llm"
+    },
+    {
+      "id": "https://huggingface.co/blog/wuerstchen",
+      "date": "Wed, 13 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/wuerstchen"
+    },
+    {
+      "id": "https://huggingface.co/blog/ram-efficient-pytorch-fsdp",
+      "date": "Wed, 13 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ram-efficient-pytorch-fsdp"
+    },
+    {
+      "id": "https://huggingface.co/blog/overview-quantization-transformers",
+      "date": "Tue, 12 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/overview-quantization-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/safecoder-vs-closed-source-code-assistants",
+      "date": "Mon, 11 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/safecoder-vs-closed-source-code-assistants"
+    },
+    {
+      "id": "https://huggingface.co/blog/t2i-sdxl-adapters",
+      "date": "Fri, 08 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/t2i-sdxl-adapters"
+    },
+    {
+      "id": "https://huggingface.co/blog/falcon-180b",
+      "date": "Wed, 06 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/falcon-180b"
+    },
+    {
+      "id": "https://huggingface.co/blog/fetch-case-study",
+      "date": "Fri, 01 Sep 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fetch-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/audioldm2",
+      "date": "Wed, 30 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/audioldm2"
+    },
+    {
+      "id": "https://huggingface.co/blog/codellama",
+      "date": "Fri, 25 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/codellama"
+    },
+    {
+      "id": "https://huggingface.co/blog/password-git-deprecation",
+      "date": "Fri, 25 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/password-git-deprecation"
+    },
+    {
+      "id": "https://huggingface.co/blog/gptq-integration",
+      "date": "Wed, 23 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gptq-integration"
+    },
+    {
+      "id": "https://huggingface.co/blog/safecoder",
+      "date": "Tue, 22 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/safecoder"
+    },
+    {
+      "id": "https://huggingface.co/blog/idefics",
+      "date": "Tue, 22 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/idefics"
+    },
+    {
+      "id": "https://huggingface.co/blog/aws-marketplace",
+      "date": "Thu, 10 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/aws-marketplace"
+    },
+    {
+      "id": "https://huggingface.co/blog/optimizing-bark",
+      "date": "Wed, 09 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/optimizing-bark"
+    },
+    {
+      "id": "https://huggingface.co/blog/deploy-deepfloydif-using-bentoml",
+      "date": "Wed, 09 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deploy-deepfloydif-using-bentoml"
+    },
+    {
+      "id": "https://huggingface.co/blog/dpo-trl",
+      "date": "Tue, 08 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/dpo-trl"
+    },
+    {
+      "id": "https://huggingface.co/blog/swift-coreml-llm",
+      "date": "Tue, 08 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/swift-coreml-llm"
+    },
+    {
+      "id": "https://huggingface.co/blog/run-musicgen-as-an-api",
+      "date": "Fri, 04 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/run-musicgen-as-an-api"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggy-lingo",
+      "date": "Wed, 02 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/huggy-lingo"
+    },
+    {
+      "id": "https://huggingface.co/blog/encrypted-llm",
+      "date": "Wed, 02 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/encrypted-llm"
+    },
+    {
+      "id": "https://huggingface.co/blog/3d-assets",
+      "date": "Tue, 01 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/3d-assets"
+    },
+    {
+      "id": "https://huggingface.co/blog/sd_distillation",
+      "date": "Tue, 01 Aug 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sd_distillation"
+    },
+    {
+      "id": "https://huggingface.co/blog/stable-diffusion-xl-coreml",
+      "date": "Thu, 27 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/stable-diffusion-xl-coreml"
+    },
+    {
+      "id": "https://huggingface.co/blog/eu-ai-act-oss",
+      "date": "Mon, 24 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/eu-ai-act-oss"
+    },
+    {
+      "id": "https://huggingface.co/blog/agents-js",
+      "date": "Mon, 24 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/agents-js"
+    },
+    {
+      "id": "https://huggingface.co/blog/game-jam-first-edition-results",
+      "date": "Fri, 21 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/game-jam-first-edition-results"
+    },
+    {
+      "id": "https://huggingface.co/blog/diffusers-turns-1",
+      "date": "Thu, 20 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/diffusers-turns-1"
+    },
+    {
+      "id": "https://huggingface.co/blog/llama2",
+      "date": "Tue, 18 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/llama2"
+    },
+    {
+      "id": "https://huggingface.co/blog/ai-webtv",
+      "date": "Mon, 17 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ai-webtv"
+    },
+    {
+      "id": "https://huggingface.co/blog/os-llms",
+      "date": "Mon, 17 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/os-llms"
+    },
+    {
+      "id": "https://huggingface.co/blog/stable-diffusion-finetuning-intel",
+      "date": "Fri, 14 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/stable-diffusion-finetuning-intel"
+    },
+    {
+      "id": "https://huggingface.co/blog/ml-web-games",
+      "date": "Wed, 05 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ml-web-games"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-endpoints-llm",
+      "date": "Tue, 04 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-endpoints-llm"
+    },
+    {
+      "id": "https://huggingface.co/blog/text-to-webapp",
+      "date": "Mon, 03 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/text-to-webapp"
+    },
+    {
+      "id": "https://huggingface.co/blog/writer-case-study",
+      "date": "Sat, 01 Jul 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/writer-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/bridgetower",
+      "date": "Thu, 29 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/bridgetower"
+    },
+    {
+      "id": "https://huggingface.co/blog/ethics-soc-4",
+      "date": "Mon, 26 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ethics-soc-4"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-llm-leaderboard-mmlu",
+      "date": "Fri, 23 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/open-llm-leaderboard-mmlu"
+    },
+    {
+      "id": "https://huggingface.co/blog/panel-on-hugging-face",
+      "date": "Thu, 22 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/panel-on-hugging-face"
+    },
+    {
+      "id": "https://huggingface.co/blog/policy-ntia-rfc",
+      "date": "Tue, 20 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/policy-ntia-rfc"
+    },
+    {
+      "id": "https://huggingface.co/blog/mms_adapters",
+      "date": "Mon, 19 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/mms_adapters"
+    },
+    {
+      "id": "https://huggingface.co/blog/autoformer",
+      "date": "Fri, 16 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/autoformer"
+    },
+    {
+      "id": "https://huggingface.co/blog/fast-diffusers-coreml",
+      "date": "Thu, 15 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fast-diffusers-coreml"
+    },
+    {
+      "id": "https://huggingface.co/blog/livebook-app-deployment",
+      "date": "Thu, 15 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/livebook-app-deployment"
+    },
+    {
+      "id": "https://huggingface.co/blog/content-guidelines-update",
+      "date": "Thu, 15 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/content-guidelines-update"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface-and-amd",
+      "date": "Tue, 13 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/huggingface-and-amd"
+    },
+    {
+      "id": "https://huggingface.co/blog/open-llm-leaderboard-rlhf",
+      "date": "Mon, 12 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/open-llm-leaderboard-rlhf"
+    },
+    {
+      "id": "https://huggingface.co/blog/hf-hub-glam-guide",
+      "date": "Mon, 12 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hf-hub-glam-guide"
+    },
+    {
+      "id": "https://huggingface.co/blog/hub-duckdb",
+      "date": "Wed, 07 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hub-duckdb"
+    },
+    {
+      "id": "https://huggingface.co/blog/fasttext",
+      "date": "Tue, 06 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fasttext"
+    },
+    {
+      "id": "https://huggingface.co/blog/falcon",
+      "date": "Mon, 05 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/falcon"
+    },
+    {
+      "id": "https://huggingface.co/blog/unity-asr",
+      "date": "Fri, 02 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/unity-asr"
+    },
+    {
+      "id": "https://huggingface.co/blog/game-jam",
+      "date": "Thu, 01 Jun 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/game-jam"
+    },
+    {
+      "id": "https://huggingface.co/blog/sagemaker-huggingface-llm",
+      "date": "Wed, 31 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sagemaker-huggingface-llm"
+    },
+    {
+      "id": "https://huggingface.co/blog/bertopic",
+      "date": "Wed, 31 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/bertopic"
+    },
+    {
+      "id": "https://huggingface.co/blog/train-optimize-sd-intel",
+      "date": "Thu, 25 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/train-optimize-sd-intel"
+    },
+    {
+      "id": "https://huggingface.co/blog/4bit-transformers-bitsandbytes",
+      "date": "Wed, 24 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/4bit-transformers-bitsandbytes"
+    },
+    {
+      "id": "https://huggingface.co/blog/hugging-face-endpoints-on-azure",
+      "date": "Wed, 24 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hugging-face-endpoints-on-azure"
+    },
+    {
+      "id": "https://huggingface.co/blog/huggingface-and-ibm",
+      "date": "Tue, 23 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/huggingface-and-ibm"
+    },
+    {
+      "id": "https://huggingface.co/blog/safetensors-security-audit",
+      "date": "Tue, 23 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/safetensors-security-audit"
+    },
+    {
+      "id": "https://huggingface.co/blog/instruction-tuning-sd",
+      "date": "Tue, 23 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/instruction-tuning-sd"
+    },
+    {
+      "id": "https://huggingface.co/blog/dedup",
+      "date": "Tue, 16 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/dedup"
+    },
+    {
+      "id": "https://huggingface.co/blog/generative-ai-models-on-intel-cpu",
+      "date": "Tue, 16 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/generative-ai-models-on-intel-cpu"
+    },
+    {
+      "id": "https://huggingface.co/blog/cnil",
+      "date": "Mon, 15 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/cnil"
+    },
+    {
+      "id": "https://huggingface.co/blog/chatbot-amd-gpu",
+      "date": "Mon, 15 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/chatbot-amd-gpu"
+    },
+    {
+      "id": "https://huggingface.co/blog/rwkv",
+      "date": "Mon, 15 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/rwkv"
+    },
+    {
+      "id": "https://huggingface.co/blog/assisted-generation",
+      "date": "Thu, 11 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/assisted-generation"
+    },
+    {
+      "id": "https://huggingface.co/blog/starchat-alpha",
+      "date": "Tue, 09 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/starchat-alpha"
+    },
+    {
+      "id": "https://huggingface.co/blog/text-to-video",
+      "date": "Mon, 08 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/text-to-video"
+    },
+    {
+      "id": "https://huggingface.co/blog/starcoder",
+      "date": "Thu, 04 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/starcoder"
+    },
+    {
+      "id": "https://huggingface.co/blog/unity-api",
+      "date": "Mon, 01 May 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/unity-api"
+    },
+    {
+      "id": "https://huggingface.co/blog/tf_tpu",
+      "date": "Thu, 27 Apr 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tf_tpu"
+    },
+    {
+      "id": "https://huggingface.co/blog/if",
+      "date": "Wed, 26 Apr 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/if"
+    },
+    {
+      "id": "https://huggingface.co/blog/databricks-case-study",
+      "date": "Wed, 26 Apr 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/databricks-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/chinese-language-blog",
+      "date": "Mon, 24 Apr 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/chinese-language-blog"
+    },
+    {
+      "id": "https://huggingface.co/blog/unity-in-spaces",
+      "date": "Fri, 21 Apr 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/unity-in-spaces"
+    },
+    {
+      "id": "https://huggingface.co/blog/accelerate-transformers-with-inferentia2",
+      "date": "Mon, 17 Apr 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/accelerate-transformers-with-inferentia2"
+    },
+    {
+      "id": "https://huggingface.co/blog/graphml-classification",
+      "date": "Fri, 14 Apr 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/graphml-classification"
+    },
+    {
+      "id": "https://huggingface.co/blog/owkin-substra",
+      "date": "Wed, 12 Apr 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/owkin-substra"
+    },
+    {
+      "id": "https://huggingface.co/blog/snorkel-case-study",
+      "date": "Thu, 06 Apr 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/snorkel-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/stackllama",
+      "date": "Wed, 05 Apr 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/stackllama"
+    },
+    {
+      "id": "https://huggingface.co/blog/ethics-soc-3",
+      "date": "Thu, 30 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ethics-soc-3"
+    },
+    {
+      "id": "https://huggingface.co/blog/habana-gaudi-2-bloom",
+      "date": "Tue, 28 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/habana-gaudi-2-bloom"
+    },
+    {
+      "id": "https://huggingface.co/blog/stable-diffusion-inference-intel",
+      "date": "Tue, 28 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/stable-diffusion-inference-intel"
+    },
+    {
+      "id": "https://huggingface.co/blog/fl-with-flower",
+      "date": "Mon, 27 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fl-with-flower"
+    },
+    {
+      "id": "https://huggingface.co/blog/train-your-controlnet",
+      "date": "Fri, 24 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/train-your-controlnet"
+    },
+    {
+      "id": "https://huggingface.co/blog/notebooks-hub",
+      "date": "Thu, 23 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/notebooks-hub"
+    },
+    {
+      "id": "https://huggingface.co/blog/informer",
+      "date": "Fri, 10 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/informer"
+    },
+    {
+      "id": "https://huggingface.co/blog/trl-peft",
+      "date": "Thu, 09 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/trl-peft"
+    },
+    {
+      "id": "https://huggingface.co/blog/vit-align",
+      "date": "Mon, 06 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/vit-align"
+    },
+    {
+      "id": "https://huggingface.co/blog/using-ml-for-disasters",
+      "date": "Fri, 03 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/using-ml-for-disasters"
+    },
+    {
+      "id": "https://huggingface.co/blog/controlnet",
+      "date": "Fri, 03 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/controlnet"
+    },
+    {
+      "id": "https://huggingface.co/blog/ethics-diffusers",
+      "date": "Thu, 02 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ethics-diffusers"
+    },
+    {
+      "id": "https://huggingface.co/blog/classification-use-cases",
+      "date": "Wed, 01 Mar 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/classification-use-cases"
+    },
+    {
+      "id": "https://huggingface.co/blog/red-teaming",
+      "date": "Fri, 24 Feb 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/red-teaming"
+    },
+    {
+      "id": "https://huggingface.co/blog/fast-mac-diffusers",
+      "date": "Fri, 24 Feb 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fast-mac-diffusers"
+    },
+    {
+      "id": "https://huggingface.co/blog/fetch-eap-case-study",
+      "date": "Thu, 23 Feb 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fetch-eap-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/aws-partnership",
+      "date": "Tue, 21 Feb 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/aws-partnership"
+    },
+    {
+      "id": "https://huggingface.co/blog/blip-2",
+      "date": "Wed, 15 Feb 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/blip-2"
+    },
+    {
+      "id": "https://huggingface.co/blog/mantis-case-study",
+      "date": "Wed, 15 Feb 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/mantis-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/peft",
+      "date": "Fri, 10 Feb 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/peft"
+    },
+    {
+      "id": "https://huggingface.co/blog/speecht5",
+      "date": "Wed, 08 Feb 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/speecht5"
+    },
+    {
+      "id": "https://huggingface.co/blog/ml-for-games-5",
+      "date": "Tue, 07 Feb 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ml-for-games-5"
+    },
+    {
+      "id": "https://huggingface.co/blog/aivsai",
+      "date": "Tue, 07 Feb 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/aivsai"
+    },
+    {
+      "id": "https://huggingface.co/blog/intel-sapphire-rapids-inference",
+      "date": "Mon, 06 Feb 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/intel-sapphire-rapids-inference"
+    },
+    {
+      "id": "https://huggingface.co/blog/vision_language_pretraining",
+      "date": "Fri, 03 Feb 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/vision_language_pretraining"
+    },
+    {
+      "id": "https://huggingface.co/blog/cv_state",
+      "date": "Mon, 30 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/cv_state"
+    },
+    {
+      "id": "https://huggingface.co/blog/ml-for-games-4",
+      "date": "Thu, 26 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ml-for-games-4"
+    },
+    {
+      "id": "https://huggingface.co/blog/lora",
+      "date": "Thu, 26 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lora"
+    },
+    {
+      "id": "https://huggingface.co/blog/dialog-agents",
+      "date": "Tue, 24 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/dialog-agents"
+    },
+    {
+      "id": "https://huggingface.co/blog/optimum-onnxruntime-training",
+      "date": "Tue, 24 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/optimum-onnxruntime-training"
+    },
+    {
+      "id": "https://huggingface.co/blog/ml-for-games-3",
+      "date": "Fri, 20 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ml-for-games-3"
+    },
+    {
+      "id": "https://huggingface.co/blog/mask2former",
+      "date": "Thu, 19 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/mask2former"
+    },
+    {
+      "id": "https://huggingface.co/blog/paddlepaddle",
+      "date": "Tue, 17 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/paddlepaddle"
+    },
+    {
+      "id": "https://huggingface.co/blog/image-similarity",
+      "date": "Mon, 16 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/image-similarity"
+    },
+    {
+      "id": "https://huggingface.co/blog/ml-for-games-2",
+      "date": "Mon, 09 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ml-for-games-2"
+    },
+    {
+      "id": "https://huggingface.co/blog/intro-graphml",
+      "date": "Tue, 03 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/intro-graphml"
+    },
+    {
+      "id": "https://huggingface.co/blog/ml-for-games-1",
+      "date": "Mon, 02 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ml-for-games-1"
+    },
+    {
+      "id": "https://huggingface.co/blog/intel-sapphire-rapids",
+      "date": "Mon, 02 Jan 2023 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/intel-sapphire-rapids"
+    },
+    {
+      "id": "https://huggingface.co/blog/clipseg-zero-shot",
+      "date": "Wed, 21 Dec 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/clipseg-zero-shot"
+    },
+    {
+      "id": "https://huggingface.co/blog/model-cards",
+      "date": "Tue, 20 Dec 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/model-cards"
+    },
+    {
+      "id": "https://huggingface.co/blog/ethics-soc-2",
+      "date": "Thu, 15 Dec 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ethics-soc-2"
+    },
+    {
+      "id": "https://huggingface.co/blog/audio-datasets",
+      "date": "Thu, 15 Dec 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/audio-datasets"
+    },
+    {
+      "id": "https://huggingface.co/blog/habana-gaudi-2-benchmark",
+      "date": "Wed, 14 Dec 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/habana-gaudi-2-benchmark"
+    },
+    {
+      "id": "https://huggingface.co/blog/rlhf",
+      "date": "Fri, 09 Dec 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/rlhf"
+    },
+    {
+      "id": "https://huggingface.co/blog/elixir-bumblebee",
+      "date": "Fri, 09 Dec 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/elixir-bumblebee"
+    },
+    {
+      "id": "https://huggingface.co/blog/deep-learning-with-proteins",
+      "date": "Fri, 02 Dec 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deep-learning-with-proteins"
+    },
+    {
+      "id": "https://huggingface.co/blog/diffusers-coreml",
+      "date": "Thu, 01 Dec 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/diffusers-coreml"
+    },
+    {
+      "id": "https://huggingface.co/blog/time-series-transformers",
+      "date": "Thu, 01 Dec 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/time-series-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/vq-diffusion",
+      "date": "Wed, 30 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/vq-diffusion"
+    },
+    {
+      "id": "https://huggingface.co/blog/interns-2023",
+      "date": "Tue, 29 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/interns-2023"
+    },
+    {
+      "id": "https://huggingface.co/blog/diffusion-models-event",
+      "date": "Fri, 25 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/diffusion-models-event"
+    },
+    {
+      "id": "https://huggingface.co/blog/ml-director-insights-4",
+      "date": "Wed, 23 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ml-director-insights-4"
+    },
+    {
+      "id": "https://huggingface.co/blog/document-ai",
+      "date": "Mon, 21 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/document-ai"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-update",
+      "date": "Mon, 21 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-update"
+    },
+    {
+      "id": "https://huggingface.co/blog/arxiv",
+      "date": "Thu, 17 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/arxiv"
+    },
+    {
+      "id": "https://huggingface.co/blog/sentiment-analysis-fhe",
+      "date": "Thu, 17 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sentiment-analysis-fhe"
+    },
+    {
+      "id": "https://huggingface.co/blog/introducing-csearch",
+      "date": "Tue, 08 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/introducing-csearch"
+    },
+    {
+      "id": "https://huggingface.co/blog/pricing-update",
+      "date": "Tue, 08 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/pricing-update"
+    },
+    {
+      "id": "https://huggingface.co/blog/dreambooth",
+      "date": "Mon, 07 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/dreambooth"
+    },
+    {
+      "id": "https://huggingface.co/blog/fine-tune-whisper",
+      "date": "Thu, 03 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fine-tune-whisper"
+    },
+    {
+      "id": "https://huggingface.co/blog/openvino",
+      "date": "Wed, 02 Nov 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/openvino"
+    },
+    {
+      "id": "https://huggingface.co/blog/evaluating-llm-bias",
+      "date": "Mon, 24 Oct 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/evaluating-llm-bias"
+    },
+    {
+      "id": "https://huggingface.co/blog/pytorch-ddp-accelerate-transformers",
+      "date": "Fri, 21 Oct 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/pytorch-ddp-accelerate-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/mteb",
+      "date": "Wed, 19 Oct 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/mteb"
+    },
+    {
+      "id": "https://huggingface.co/blog/inference-endpoints",
+      "date": "Fri, 14 Oct 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/inference-endpoints"
+    },
+    {
+      "id": "https://huggingface.co/blog/stable_diffusion_jax",
+      "date": "Thu, 13 Oct 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/stable_diffusion_jax"
+    },
+    {
+      "id": "https://huggingface.co/blog/bloom-inference-optimization",
+      "date": "Wed, 12 Oct 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/bloom-inference-optimization"
+    },
+    {
+      "id": "https://huggingface.co/blog/introducing-doi",
+      "date": "Fri, 07 Oct 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/introducing-doi"
+    },
+    {
+      "id": "https://huggingface.co/blog/japanese-stable-diffusion",
+      "date": "Wed, 05 Oct 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/japanese-stable-diffusion"
+    },
+    {
+      "id": "https://huggingface.co/blog/zero-shot-eval-on-the-hub",
+      "date": "Mon, 03 Oct 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/zero-shot-eval-on-the-hub"
+    },
+    {
+      "id": "https://huggingface.co/blog/autotrain-image-classification",
+      "date": "Wed, 28 Sep 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/autotrain-image-classification"
+    },
+    {
+      "id": "https://huggingface.co/blog/accelerate-large-models",
+      "date": "Tue, 27 Sep 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/accelerate-large-models"
+    },
+    {
+      "id": "https://huggingface.co/blog/setfit",
+      "date": "Mon, 26 Sep 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/setfit"
+    },
+    {
+      "id": "https://huggingface.co/blog/ethics-soc-1",
+      "date": "Thu, 22 Sep 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ethics-soc-1"
+    },
+    {
+      "id": "https://huggingface.co/blog/bloom-inference-pytorch-scripts",
+      "date": "Fri, 16 Sep 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/bloom-inference-pytorch-scripts"
+    },
+    {
+      "id": "https://huggingface.co/blog/diffusers-2nd-month",
+      "date": "Mon, 12 Sep 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/diffusers-2nd-month"
+    },
+    {
+      "id": "https://huggingface.co/blog/train-decision-transformers",
+      "date": "Thu, 08 Sep 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/train-decision-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/megatron-training",
+      "date": "Wed, 07 Sep 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/megatron-training"
+    },
+    {
+      "id": "https://huggingface.co/blog/open_rail",
+      "date": "Wed, 31 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/open_rail"
+    },
+    {
+      "id": "https://huggingface.co/blog/spaces_3dmoljs",
+      "date": "Wed, 24 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/spaces_3dmoljs"
+    },
+    {
+      "id": "https://huggingface.co/blog/stable_diffusion",
+      "date": "Mon, 22 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/stable_diffusion"
+    },
+    {
+      "id": "https://huggingface.co/blog/pretraining-bert",
+      "date": "Mon, 22 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/pretraining-bert"
+    },
+    {
+      "id": "https://huggingface.co/blog/deploy-vertex-ai",
+      "date": "Fri, 19 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deploy-vertex-ai"
+    },
+    {
+      "id": "https://huggingface.co/blog/vision-transformers",
+      "date": "Thu, 18 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/vision-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/hf-bitsandbytes-integration",
+      "date": "Wed, 17 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hf-bitsandbytes-integration"
+    },
+    {
+      "id": "https://huggingface.co/blog/skops",
+      "date": "Fri, 12 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/skops"
+    },
+    {
+      "id": "https://huggingface.co/blog/tensorflow-philosophy",
+      "date": "Fri, 12 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tensorflow-philosophy"
+    },
+    {
+      "id": "https://huggingface.co/blog/deploy-tfserving-kubernetes",
+      "date": "Thu, 11 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deploy-tfserving-kubernetes"
+    },
+    {
+      "id": "https://huggingface.co/blog/how-to-train-sentence-transformers",
+      "date": "Wed, 10 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/how-to-train-sentence-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/deep-rl-ppo",
+      "date": "Fri, 05 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deep-rl-ppo"
+    },
+    {
+      "id": "https://huggingface.co/blog/introducing-private-hub",
+      "date": "Wed, 03 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/introducing-private-hub"
+    },
+    {
+      "id": "https://huggingface.co/blog/nystromformer",
+      "date": "Tue, 02 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/nystromformer"
+    },
+    {
+      "id": "https://huggingface.co/blog/us-national-ai-research-resource",
+      "date": "Mon, 01 Aug 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/us-national-ai-research-resource"
+    },
+    {
+      "id": "https://huggingface.co/blog/datasets-docs-update",
+      "date": "Thu, 28 Jul 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/datasets-docs-update"
+    },
+    {
+      "id": "https://huggingface.co/blog/tf-xla-generate",
+      "date": "Wed, 27 Jul 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tf-xla-generate"
+    },
+    {
+      "id": "https://huggingface.co/blog/tf-serving-vision",
+      "date": "Mon, 25 Jul 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tf-serving-vision"
+    },
+    {
+      "id": "https://huggingface.co/blog/deep-rl-a2c",
+      "date": "Fri, 22 Jul 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deep-rl-a2c"
+    },
+    {
+      "id": "https://huggingface.co/blog/mnist-adversarial",
+      "date": "Sat, 16 Jul 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/mnist-adversarial"
+    },
+    {
+      "id": "https://huggingface.co/blog/bloom-megatron-deepspeed",
+      "date": "Thu, 14 Jul 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/bloom-megatron-deepspeed"
+    },
+    {
+      "id": "https://huggingface.co/blog/playlist-generator",
+      "date": "Wed, 13 Jul 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/playlist-generator"
+    },
+    {
+      "id": "https://huggingface.co/blog/bloom",
+      "date": "Tue, 12 Jul 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/bloom"
+    },
+    {
+      "id": "https://huggingface.co/blog/sentiment-analysis-twitter",
+      "date": "Thu, 07 Jul 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sentiment-analysis-twitter"
+    },
+    {
+      "id": "https://huggingface.co/blog/deep-rl-pg",
+      "date": "Thu, 30 Jun 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deep-rl-pg"
+    },
+    {
+      "id": "https://huggingface.co/blog/your-first-ml-project",
+      "date": "Wed, 29 Jun 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/your-first-ml-project"
+    },
+    {
+      "id": "https://huggingface.co/blog/accelerate-deepspeed",
+      "date": "Tue, 28 Jun 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/accelerate-deepspeed"
+    },
+    {
+      "id": "https://huggingface.co/blog/eval-on-the-hub",
+      "date": "Tue, 28 Jun 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/eval-on-the-hub"
+    },
+    {
+      "id": "https://huggingface.co/blog/getting-started-with-embeddings",
+      "date": "Thu, 23 Jun 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/getting-started-with-embeddings"
+    },
+    {
+      "id": "https://huggingface.co/blog/convert-transformers-to-onnx",
+      "date": "Wed, 22 Jun 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/convert-transformers-to-onnx"
+    },
+    {
+      "id": "https://huggingface.co/blog/intel",
+      "date": "Wed, 15 Jun 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/intel"
+    },
+    {
+      "id": "https://huggingface.co/blog/ml-director-insights-3",
+      "date": "Tue, 14 Jun 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ml-director-insights-3"
+    },
+    {
+      "id": "https://huggingface.co/blog/annotated-diffusion",
+      "date": "Tue, 07 Jun 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/annotated-diffusion"
+    },
+    {
+      "id": "https://huggingface.co/blog/deep-rl-dqn",
+      "date": "Tue, 07 Jun 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deep-rl-dqn"
+    },
+    {
+      "id": "https://huggingface.co/blog/graphcore-update",
+      "date": "Thu, 26 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/graphcore-update"
+    },
+    {
+      "id": "https://huggingface.co/blog/community-update",
+      "date": "Wed, 25 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/community-update"
+    },
+    {
+      "id": "https://huggingface.co/blog/tapex",
+      "date": "Mon, 23 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tapex"
+    },
+    {
+      "id": "https://huggingface.co/blog/deep-rl-q-part2",
+      "date": "Fri, 20 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deep-rl-q-part2"
+    },
+    {
+      "id": "https://huggingface.co/blog/sempre-health-eap-case-study",
+      "date": "Thu, 19 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sempre-health-eap-case-study"
+    },
+    {
+      "id": "https://huggingface.co/blog/ethical-charter-multimodal",
+      "date": "Thu, 19 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ethical-charter-multimodal"
+    },
+    {
+      "id": "https://huggingface.co/blog/deep-rl-q-part1",
+      "date": "Wed, 18 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deep-rl-q-part1"
+    },
+    {
+      "id": "https://huggingface.co/blog/sasha-luccioni-interview",
+      "date": "Tue, 17 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sasha-luccioni-interview"
+    },
+    {
+      "id": "https://huggingface.co/blog/fellowship",
+      "date": "Tue, 17 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fellowship"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-blocks",
+      "date": "Mon, 16 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-blocks"
+    },
+    {
+      "id": "https://huggingface.co/blog/ml-director-insights-2",
+      "date": "Fri, 13 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ml-director-insights-2"
+    },
+    {
+      "id": "https://huggingface.co/blog/ambassadors",
+      "date": "Fri, 13 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ambassadors"
+    },
+    {
+      "id": "https://huggingface.co/blog/optimum-inference",
+      "date": "Tue, 10 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/optimum-inference"
+    },
+    {
+      "id": "https://huggingface.co/blog/series-c",
+      "date": "Mon, 09 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/series-c"
+    },
+    {
+      "id": "https://huggingface.co/blog/fastai",
+      "date": "Fri, 06 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fastai"
+    },
+    {
+      "id": "https://huggingface.co/blog/deep-rl-intro",
+      "date": "Wed, 04 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deep-rl-intro"
+    },
+    {
+      "id": "https://huggingface.co/blog/pytorch-fsdp",
+      "date": "Mon, 02 May 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/pytorch-fsdp"
+    },
+    {
+      "id": "https://huggingface.co/blog/opinion-classification-with-kili",
+      "date": "Thu, 28 Apr 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/opinion-classification-with-kili"
+    },
+    {
+      "id": "https://huggingface.co/blog/ml-director-insights",
+      "date": "Wed, 27 Apr 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ml-director-insights"
+    },
+    {
+      "id": "https://huggingface.co/blog/getting-started-habana",
+      "date": "Tue, 26 Apr 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/getting-started-habana"
+    },
+    {
+      "id": "https://huggingface.co/blog/education",
+      "date": "Mon, 25 Apr 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/education"
+    },
+    {
+      "id": "https://huggingface.co/blog/supercharge-customer-service-with-machine-learning",
+      "date": "Mon, 25 Apr 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/supercharge-customer-service-with-machine-learning"
+    },
+    {
+      "id": "https://huggingface.co/blog/carbon-emissions-on-the-hub",
+      "date": "Fri, 22 Apr 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/carbon-emissions-on-the-hub"
+    },
+    {
+      "id": "https://huggingface.co/blog/lewis-tunstall-interview",
+      "date": "Wed, 13 Apr 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/lewis-tunstall-interview"
+    },
+    {
+      "id": "https://huggingface.co/blog/habana",
+      "date": "Tue, 12 Apr 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/habana"
+    },
+    {
+      "id": "https://huggingface.co/blog/transformers-design-philosophy",
+      "date": "Tue, 05 Apr 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/transformers-design-philosophy"
+    },
+    {
+      "id": "https://huggingface.co/blog/decision-transformers",
+      "date": "Mon, 28 Mar 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/decision-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/meg-mitchell-interview",
+      "date": "Wed, 23 Mar 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/meg-mitchell-interview"
+    },
+    {
+      "id": "https://huggingface.co/blog/ai-residency",
+      "date": "Tue, 22 Mar 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ai-residency"
+    },
+    {
+      "id": "https://huggingface.co/blog/fine-tune-segformer",
+      "date": "Thu, 17 Mar 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fine-tune-segformer"
+    },
+    {
+      "id": "https://huggingface.co/blog/bert-inferentia-sagemaker",
+      "date": "Wed, 16 Mar 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/bert-inferentia-sagemaker"
+    },
+    {
+      "id": "https://huggingface.co/blog/image-search-datasets",
+      "date": "Wed, 16 Mar 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/image-search-datasets"
+    },
+    {
+      "id": "https://huggingface.co/blog/constrained-beam-search",
+      "date": "Fri, 11 Mar 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/constrained-beam-search"
+    },
+    {
+      "id": "https://huggingface.co/blog/bert-101",
+      "date": "Wed, 02 Mar 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/bert-101"
+    },
+    {
+      "id": "https://huggingface.co/blog/fine-tune-vit",
+      "date": "Fri, 11 Feb 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fine-tune-vit"
+    },
+    {
+      "id": "https://huggingface.co/blog/sentiment-analysis-python",
+      "date": "Wed, 02 Feb 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sentiment-analysis-python"
+    },
+    {
+      "id": "https://huggingface.co/blog/asr-chunking",
+      "date": "Tue, 01 Feb 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/asr-chunking"
+    },
+    {
+      "id": "https://huggingface.co/blog/searching-the-hub",
+      "date": "Tue, 25 Jan 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/searching-the-hub"
+    },
+    {
+      "id": "https://huggingface.co/blog/sb3",
+      "date": "Fri, 21 Jan 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sb3"
+    },
+    {
+      "id": "https://huggingface.co/blog/infinity-cpu-performance",
+      "date": "Thu, 13 Jan 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/infinity-cpu-performance"
+    },
+    {
+      "id": "https://huggingface.co/blog/wav2vec2-with-ngram",
+      "date": "Wed, 12 Jan 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/wav2vec2-with-ngram"
+    },
+    {
+      "id": "https://huggingface.co/blog/gptj-sagemaker",
+      "date": "Tue, 11 Jan 2022 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gptj-sagemaker"
+    },
+    {
+      "id": "https://huggingface.co/blog/autonlp-prodigy",
+      "date": "Thu, 23 Dec 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/autonlp-prodigy"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-joins-hf",
+      "date": "Tue, 21 Dec 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-joins-hf"
+    },
+    {
+      "id": "https://huggingface.co/blog/perceiver",
+      "date": "Wed, 15 Dec 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/perceiver"
+    },
+    {
+      "id": "https://huggingface.co/blog/codeparrot",
+      "date": "Wed, 08 Dec 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/codeparrot"
+    },
+    {
+      "id": "https://huggingface.co/blog/snowball-fight",
+      "date": "Thu, 02 Dec 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/snowball-fight"
+    },
+    {
+      "id": "https://huggingface.co/blog/graphcore-getting-started",
+      "date": "Tue, 30 Nov 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/graphcore-getting-started"
+    },
+    {
+      "id": "https://huggingface.co/blog/data-measurements-tool",
+      "date": "Mon, 29 Nov 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/data-measurements-tool"
+    },
+    {
+      "id": "https://huggingface.co/blog/accelerating-pytorch",
+      "date": "Fri, 19 Nov 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/accelerating-pytorch"
+    },
+    {
+      "id": "https://huggingface.co/blog/fine-tune-xlsr-wav2vec2",
+      "date": "Mon, 15 Nov 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fine-tune-xlsr-wav2vec2"
+    },
+    {
+      "id": "https://huggingface.co/blog/bert-cpu-scaling-part-2",
+      "date": "Thu, 04 Nov 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/bert-cpu-scaling-part-2"
+    },
+    {
+      "id": "https://huggingface.co/blog/course-launch-event",
+      "date": "Tue, 26 Oct 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/course-launch-event"
+    },
+    {
+      "id": "https://huggingface.co/blog/large-language-models",
+      "date": "Tue, 26 Oct 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/large-language-models"
+    },
+    {
+      "id": "https://huggingface.co/blog/1b-sentence-embeddings",
+      "date": "Mon, 25 Oct 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/1b-sentence-embeddings"
+    },
+    {
+      "id": "https://huggingface.co/blog/the-age-of-ml-as-code",
+      "date": "Wed, 20 Oct 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/the-age-of-ml-as-code"
+    },
+    {
+      "id": "https://huggingface.co/blog/fine-tune-clip-rsicd",
+      "date": "Wed, 13 Oct 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fine-tune-clip-rsicd"
+    },
+    {
+      "id": "https://huggingface.co/blog/streamlit-spaces",
+      "date": "Tue, 05 Oct 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/streamlit-spaces"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio-spaces",
+      "date": "Tue, 05 Oct 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio-spaces"
+    },
+    {
+      "id": "https://huggingface.co/blog/summer-at-huggingface",
+      "date": "Fri, 24 Sep 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/summer-at-huggingface"
+    },
+    {
+      "id": "https://huggingface.co/blog/graphcore",
+      "date": "Tue, 14 Sep 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/graphcore"
+    },
+    {
+      "id": "https://huggingface.co/blog/hardware-partners-program",
+      "date": "Tue, 14 Sep 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/hardware-partners-program"
+    },
+    {
+      "id": "https://huggingface.co/blog/collaborative-training",
+      "date": "Thu, 15 Jul 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/collaborative-training"
+    },
+    {
+      "id": "https://huggingface.co/blog/spacy",
+      "date": "Tue, 13 Jul 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/spacy"
+    },
+    {
+      "id": "https://huggingface.co/blog/deploy-hugging-face-models-easily-with-amazon-sagemaker",
+      "date": "Thu, 08 Jul 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/deploy-hugging-face-models-easily-with-amazon-sagemaker"
+    },
+    {
+      "id": "https://huggingface.co/blog/sentence-transformers-in-the-hub",
+      "date": "Mon, 28 Jun 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sentence-transformers-in-the-hub"
+    },
+    {
+      "id": "https://huggingface.co/blog/few-shot-learning-gpt-neo-and-inference-api",
+      "date": "Thu, 03 Jun 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/few-shot-learning-gpt-neo-and-inference-api"
+    },
+    {
+      "id": "https://huggingface.co/blog/gradio",
+      "date": "Tue, 25 May 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/gradio"
+    },
+    {
+      "id": "https://huggingface.co/blog/bert-cpu-scaling-part-1",
+      "date": "Tue, 20 Apr 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/bert-cpu-scaling-part-1"
+    },
+    {
+      "id": "https://huggingface.co/blog/accelerate-library",
+      "date": "Fri, 16 Apr 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/accelerate-library"
+    },
+    {
+      "id": "https://huggingface.co/blog/sagemaker-distributed-training-seq2seq",
+      "date": "Thu, 08 Apr 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/sagemaker-distributed-training-seq2seq"
+    },
+    {
+      "id": "https://huggingface.co/blog/big-bird",
+      "date": "Wed, 31 Mar 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/big-bird"
+    },
+    {
+      "id": "https://huggingface.co/blog/the-partnership-amazon-sagemaker-and-hugging-face",
+      "date": "Tue, 23 Mar 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/the-partnership-amazon-sagemaker-and-hugging-face"
+    },
+    {
+      "id": "https://huggingface.co/blog/how-to-deploy-a-pipeline-to-google-clouds",
+      "date": "Thu, 18 Mar 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/how-to-deploy-a-pipeline-to-google-clouds"
+    },
+    {
+      "id": "https://huggingface.co/blog/fine-tune-wav2vec2-english",
+      "date": "Fri, 12 Mar 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/fine-tune-wav2vec2-english"
+    },
+    {
+      "id": "https://huggingface.co/blog/long-range-transformers",
+      "date": "Tue, 09 Mar 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/long-range-transformers"
+    },
+    {
+      "id": "https://huggingface.co/blog/simple-considerations",
+      "date": "Thu, 25 Feb 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/simple-considerations"
+    },
+    {
+      "id": "https://huggingface.co/blog/ray-rag",
+      "date": "Wed, 10 Feb 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ray-rag"
+    },
+    {
+      "id": "https://huggingface.co/blog/pytorch-xla",
+      "date": "Tue, 09 Feb 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/pytorch-xla"
+    },
+    {
+      "id": "https://huggingface.co/blog/tf-serving",
+      "date": "Tue, 26 Jan 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/tf-serving"
+    },
+    {
+      "id": "https://huggingface.co/blog/zero-deepspeed-fairscale",
+      "date": "Tue, 19 Jan 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/zero-deepspeed-fairscale"
+    },
+    {
+      "id": "https://huggingface.co/blog/accelerated-inference",
+      "date": "Mon, 18 Jan 2021 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/accelerated-inference"
+    },
+    {
+      "id": "https://huggingface.co/blog/warm-starting-encoder-decoder",
+      "date": "Mon, 09 Nov 2020 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/warm-starting-encoder-decoder"
+    },
+    {
+      "id": "https://huggingface.co/blog/porting-fsmt",
+      "date": "Tue, 03 Nov 2020 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/porting-fsmt"
+    },
+    {
+      "id": "https://huggingface.co/blog/ray-tune",
+      "date": "Mon, 02 Nov 2020 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/ray-tune"
+    },
+    {
+      "id": "https://huggingface.co/blog/encoder-decoder",
+      "date": "Sat, 10 Oct 2020 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/encoder-decoder"
+    },
+    {
+      "id": "https://huggingface.co/blog/pytorch_block_sparse",
+      "date": "Thu, 10 Sep 2020 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/pytorch_block_sparse"
+    },
+    {
+      "id": "https://huggingface.co/blog/reformer",
+      "date": "Fri, 03 Jul 2020 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/reformer"
+    },
+    {
+      "id": "https://huggingface.co/blog/how-to-generate",
+      "date": "Sun, 01 Mar 2020 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/how-to-generate"
+    },
+    {
+      "id": "https://huggingface.co/blog/how-to-train",
+      "date": "Fri, 14 Feb 2020 00:00:00 GMT",
+      "url": "https://huggingface.co/blog/how-to-train"
+    }
+  ]
+}

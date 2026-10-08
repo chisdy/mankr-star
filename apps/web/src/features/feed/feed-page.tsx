@@ -3,7 +3,7 @@ import { useReadableSearchParams } from "@/lib/search-params"
 import { useTranslation } from "react-i18next"
 import { UPDATE_EVENT_TYPES, type UpdateEventType } from "@mankr/shared"
 import {
-  RssIcon,
+  ArrowsClockwiseIcon,
   XIcon,
   CircleNotchIcon,
   ClockCounterClockwiseIcon,
@@ -110,7 +110,7 @@ export function FeedPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
-              <RssIcon className="size-4.5" />
+              <ArrowsClockwiseIcon className="size-4.5" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               {t("title")}
@@ -179,7 +179,7 @@ export function FeedPage() {
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center space-y-3 rounded-xl border border-dashed border-border/80 bg-card p-12 text-center">
             <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <RssIcon className="size-5" />
+              <ArrowsClockwiseIcon className="size-5" />
             </div>
             <p className="max-w-xs text-xs leading-relaxed text-muted-foreground">
               {isFiltered ? t("emptyFiltered") : t("empty")}

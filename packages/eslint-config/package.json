@@ -1,0 +1,17 @@
+{
+  "name": "@workspace/eslint-config",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "ESLint's compatible TypeScript API, separate from the application compiler",
+  "dependencies": {
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8"
+  },
+  "peerDependencies": {
+    "eslint": "^10"
+  },
+  "exports": {
+    "./typescript": "./typescript.js"
+  }
+}

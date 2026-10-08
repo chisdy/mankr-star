@@ -1,11 +1,11 @@
 import * as React from "react"
-import { Link, NavLink, useNavigate } from "react-router"
+import { Link, NavLink, useLocation, useNavigate } from "react-router"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import {
-  BookmarksIcon,
+  FolderStarIcon,
   HashIcon,
-  RssIcon,
+  ArrowsClockwiseIcon,
   GearIcon,
   SunIcon,
   MoonIcon,
@@ -13,9 +13,10 @@ import {
   SignOutIcon,
   TranslateIcon,
   UserIcon,
-  ChartBarIcon,
+  ChartDonutIcon,
   GithubLogoIcon,
-  TrophyIcon,
+  RankingIcon,
+  FireIcon,
   type Icon,
 } from "@phosphor-icons/react"
 
@@ -51,6 +52,7 @@ import { useTheme } from "@/components/theme-provider"
 import { FolderTreePanel } from "@/features/folders/folder-tree-panel"
 import { useAuth } from "@/hooks/use-auth"
 import { useLoginDialog } from "@/hooks/login-dialog-context"
+import { useDiscoveryChannels } from "@/features/discovery/use-discovery"
 import { getLocale, setLocale } from "@/i18n"
 import { LOCALES, LOCALE_LABELS, type Locale } from "@/i18n/locales"
 
@@ -58,21 +60,29 @@ const PROJECT_GITHUB_URL = "https://github.com/chisdy/mankr-star"
 
 type NavItem = {
   to: string
-  labelKey: "bookmarks" | "tags" | "rankings" | "feed" | "insights" | "settings"
+  labelKey:
+    | "bookmarks"
+    | "tags"
+    | "rankings"
+    | "feed"
+    | "insights"
+    | "settings"
+    | "discovery"
   icon: Icon
   /** 未登录时是否可见；默认 true */
   guestVisible?: boolean
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { to: "/", labelKey: "bookmarks", icon: BookmarksIcon },
-  { to: "/rankings", labelKey: "rankings", icon: TrophyIcon },
+  { to: "/", labelKey: "bookmarks", icon: FolderStarIcon },
+  { to: "/discover", labelKey: "discovery", icon: FireIcon },
+  { to: "/rankings", labelKey: "rankings", icon: RankingIcon },
   { to: "/tags", labelKey: "tags", icon: HashIcon },
-  { to: "/feed", labelKey: "feed", icon: RssIcon },
+  { to: "/feed", labelKey: "feed", icon: ArrowsClockwiseIcon },
   {
     to: "/insights",
     labelKey: "insights",
-    icon: ChartBarIcon,
+    icon: ChartDonutIcon,
     guestVisible: false,
   },
 ]
@@ -86,14 +96,18 @@ export const SETTINGS_ITEM: NavItem = {
 
 function useVisibleNavItems(includeSettings = false) {
   const { isAuthenticated } = useAuth()
+  const { data: discovery } = useDiscoveryChannels()
+  const discoveryVisible = Boolean(discovery?.enabled && discovery.ready)
   return React.useMemo(() => {
-    const base = isAuthenticated
-      ? NAV_ITEMS
-      : NAV_ITEMS.filter((item) => item.guestVisible !== false)
+    const base = NAV_ITEMS.filter(
+      (item) =>
+        (isAuthenticated || item.guestVisible !== false) &&
+        (item.to !== "/discover" || discoveryVisible)
+    )
     if (!includeSettings) return base
     if (!isAuthenticated) return base
     return [...base, SETTINGS_ITEM]
-  }, [isAuthenticated, includeSettings])
+  }, [isAuthenticated, includeSettings, discoveryVisible])
 }
 
 const railLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -341,6 +355,7 @@ function MobileNav({
 }) {
   const { t } = useTranslation("nav")
   const navItems = useVisibleNavItems(true)
+  const location = useLocation()
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -378,10 +393,12 @@ function MobileNav({
             )
           })}
         </nav>
-        <FolderTreePanel
-          className="min-h-0 w-full flex-1 border-r-0"
-          onNavigate={() => onOpenChange(false)}
-        />
+        {location.pathname !== "/discover" ? (
+          <FolderTreePanel
+            className="min-h-0 w-full flex-1 border-r-0"
+            onNavigate={() => onOpenChange(false)}
+          />
+        ) : null}
       </SheetContent>
     </Sheet>
   )

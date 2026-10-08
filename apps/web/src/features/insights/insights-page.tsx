@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next"
 import { Link } from "react-router"
 import { useReadableSearchParams } from "@/lib/search-params"
 import {
-  ChartBarIcon,
+  ChartDonutIcon,
   CpuIcon,
   DatabaseIcon,
   CoinsIcon,
@@ -123,7 +123,7 @@ export function InsightsPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
-              <ChartBarIcon className="size-4.5" />
+              <ChartDonutIcon className="size-4.5" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               {t("header.title")}

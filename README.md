@@ -10,6 +10,7 @@
 | 组织 | 树形文件夹、标签、全文检索（FTS）+ 可选语义混合检索、筛选与归档 |
 | AI | 用户自备 DeepSeek Key；异步摘要 / 文件夹 / 标签；无 Key 时规则降级 |
 | 同步 | Cron 每 6 小时拉取 GitHub 更新，写入 Feed 事件与健康状态 |
+| 每日热点 | `/discover`：AI、前端、后端 / 基础设施、开发工具四个固定频道；GitHub 候选仓库、HN 热门与经过验证的 RSS 更新；支持来源平台筛选和手动收藏 |
 | 洞察 | 来源 / 语言 / 健康分布、AI 用量、Cloudflare Free 额度、同步问题 |
 | KB Chat | 基于收藏库检索 + 可选 AnySearch 联网；SSE 流式回答 |
 | 设置 | DeepSeek / AnySearch / Cloudflare Analytics / GitHub PAT、**API Token（MCP）**、跟踪阈值与动态订阅、公开浏览、JSON / Markdown 导出 |
@@ -55,6 +56,27 @@ pnpm --filter web dev
 额度仪表盘路径：**设置** 配置凭证后，打开 **洞察**（`/insights`）顶部的「Cloudflare Free 额度」卡片。
 
 Worker 环境变量见 `apps/web/wrangler.jsonc`（`APP_NAME` 等）。本地开发用 Wrangler 绑定 D1。
+
+## 每日热点的启用与运维
+
+`DISCOVERY_ENABLED` 默认关闭。部署前先核对目标 D1 的迁移记录，应用新增迁移，再保持开关关闭部署代码；完成来源验证、测试和目标套餐的完整 Cron 资源验收后才设为 `"true"`。热点不调用付费 AI，也不需要新的数据 API Key；已有 GitHub PAT 可提高配额。API 免费不代表 Workers / D1 的计算和存储没有成本。
+
+原业务触发器 `*/10 * * * *` 保持不变，热点使用 `5-55/10 * * * *` 单独推进。每天北京时间 08:00 后创建当天任务，每轮推进有预算的分片，显示实际发布时间。生产初始化由热点 Cron 完成；`GET /api/discovery/channels` 的 `enabled` 与 `ready` 都为 true 后才显示导航，首次失败时查看 Worker 日志及发现读接口状态。网页刷新只读已发布数据，不能触发抓取。
+
+本地预览在 `apps/web/.dev.vars` 设置 `DISCOVERY_ENABLED=true`，不会改变生产默认关闭的开关。`pnpm dev` 不会自动运行 Cron；在北京时间 08:00 后用以下命令推进一个热点分片，后续按同一命令续跑。已有成功频道发布、channels API 返回 `ready=true` 后，刷新页面即可看到「每日热点」导航；首次采样没有昨日增长是正常状态。上游限流时按任务重试时间等待，不通过高频空调用耗尽分片轮次。
+
+```bash
+curl -G 'http://localhost:5173/cdn-cgi/local/scheduled' \
+  --data-urlencode 'cron=5-55/10 * * * *' \
+  --data-urlencode 'format=json'
+curl 'http://localhost:5173/api/discovery/channels'
+```
+
+GitHub Stars 增长只比较昨日成功采样，间隔须为 20–36 小时；首日显示「新发现」，缺失增长与真实零增长分别处理。HN 保留原生分数及评论数；RSS 标为「最新更新」。来源失败时使用有效期内的旧来源，全部失败时保留旧榜单及失败状态。关闭开关可停用并隐藏入口，保留新增表及原收藏数据。
+
+一次同步以六小时内完成为目标，提前为来源终止、四频道发布与清理预留轮次；延迟触发超过期限时记录失败并保旧，清理随后恢复。预算配置有可执行下限，不应通过减小候选池或停用来源来宣称原方案资源验收通过。
+
+开发环境可用 Wrangler 的 scheduled 测试路径及固定时钟验证。当前 RSS 本地冷解析的 sampled JS 曾超过 Workers Free 的 10 ms CPU 限制，缩小 RSS 样本也未稳定解决；因此尚未通过免费套餐的生产启用验收。需在 staging 记录完整 Cron 的平台 CPU/outcome、出站请求、D1 语句和读写行数，未通过时保持关闭，并评估 Paid Workers。采样脚本为 `scripts/discovery-resource-smoke.mjs`，其本地 profiler 与 `elapsedMs` 均不能替代平台 CPU 指标。详细规则、预算、回退与验收见 [每日热点计划](docs/superpowers/plans/2026-10-08-daily-discovery-plan.md)。
 
 ## 文档
 

@@ -13,6 +13,7 @@ export default defineConfig(async () => {
       cloudflareTest({
         miniflare: {
           compatibilityDate: "2026-08-04",
+          compatibilityFlags: ["nodejs_compat"],
           // MIGRATION_DB 不参与 setup.ts 的自动迁移，供迁移专测逐步应用
           d1Databases: ["DB", "MIGRATION_DB"],
           bindings: {

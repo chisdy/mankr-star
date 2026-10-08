@@ -1,0 +1,62 @@
+{
+  "sourceId": "webdev",
+  "url": "https://web.dev/static/blog/feed.xml",
+  "verifiedAt": "2026-10-08T05:48:24.291987+00:00",
+  "bytes": 5034,
+  "sha256": "8b8add7b42e0e38405c28f29ad7b874a0e8dd39f699f0364287ae59b7bba5d14",
+  "entryCount": 10,
+  "newestFirst": true,
+  "orderViolations": [],
+  "entries": [
+    {
+      "id": "https://web.dev/blog/web-platform-05-2026?hl=en",
+      "date": "Fri, 29 May 2026 07:00:00 GMT",
+      "url": "https://web.dev/blog/web-platform-05-2026?hl=en"
+    },
+    {
+      "id": "https://web.dev/blog/baseline-digest-apr-2026?hl=en",
+      "date": "Wed, 27 May 2026 07:00:00 GMT",
+      "url": "https://web.dev/blog/baseline-digest-apr-2026?hl=en"
+    },
+    {
+      "id": "https://web.dev/blog/web-platform-04-2026?hl=en",
+      "date": "Fri, 24 Apr 2026 07:00:00 GMT",
+      "url": "https://web.dev/blog/web-platform-04-2026?hl=en"
+    },
+    {
+      "id": "https://web.dev/blog/baseline-digest-mar-2026?hl=en",
+      "date": "Tue, 14 Apr 2026 07:00:00 GMT",
+      "url": "https://web.dev/blog/baseline-digest-mar-2026?hl=en"
+    },
+    {
+      "id": "https://web.dev/blog/baseline-digest-feb-2026?hl=en",
+      "date": "Mon, 30 Mar 2026 07:00:00 GMT",
+      "url": "https://web.dev/blog/baseline-digest-feb-2026?hl=en"
+    },
+    {
+      "id": "https://web.dev/blog/web-platform-03-2026?hl=en",
+      "date": "Fri, 27 Mar 2026 07:00:00 GMT",
+      "url": "https://web.dev/blog/web-platform-03-2026?hl=en"
+    },
+    {
+      "id": "https://web.dev/blog/baseline-digest-jan-2026?hl=en",
+      "date": "Mon, 02 Mar 2026 08:00:00 GMT",
+      "url": "https://web.dev/blog/baseline-digest-jan-2026?hl=en"
+    },
+    {
+      "id": "https://web.dev/blog/web-platform-02-2026?hl=en",
+      "date": "Thu, 26 Feb 2026 08:00:00 GMT",
+      "url": "https://web.dev/blog/web-platform-02-2026?hl=en"
+    },
+    {
+      "id": "https://web.dev/blog/baseline-navigation-api?hl=en",
+      "date": "Tue, 17 Feb 2026 08:00:00 GMT",
+      "url": "https://web.dev/blog/baseline-navigation-api?hl=en"
+    },
+    {
+      "id": "https://web.dev/blog/interop-2026?hl=en",
+      "date": "Thu, 12 Feb 2026 08:00:00 GMT",
+      "url": "https://web.dev/blog/interop-2026?hl=en"
+    }
+  ]
+}

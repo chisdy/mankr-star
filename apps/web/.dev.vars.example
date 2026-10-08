@@ -1,6 +1,9 @@
 # 本地开发密钥（复制为 .dev.vars，勿提交真实密钥）
 # cp .dev.vars.example .dev.vars
 
+# 本地热点预览；首版需手动触发本地 Cron，生产仍使用 Wrangler 的关闭开关
+DISCOVERY_ENABLED=true
+
 SESSION_SECRET=dev-session-secret-change-me-to-32chars-min
 PAT_ENCRYPTION_KEY=dev-pat-encryption-key-change-me-32b
 # 可选：独立 DeepSeek Key 加密密钥；未设则回退 PAT_ENCRYPTION_KEY

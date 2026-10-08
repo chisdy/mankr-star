@@ -1,0 +1,1 @@
+CREATE INDEX `bookmarks_github_case_url_idx` ON `bookmarks` (lower("canonical_url")) WHERE "bookmarks"."source_type"='github' AND "bookmarks"."deleted_at" IS NULL;

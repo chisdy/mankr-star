@@ -6,6 +6,7 @@ import { authRoutes } from "./routes/auth"
 import { bookmarkRoutes } from "./routes/bookmarks"
 import { folderRoutes } from "./routes/folders"
 import { exportRoutes } from "./routes/export"
+import { discoveryRoutes } from "./routes/discovery"
 import { feedRoutes } from "./routes/feed"
 import { healthRoutes } from "./routes/health"
 import { browserImportRoutes } from "./routes/browser-import"
@@ -29,6 +30,7 @@ app.route("/api", bookmarkRoutes)
 app.route("/api", folderRoutes)
 app.route("/api", tagRoutes)
 app.route("/api", feedRoutes)
+app.route("/api", discoveryRoutes)
 app.route("/api", insightsRoutes)
 app.route("/api", kbRoutes)
 app.route("/api", kbConversationRoutes)
@@ -44,7 +46,7 @@ setMcpHttpDispatch(async (path, init, env, executionCtx) => {
     path,
     init,
     env,
-    executionCtx as ExecutionContext,
+    executionCtx as ExecutionContext
   )
   const body = await res.text()
   return { ok: res.ok, status: res.status, body }
@@ -65,7 +67,7 @@ app.onError((err, c) => {
       code: "INTERNAL_ERROR",
       details: err instanceof Error ? err.message : String(err),
     },
-    500,
+    500
   )
 })
 

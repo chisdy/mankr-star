@@ -46,6 +46,7 @@ const FOLDER_TREE_HIDDEN_PATHS = new Set([
   "/insights",
   "/settings",
   "/import",
+  "/discover",
 ])
 
 export function AppShell() {
@@ -98,6 +99,7 @@ function AppShellContent() {
   }, [searchParams, setSearchParams, isAuthenticated])
 
   const showFolderTree = !FOLDER_TREE_HIDDEN_PATHS.has(location.pathname)
+  const isDiscovery = location.pathname === "/discover"
 
   const searchQuery = searchParams.get("q") || ""
   const [searchInput, setSearchInput] = React.useState(searchQuery)
@@ -167,22 +169,29 @@ function AppShellContent() {
             </Button>
 
             {showFolderTree ? <FolderBreadcrumb /> : null}
+            {isDiscovery ? (
+              <span className="truncate text-sm font-medium">
+                {t("discovery")}
+              </span>
+            ) : null}
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <form
-              onSubmit={handleSearchSubmit}
-              className="w-40 sm:w-52 md:w-64 lg:w-80"
-            >
-              <SearchInput
-                placeholder={t("searchPlaceholder")}
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onClear={handleSearchClear}
-                clearAriaLabel={t("clearSearch")}
-                className="h-8 w-full border-muted bg-muted/40 text-xs md:text-sm"
-              />
-            </form>
+            {!isDiscovery ? (
+              <form
+                onSubmit={handleSearchSubmit}
+                className="w-40 sm:w-52 md:w-64 lg:w-80"
+              >
+                <SearchInput
+                  placeholder={t("searchPlaceholder")}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onClear={handleSearchClear}
+                  clearAriaLabel={t("clearSearch")}
+                  className="h-8 w-full border-muted bg-muted/40 text-xs md:text-sm"
+                />
+              </form>
+            ) : null}
 
             <Button
               variant={location.pathname === "/import" ? "secondary" : "outline"}
@@ -211,7 +220,7 @@ function AppShellContent() {
               aria-pressed={kbOpen}
               aria-label={t("kb:toggleAria")}
               title={t("kb:toggleAria")}
-              className="shrink-0 text-muted-foreground aria-pressed:text-foreground transition-colors duration-200"
+              className="shrink-0 text-muted-foreground transition-colors duration-200 aria-pressed:text-foreground"
             >
               <SparkleIcon
                 className={cn(
@@ -249,7 +258,7 @@ function AppShellContent() {
                     type="button"
                     variant="outline"
                     size="icon-sm"
-                    className="pointer-events-auto rounded-full border-border/60 bg-background/65 shadow-md backdrop-blur-xl supports-[backdrop-filter]:bg-background/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="pointer-events-auto rounded-full border-border/60 bg-background/65 shadow-md backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none supports-[backdrop-filter]:bg-background/50"
                     onClick={() => scrollFilterToolbar("left")}
                     aria-label={t("bookmarks:list.filterScrollLeftAria")}
                     title={t("bookmarks:list.filterScrollLeftAria")}
@@ -263,7 +272,7 @@ function AppShellContent() {
                     type="button"
                     variant="outline"
                     size="icon-sm"
-                    className="pointer-events-auto rounded-full border-border/60 bg-background/65 shadow-md backdrop-blur-xl supports-[backdrop-filter]:bg-background/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="pointer-events-auto rounded-full border-border/60 bg-background/65 shadow-md backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none supports-[backdrop-filter]:bg-background/50"
                     onClick={() => scrollFilterToolbar("right")}
                     aria-label={t("bookmarks:list.filterScrollRightAria")}
                     title={t("bookmarks:list.filterScrollRightAria")}

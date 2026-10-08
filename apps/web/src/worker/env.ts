@@ -1,4 +1,6 @@
 export type Env = {
+  /** 每日发现默认关闭，完成迁移和资源验证后启用。 */
+  DISCOVERY_ENABLED?: string
   DB: D1Database
   ASSETS?: Fetcher
   SESSION_SECRET: string

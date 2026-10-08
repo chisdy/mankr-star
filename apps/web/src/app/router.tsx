@@ -9,6 +9,7 @@ import { RegisterPage } from "@/features/auth/register-page"
 import { BookmarksPage } from "@/features/bookmarks/bookmarks-page"
 import { BookmarkDetailPage } from "@/features/bookmarks/bookmark-detail-page"
 import { FeedPage } from "@/features/feed/feed-page"
+import { DiscoveryPage } from "@/features/discovery/discovery-page"
 import { TagsPage } from "@/features/tags/tags-page"
 import { RankingsPage } from "@/features/rankings/rankings-page"
 import { InsightsPage } from "@/features/insights/insights-page"
@@ -117,6 +118,7 @@ export const router = createBrowserRouter([
               { path: "/tags", element: <TagsPage /> },
               { path: "/rankings", element: <RankingsPage /> },
               { path: "/feed", element: <FeedPage /> },
+              { path: "/discover", element: <DiscoveryPage /> },
               { path: "/bookmarks/:id", element: <BookmarkDetailPage /> },
               {
                 element: <RequireAuth />,

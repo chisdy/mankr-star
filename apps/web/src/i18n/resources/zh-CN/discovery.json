@@ -1,0 +1,86 @@
+{
+  "title": "每日热点",
+  "description": "四个固定技术频道，每天北京时间 08:00 后同步。榜单完成后发布，刷新只读取已发布内容。",
+  "channels": {
+    "ai": "AI / 大模型",
+    "frontend": "前端开发",
+    "backend": "后端 / 基础设施",
+    "tools": "开发工具"
+  },
+  "refresh": "刷新",
+  "refreshAria": "重新读取已发布热点",
+  "channelAria": "热点频道",
+  "sourceStatusAria": "来源更新状态",
+  "sourceFilter": {
+    "label": "来源平台",
+    "all": "全部",
+    "count": "显示本期榜单 {{total}} 条中的 {{count}} 条",
+    "emptyTitle": "本期榜单暂无 {{source}} 内容",
+    "emptyDescription": "可以切换其他平台，或查看当前频道的全部内容。",
+    "showAll": "查看全部平台"
+  },
+  "loading": "正在加载热点",
+  "loadFailed": "暂时无法读取热点，请稍后刷新。",
+  "updatedAt": "榜单更新于 {{value}}",
+  "lastSuccess": "上次成功 {{value}}",
+  "source": {
+    "github": "GitHub",
+    "hn": "Hacker News",
+    "rss": "RSS"
+  },
+  "sourceState": {
+    "fresh": "已更新",
+    "stale": "沿用旧内容",
+    "failed": "更新失败",
+    "empty": "暂无内容"
+  },
+  "feeds": {
+    "huggingface": "Hugging Face",
+    "webdev": "web.dev",
+    "cloudflare": "Cloudflare"
+  },
+  "state": {
+    "disabled": {
+      "title": "每日热点尚未启用",
+      "description": "管理员启用此功能并完成首次同步后，热点会出现在导航中。"
+    },
+    "initializing": {
+      "title": "正在准备首个榜单",
+      "description": "每日同步会分批获取和整理内容，完成后在这里发布。"
+    },
+    "updating": {
+      "title": "新榜单正在更新",
+      "description": "当前继续展示最近发布的完整榜单。"
+    },
+    "empty": {
+      "title": "这个频道暂无内容",
+      "description": "本次同步没有符合频道规则的内容，下一次同步后会再次更新。"
+    },
+    "partial": {
+      "title": "部分来源尚未更新",
+      "description": "展示已成功更新的来源，以及仍在有效期内的旧来源内容。"
+    },
+    "failed": {
+      "title": "本次同步未能完成",
+      "description": "目前没有可用榜单，等待下次同步重试。",
+      "withItems": "继续展示最近成功发布的榜单，具体来源时间见下方。"
+    }
+  },
+  "stars": "{{value}} Stars",
+  "growth": "较昨日采样 {{value}}",
+  "newDiscovery": "新发现 / 基线不足",
+  "previousSample": "上次采样",
+  "currentSample": "本次采样",
+  "hnScore": "HN 分数 {{value}}",
+  "comments": "{{value}} 条评论",
+  "latestUpdate": "最新更新",
+  "original": "原文",
+  "save": "收藏",
+  "saved": "已收藏",
+  "saving": "收藏中…",
+  "saveAria": "收藏 {{title}}",
+  "savedAria": "{{title}} 已收藏",
+  "savedToast": "已加入收藏",
+  "saveFailed": "收藏失败，请稍后重试。",
+  "rankingNote": "按来源规则组合推荐。GitHub 展示真实 Stars 和采样增量，HN 展示分数与评论，RSS 按发布时间更新；各来源指标不相加。"
+}

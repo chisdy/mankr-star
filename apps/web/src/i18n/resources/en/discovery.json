@@ -1,0 +1,86 @@
+{
+  "title": "Daily discovery",
+  "description": "Four fixed technical channels sync after 08:00 Beijing time each day. Editions appear once complete; refresh reads published content.",
+  "channels": {
+    "ai": "AI / LLMs",
+    "frontend": "Frontend",
+    "backend": "Backend / Infrastructure",
+    "tools": "Developer tools"
+  },
+  "refresh": "Refresh",
+  "refreshAria": "Reload published discovery",
+  "channelAria": "Discovery channels",
+  "sourceStatusAria": "Source update status",
+  "sourceFilter": {
+    "label": "Source platform",
+    "all": "All",
+    "count": "Showing {{count}} of {{total}} items in this edition",
+    "emptyTitle": "No {{source}} items in this edition",
+    "emptyDescription": "Try another platform or view all items in this channel.",
+    "showAll": "Show all platforms"
+  },
+  "loading": "Loading discovery",
+  "loadFailed": "Unable to load discovery. Please refresh later.",
+  "updatedAt": "Edition published {{value}}",
+  "lastSuccess": "Last success {{value}}",
+  "source": {
+    "github": "GitHub",
+    "hn": "Hacker News",
+    "rss": "RSS"
+  },
+  "sourceState": {
+    "fresh": "Updated",
+    "stale": "Previous content",
+    "failed": "Update failed",
+    "empty": "No content"
+  },
+  "feeds": {
+    "huggingface": "Hugging Face",
+    "webdev": "web.dev",
+    "cloudflare": "Cloudflare"
+  },
+  "state": {
+    "disabled": {
+      "title": "Daily discovery is disabled",
+      "description": "It appears in navigation after an administrator enables it and the first edition is published."
+    },
+    "initializing": {
+      "title": "Preparing the first edition",
+      "description": "The daily sync gathers and organizes content in batches. The edition will appear when complete."
+    },
+    "updating": {
+      "title": "A new edition is in progress",
+      "description": "The most recently published complete edition remains available."
+    },
+    "empty": {
+      "title": "No content in this channel yet",
+      "description": "This sync found no content matching the channel rules. The next daily sync will check again."
+    },
+    "partial": {
+      "title": "Some sources have not updated",
+      "description": "Showing successful updates alongside previous source content that is still within its retention window."
+    },
+    "failed": {
+      "title": "The latest sync did not finish",
+      "description": "There is no available edition yet. A later sync will retry.",
+      "withItems": "Showing the last successful edition. Source timestamps are listed below."
+    }
+  },
+  "stars": "{{value}} Stars",
+  "growth": "Since yesterday’s sample {{value}}",
+  "newDiscovery": "New discovery / no baseline",
+  "previousSample": "Previous sample",
+  "currentSample": "Current sample",
+  "hnScore": "HN score {{value}}",
+  "comments": "{{value}} comments",
+  "latestUpdate": "Latest update",
+  "original": "Original",
+  "save": "Save",
+  "saved": "Saved",
+  "saving": "Saving…",
+  "saveAria": "Save {{title}}",
+  "savedAria": "{{title}} is saved",
+  "savedToast": "Added to bookmarks",
+  "saveFailed": "Unable to save. Please try again.",
+  "rankingNote": "Recommendations combine source-specific rankings. GitHub shows actual Stars and sample growth, HN shows points and comments, and RSS shows recent updates. Metrics are never added across sources."
+}

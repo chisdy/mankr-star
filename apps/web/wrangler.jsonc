@@ -2,6 +2,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "mankr-star",
   "compatibility_date": "2026-08-04",
+  // sax's optional stream import needs explicit compatibility in Vite dev.
+  "compatibility_flags": ["nodejs_compat"],
   "main": "./src/worker/index.ts",
   "assets": {
     "not_found_handling": "single-page-application",
@@ -16,9 +18,10 @@
     }
   ],
   "triggers": {
-    "crons": ["*/10 * * * *"]
+    "crons": ["*/10 * * * *", "5-55/10 * * * *"]
   },
   "vars": {
-    "APP_NAME": "mankr-star"
+    "APP_NAME": "mankr-star",
+    "DISCOVERY_ENABLED": "false"
   }
 }

@@ -237,6 +237,13 @@ describe("api client 业务映射", () => {
     expect(bookmark.notes).toBe("写点笔记")
   })
 
+  it("重复收藏保留 409 details.id，发现页可直接标记已收藏", async () => {
+    const bookmark = await api.createBookmark({ url: "facebook/react" })
+    await expect(api.createBookmark({ url: "facebook/react" })).rejects.toMatchObject({
+      status: 409, code: "DUPLICATE", details: { id: bookmark.id },
+    })
+  })
+
   it("getBookmarks 把 pageSize 映射回 limit 并补齐 folder_name", async () => {
     await api.createBookmark({ url: "facebook/react" })
 

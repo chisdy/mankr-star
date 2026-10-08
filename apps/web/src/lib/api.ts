@@ -2,7 +2,12 @@ import {
   DEFAULT_BOOKMARK_PAGE_SIZE,
   DEFAULT_BOOKMARK_PAGINATION_MODE,
   GOOGLE_ANALYTICS_MEASUREMENT_ID_RE,
+  canonicalizeUrl,
+  detectSourceType,
+  discoveryChannelsResponseSchema,
+  discoveryResponseSchema,
   slugify,
+  urlExternalId,
   type KbConversationDetail,
   type KbConversationSummary,
   type KbStoredMessage,
@@ -43,24 +48,37 @@ import type {
   UpdateEvent,
   User,
   CloudflareQuotaResponse,
+  DiscoveryChannelId,
+  DiscoveryChannelsResponse,
+  DiscoveryResponse,
 } from "./types"
 import { collectSubtreeFolderIds } from "./folder-utils"
+import {
+  createMockDiscovery,
+  discoveryBookmarkIdentity,
+} from "@/features/discovery/mock-data"
 
 export class ApiError extends Error {
   status: number
   code?: string
+  details?: Record<string, unknown>
   /** 请求未到达后端（网络错误 / Worker 未部署），可安全回退 mock */
   backendUnavailable: boolean
 
   constructor(
     message: string,
     status: number,
-    options: { code?: string; backendUnavailable?: boolean } = {}
+    options: {
+      code?: string
+      details?: Record<string, unknown>
+      backendUnavailable?: boolean
+    } = {}
   ) {
     super(message)
     this.name = "ApiError"
     this.status = status
     this.code = options.code
+    this.details = options.details
     this.backendUnavailable = options.backendUnavailable ?? false
   }
 }
@@ -98,6 +116,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   if (!response.ok) {
     let message = STATUS_FALLBACK_MESSAGES[response.status] ?? "请求失败，请稍后重试。"
     let code: string | undefined
+    let details: Record<string, unknown> | undefined
 
     if (isJson) {
       try {
@@ -105,6 +124,13 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         if (typeof data.error === "string") message = data.error
         else if (typeof data.message === "string") message = data.message
         if (typeof data.code === "string") code = data.code
+        if (
+          data.details &&
+          typeof data.details === "object" &&
+          !Array.isArray(data.details)
+        ) {
+          details = data.details as Record<string, unknown>
+        }
       } catch {
         // 保留状态码默认文案
       }
@@ -113,6 +139,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     // 只有「/api 根本没有被后端接管」才算后端缺失：此时 404 不会带 JSON 错误体
     throw new ApiError(message, response.status, {
       code,
+      details,
       backendUnavailable: response.status === 404 && !isJson,
     })
   }
@@ -348,6 +375,8 @@ const LOCAL_STORAGE_KEY_MOCK = "mankr_star_mock_data"
 
 interface MockDataStore {
   user: User | null
+  /** 用户配置与登录会话分别保存，退出后仍保留实例的公开浏览设置。 */
+  authenticated?: boolean
   folders: Folder[]
   bookmarks: Bookmark[]
   tags: Tag[]
@@ -551,6 +580,58 @@ async function toggleLike(
 // ---------------------------------------------------------------------------
 
 export const api = {
+  // Discovery ----------------------------------------------------------
+  async getDiscoveryChannels(): Promise<DiscoveryChannelsResponse> {
+    try {
+      return discoveryChannelsResponseSchema.parse(
+        await request<unknown>("/api/discovery/channels")
+      )
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        if (
+          !(store.user && store.authenticated !== false) &&
+          !store.user?.public_browsing_enabled
+        ) {
+          throw new ApiError("未登录", 401, { code: "UNAUTHORIZED" })
+        }
+        return {
+          enabled: true,
+          ready: true,
+          channels: [
+            { id: "ai" },
+            { id: "frontend" },
+            { id: "backend" },
+            { id: "tools" },
+          ],
+        }
+      }
+      throw err
+    }
+  },
+
+  async getDiscovery(channel: DiscoveryChannelId): Promise<DiscoveryResponse> {
+    try {
+      return discoveryResponseSchema.parse(
+        await request<unknown>(
+          `/api/discovery?channel=${encodeURIComponent(channel)}`
+        )
+      )
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        const authenticated = Boolean(
+          store.user && store.authenticated !== false
+        )
+        if (!authenticated && !store.user?.public_browsing_enabled) {
+          throw new ApiError("未登录", 401, { code: "UNAUTHORIZED" })
+        }
+        return createMockDiscovery(channel, store.bookmarks, authenticated)
+      }
+      throw err
+    }
+  },
+
   // Auth ---------------------------------------------------------------
   async getInstanceStatus(): Promise<InstanceStatus> {
     try {
@@ -561,7 +642,7 @@ export const api = {
         return {
           initialized: !!store.user,
           public_browsing_enabled: Boolean(store.user?.public_browsing_enabled),
-          authenticated: !!store.user,
+          authenticated: !!store.user && store.authenticated !== false,
           bookmark_pagination_mode:
             store.user?.bookmark_pagination_mode ??
             DEFAULT_BOOKMARK_PAGINATION_MODE,
@@ -607,6 +688,7 @@ export const api = {
           bookmark_pagination_mode: DEFAULT_BOOKMARK_PAGINATION_MODE,
           bookmark_page_size: DEFAULT_BOOKMARK_PAGE_SIZE,
         }
+        store.authenticated = true
         saveMockStore()
         return store.user
       }
@@ -629,6 +711,8 @@ export const api = {
             code: "INVALID_CREDENTIALS",
           })
         }
+        store.authenticated = true
+        saveMockStore()
         return store.user
       }
       throw err
@@ -639,6 +723,11 @@ export const api = {
     try {
       await request("/api/auth/logout", { method: "POST" })
     } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        mockStore().authenticated = false
+        saveMockStore()
+        return
+      }
       // 已登出（401）或后端缺失时静默通过，其余错误抛出
       if (err instanceof ApiError && (err.status === 401 || err.backendUnavailable)) {
         return
@@ -653,7 +742,7 @@ export const api = {
     } catch (err) {
       if (shouldFallbackToMock(err)) {
         const store = mockStore()
-        if (store.user) return store.user
+        if (store.user && store.authenticated !== false) return store.user
         throw new ApiError("未登录", 401, { code: "UNAUTHORIZED" })
       }
       throw err
@@ -810,17 +899,72 @@ export const api = {
     } catch (err) {
       if (shouldFallbackToMock(err)) {
         const store = mockStore()
+        if (!store.user || store.authenticated === false) {
+          throw new ApiError("未登录", 401, { code: "UNAUTHORIZED" })
+        }
+        const detected = detectSourceType(data.url)
+        if (!detected.ok)
+          throw new ApiError(detected.error, 400, { code: detected.code })
+        const sourceType = detected.sourceType
         const repoName = data.url
-          .replace(/^https?:\/\/github\.com\//, "")
+          .trim()
+          .replace(/^https?:\/\/(?:www\.)?github\.com\//i, "")
+          .replace(/^github\.com\//i, "")
+          .split(/[?#]/)[0]!
           .replace(/\/$/, "")
+          .replace(/\.git$/, "")
+        const canonical = canonicalizeUrl(data.url)
+        if (sourceType !== "github" && !canonical.ok) {
+          throw new ApiError(canonical.error, 400, { code: canonical.code })
+        }
+        const canonicalUrl =
+          sourceType === "github"
+            ? `https://github.com/${repoName}`
+            : canonical.ok
+              ? canonical.canonicalUrl
+              : data.url
+        const identity = discoveryBookmarkIdentity(canonicalUrl)
+        const existing = store.bookmarks.find(
+          (bookmark) =>
+            discoveryBookmarkIdentity(bookmark.canonical_url) === identity
+        )
+        if (existing && !existing.deleted_at) {
+          throw new ApiError("该内容已收藏", 409, {
+            code: "DUPLICATE",
+            details: { id: existing.id },
+          })
+        }
+        if (existing) {
+          existing.deleted_at = null
+          saveMockStore()
+          return existing
+        }
         const folder = store.folders.find((f) => f.id === data.folder_id)
         const newBookmark: Bookmark = {
-          id: "bm-" + Date.now(),
-          source_type: "github",
-          canonical_url: `https://github.com/${repoName}`,
-          external_id: repoName,
-          owner: repoName.split("/")[0] || null,
-          title: repoName,
+          id: "bm-" + crypto.randomUUID(),
+          source_type: sourceType,
+          canonical_url: canonicalUrl,
+          external_id:
+            sourceType === "github"
+              ? repoName
+              : canonical.ok
+                ? urlExternalId(canonical.hostname, canonical.pathname)
+                : null,
+          owner:
+            sourceType === "github"
+              ? repoName.split("/")[0] || null
+              : canonical.ok
+                ? canonical.hostname
+                : null,
+          title:
+            sourceType === "github"
+              ? repoName
+              : canonical.ok
+                ? canonical.hostname + canonical.pathname
+                : canonicalUrl,
+          ...(sourceType === "url" && canonical.ok
+            ? { site_name: canonical.hostname }
+            : {}),
           description: null,
           language: null,
           summary_ai: null,

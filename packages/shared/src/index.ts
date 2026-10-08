@@ -1,6 +1,7 @@
 export * from "./canonicalize-url"
 export * from "./constants"
 export * from "./detect-source"
+export * from "./discovery"
 export * from "./health"
 export * from "./schemas"
 export * from "./settings"

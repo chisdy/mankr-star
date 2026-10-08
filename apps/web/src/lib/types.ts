@@ -17,6 +17,16 @@ export type {
   CloudflareQuotaResponse,
 }
 
+export type {
+  DiscoveryChannelId,
+  DiscoveryChannelsResponse,
+  DiscoveryEvidence,
+  DiscoveryItem,
+  DiscoveryResponse,
+  DiscoverySource,
+  DiscoverySourceStatus,
+} from "@mankr/shared"
+
 export interface User {
   id: string
   username: string
@@ -459,4 +469,3 @@ export interface InsightsResponse {
     estimated_cost_usd: number | null
   }
 }
-

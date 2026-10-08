@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm"
 import {
+  type AnySQLiteColumn,
   check,
   index,
   integer,
@@ -22,7 +23,7 @@ export const settings = sqliteTable(
       .notNull()
       .default(sql`(datetime('now'))`),
   },
-  (t) => [check("settings_value_json", sql`json_valid(${t.value})`)],
+  (t) => [check("settings_value_json", sql`json_valid(${t.value})`)]
 )
 
 export const users = sqliteTable(
@@ -43,7 +44,7 @@ export const users = sqliteTable(
   (t) => [
     uniqueIndex("users_username_uq").on(t.username),
     uniqueIndex("users_email_uq").on(t.email),
-  ],
+  ]
 )
 
 export const sessions = sqliteTable(
@@ -63,7 +64,7 @@ export const sessions = sqliteTable(
   (t) => [
     index("sessions_token_hash_idx").on(t.tokenHash),
     index("sessions_user_id_idx").on(t.userId),
-  ],
+  ]
 )
 
 /** 入站 API Token（MCP / 自动化）；明文仅创建时返回一次 */
@@ -85,7 +86,7 @@ export const apiTokens = sqliteTable(
   (t) => [
     uniqueIndex("api_tokens_token_hash_uq").on(t.tokenHash),
     index("api_tokens_prefix_idx").on(t.tokenPrefix),
-  ],
+  ]
 )
 
 /** 文件夹树：depth 0..4（最多 5 级）；path 如 /id1/id2/ */
@@ -98,7 +99,9 @@ export const folders = sqliteTable(
     color: text("color"),
     sortOrder: integer("sort_order").notNull().default(0),
     description: text("description"),
-    isPreset: integer("is_preset", { mode: "boolean" }).notNull().default(false),
+    isPreset: integer("is_preset", { mode: "boolean" })
+      .notNull()
+      .default(false),
     parentId: text("parent_id"),
     /** 根为 0，最深 4 */
     depth: integer("depth").notNull().default(0),
@@ -116,7 +119,7 @@ export const folders = sqliteTable(
     uniqueIndex("folders_parent_slug_uq").on(t.parentId, t.slug),
     index("folders_parent_id_idx").on(t.parentId),
     index("folders_path_idx").on(t.path),
-  ],
+  ]
 )
 
 export const bookmarks = sqliteTable(
@@ -146,9 +149,7 @@ export const bookmarks = sqliteTable(
     /** 付费属性：null=未设置，free/freemium/paid */
     pricing: text("pricing"),
     /** 精选标记；默认 false，须手动开启 */
-    featured: integer("featured", { mode: "boolean" })
-      .notNull()
-      .default(false),
+    featured: integer("featured", { mode: "boolean" }).notNull().default(false),
     /** 是否已在该站点注册账号（仅 url 来源有意义；筛选用，默认 false） */
     accountRegistered: integer("account_registered", { mode: "boolean" })
       .notNull()
@@ -203,6 +204,9 @@ export const bookmarks = sqliteTable(
     index("bookmarks_track_synced_idx").on(t.trackUpdates, t.lastSyncedAt),
     index("bookmarks_language_idx").on(t.language),
     index("bookmarks_external_id_idx").on(t.externalId),
+    index("bookmarks_github_case_url_idx")
+      .on(sql`lower(${t.canonicalUrl})`)
+      .where(sql`${t.sourceType}='github' AND ${t.deletedAt} IS NULL`),
     index("bookmarks_owner_idx").on(t.owner),
     index("bookmarks_health_status_idx").on(t.healthStatus),
     index("bookmarks_source_type_idx").on(t.sourceType),
@@ -211,7 +215,7 @@ export const bookmarks = sqliteTable(
     index("bookmarks_view_count_idx").on(t.viewCount),
     index("bookmarks_open_count_idx").on(t.openCount),
     index("bookmarks_like_count_idx").on(t.likeCount),
-  ],
+  ]
 )
 
 /**
@@ -231,9 +235,12 @@ export const bookmarkLikes = sqliteTable(
       .default(sql`(datetime('now'))`),
   },
   (t) => [
-    uniqueIndex("bookmark_likes_bookmark_fp_uq").on(t.bookmarkId, t.fingerprint),
+    uniqueIndex("bookmark_likes_bookmark_fp_uq").on(
+      t.bookmarkId,
+      t.fingerprint
+    ),
     index("bookmark_likes_fingerprint_idx").on(t.fingerprint),
-  ],
+  ]
 )
 
 /** 收藏向量（base64 Float32 LE）；个人库规模下可在 Worker 内余弦检索 */
@@ -251,7 +258,7 @@ export const bookmarkEmbeddings = sqliteTable(
       .notNull()
       .default(sql`(datetime('now'))`),
   },
-  (t) => [index("bookmark_embeddings_model_idx").on(t.model)],
+  (t) => [index("bookmark_embeddings_model_idx").on(t.model)]
 )
 
 export const tags = sqliteTable(
@@ -267,7 +274,7 @@ export const tags = sqliteTable(
   (t) => [
     uniqueIndex("tags_slug_uq").on(t.slug),
     uniqueIndex("tags_name_uq").on(t.name),
-  ],
+  ]
 )
 
 export const bookmarkTags = sqliteTable(
@@ -283,7 +290,7 @@ export const bookmarkTags = sqliteTable(
   (t) => [
     uniqueIndex("bookmark_tags_uq").on(t.bookmarkId, t.tagId),
     index("bookmark_tags_tag_id_idx").on(t.tagId),
-  ],
+  ]
 )
 
 export const updateEvents = sqliteTable(
@@ -305,7 +312,7 @@ export const updateEvents = sqliteTable(
     uniqueIndex("update_events_dedupe_uq").on(t.bookmarkId, t.dedupeKey),
     index("update_events_detected_at_idx").on(t.detectedAt),
     index("update_events_bookmark_id_idx").on(t.bookmarkId),
-  ],
+  ]
 )
 
 export const aiJobs = sqliteTable(
@@ -328,7 +335,7 @@ export const aiJobs = sqliteTable(
   (t) => [
     index("ai_jobs_status_idx").on(t.status),
     index("ai_jobs_bookmark_id_idx").on(t.bookmarkId),
-  ],
+  ]
 )
 
 /**
@@ -367,7 +374,7 @@ export const githubImportJobs = sqliteTable(
       .notNull()
       .default(sql`(datetime('now'))`),
   },
-  (t) => [index("github_import_jobs_status_idx").on(t.status)],
+  (t) => [index("github_import_jobs_status_idx").on(t.status)]
 )
 
 /** DeepSeek 真实 HTTP 调用用量（仅记 API 请求，不含规则降级） */
@@ -400,7 +407,7 @@ export const aiUsageLogs = sqliteTable(
     index("ai_usage_logs_created_at_idx").on(t.createdAt),
     index("ai_usage_logs_kind_idx").on(t.kind),
     index("ai_usage_logs_model_idx").on(t.model),
-  ],
+  ]
 )
 
 /**
@@ -433,7 +440,7 @@ export const kbConversations = sqliteTable(
       .notNull()
       .default(sql`(datetime('now'))`),
   },
-  (t) => [index("kb_conversations_updated_at_idx").on(t.updatedAt)],
+  (t) => [index("kb_conversations_updated_at_idx").on(t.updatedAt)]
 )
 
 /**
@@ -466,7 +473,7 @@ export const kbMessages = sqliteTable(
   (t) => [
     uniqueIndex("kb_messages_uq").on(t.conversationId, t.id),
     index("kb_messages_conversation_seq_idx").on(t.conversationId, t.seq),
-  ],
+  ]
 )
 
 /**
@@ -489,7 +496,9 @@ export const browserImportJobs = sqliteTable(
     hasFolders: integer("has_folders", { mode: "boolean" })
       .notNull()
       .default(false),
-    classified: integer("classified", { mode: "boolean" }).notNull().default(false),
+    classified: integer("classified", { mode: "boolean" })
+      .notNull()
+      .default(false),
     total: integer("total").notNull().default(0),
     processed: integer("processed").notNull().default(0),
     imported: integer("imported").notNull().default(0),
@@ -509,7 +518,7 @@ export const browserImportJobs = sqliteTable(
       .notNull()
       .default(sql`(datetime('now'))`),
   },
-  (t) => [index("browser_import_jobs_status_idx").on(t.status)],
+  (t) => [index("browser_import_jobs_status_idx").on(t.status)]
 )
 
 export const browserImportItems = sqliteTable(
@@ -545,7 +554,7 @@ export const browserImportItems = sqliteTable(
     uniqueIndex("browser_import_items_job_seq_uq").on(t.jobId, t.seq),
     index("browser_import_items_job_batch_idx").on(t.jobId, t.batchIndex),
     index("browser_import_items_job_status_idx").on(t.jobId, t.linkStatus),
-  ],
+  ]
 )
 
 export type User = typeof users.$inferSelect
@@ -562,3 +571,169 @@ export type BrowserImportJob = typeof browserImportJobs.$inferSelect
 export type BrowserImportItem = typeof browserImportItems.$inferSelect
 export type KbConversation = typeof kbConversations.$inferSelect
 export type KbMessageRow = typeof kbMessages.$inferSelect
+
+/** 每日发现的身份与别名；归并保留旧版本的外键。 */
+export const discoveryItems = sqliteTable(
+  "discovery_items",
+  {
+    id: text("id").primaryKey(),
+    canonicalUrl: text("canonical_url"),
+    githubRepoId: integer("github_repo_id"),
+    mergedIntoId: text("merged_into_id").references(
+      (): AnySQLiteColumn => discoveryItems.id
+    ),
+    aliasesJson: text("aliases_json").notNull().default("[]"),
+    bookmarkSourceType: text("bookmark_source_type").notNull(),
+    title: text("title").notNull(),
+    summary: text("summary"),
+    publishedAt: text("published_at"),
+    firstSeenAt: text("first_seen_at").notNull(),
+    lastSeenAt: text("last_seen_at").notNull(),
+  },
+  (t) => [
+    uniqueIndex("discovery_items_url_uq").on(t.canonicalUrl),
+    uniqueIndex("discovery_items_github_uq").on(t.githubRepoId),
+    index("discovery_items_merge_idx").on(t.mergedIntoId),
+    check(
+      "discovery_items_aliases_json",
+      sql`json_valid(${t.aliasesJson}) AND length(${t.aliasesJson}) <= 16384`
+    ),
+    check(
+      "discovery_items_url_or_merge",
+      sql`${t.canonicalUrl} IS NOT NULL OR ${t.mergedIntoId} IS NOT NULL`
+    ),
+  ]
+)
+
+/** 来源、发布、实际调用日预算任务共用一个有租约的断点结构。 */
+export const discoverySyncJobs = sqliteTable(
+  "discovery_sync_jobs",
+  {
+    id: text("id").primaryKey(),
+    editionDay: text("edition_day").notNull(),
+    partitionKey: text("partition_key").notNull(),
+    kind: text("kind").notNull(),
+    ruleVersion: text("rule_version").notNull(),
+    executionSchemaVersion: integer("execution_schema_version").notNull(),
+    configSnapshotJson: text("config_snapshot_json").notNull(),
+    poolStateJson: text("pool_state_json").notNull().default("[]"),
+    cursorJson: text("cursor_json").notNull().default("{}"),
+    state: text("state").notNull().default("pending"),
+    requestCount: integer("request_count").notNull().default(0),
+    attempts: integer("attempts").notNull().default(0),
+    nextRetryAt: text("next_retry_at"),
+    leaseToken: text("lease_token"),
+    leaseUntil: text("lease_until"),
+    errorCode: text("error_code"),
+    startedAt: text("started_at").notNull(),
+    deadlineAt: text("deadline_at").notNull(),
+    finishedAt: text("finished_at"),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [
+    uniqueIndex("discovery_jobs_day_partition_uq").on(
+      t.editionDay,
+      t.partitionKey
+    ),
+    index("discovery_jobs_state_retry_idx").on(t.state, t.nextRetryAt),
+    index("discovery_jobs_kind_day_idx").on(t.kind, t.editionDay),
+    check(
+      "discovery_jobs_json",
+      sql`json_valid(${t.configSnapshotJson}) AND json_valid(${t.poolStateJson}) AND json_valid(${t.cursorJson}) AND length(${t.configSnapshotJson}) <= 65536 AND length(${t.poolStateJson}) <= 65536 AND length(${t.cursorJson}) <= 262144`
+    ),
+  ]
+)
+
+export const discoveryObservations = sqliteTable(
+  "discovery_observations",
+  {
+    id: text("id").primaryKey(),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => discoverySyncJobs.id),
+    itemId: text("item_id")
+      .notNull()
+      .references(() => discoveryItems.id),
+    source: text("source").notNull(),
+    sourceId: text("source_id").notNull(),
+    externalId: text("external_id").notNull(),
+    observedAt: text("observed_at").notNull(),
+    candidateJson: text("candidate_json").notNull(),
+  },
+  (t) => [
+    uniqueIndex("discovery_observation_job_source_external_uq").on(
+      t.jobId,
+      t.source,
+      t.externalId
+    ),
+    index("discovery_observations_item_time_idx").on(t.itemId, t.observedAt),
+    check(
+      "discovery_observations_json",
+      sql`json_valid(${t.candidateJson}) AND length(${t.candidateJson}) <= 16384`
+    ),
+  ]
+)
+
+export const discoveryEditions = sqliteTable(
+  "discovery_editions",
+  {
+    id: text("id").primaryKey(),
+    editionDay: text("edition_day").notNull(),
+    channelId: text("channel_id").notNull(),
+    revision: integer("revision").notNull(),
+    state: text("state").notNull().default("draft"),
+    ruleVersion: text("rule_version").notNull(),
+    sourcesJson: text("sources_json").notNull(),
+    sourceJobIdsJson: text("source_job_ids_json").notNull(),
+    publishJobId: text("publish_job_id")
+      .notNull()
+      .references(() => discoverySyncJobs.id),
+    leaseToken: text("lease_token").notNull(),
+    publishedAt: text("published_at"),
+  },
+  (t) => [
+    uniqueIndex("discovery_editions_day_channel_revision_uq").on(
+      t.editionDay,
+      t.channelId,
+      t.revision
+    ),
+    index("discovery_editions_latest_idx").on(
+      t.channelId,
+      t.state,
+      t.editionDay,
+      t.revision
+    ),
+    check(
+      "discovery_editions_json",
+      sql`json_valid(${t.sourcesJson}) AND json_valid(${t.sourceJobIdsJson})`
+    ),
+  ]
+)
+
+export const discoveryEditionItems = sqliteTable(
+  "discovery_edition_items",
+  {
+    editionId: text("edition_id")
+      .notNull()
+      .references(() => discoveryEditions.id),
+    itemId: text("item_id")
+      .notNull()
+      .references(() => discoveryItems.id),
+    rank: integer("rank").notNull(),
+    frozenJson: text("frozen_json").notNull(),
+  },
+  (t) => [
+    uniqueIndex("discovery_edition_items_identity_uq").on(
+      t.editionId,
+      t.itemId
+    ),
+    uniqueIndex("discovery_edition_items_rank_uq").on(t.editionId, t.rank),
+    check(
+      "discovery_edition_items_json",
+      sql`json_valid(${t.frozenJson}) AND length(${t.frozenJson}) <= 32768`
+    ),
+    check("discovery_edition_items_rank", sql`${t.rank} BETWEEN 1 AND 20`),
+  ]
+)
+
+export type DiscoveryJobRow = typeof discoverySyncJobs.$inferSelect

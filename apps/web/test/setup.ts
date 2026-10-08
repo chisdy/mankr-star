@@ -2,6 +2,11 @@ import { applyD1Migrations, env } from "cloudflare:test"
 import { beforeAll, beforeEach } from "vitest"
 
 const TABLES = [
+  "discovery_edition_items",
+  "discovery_editions",
+  "discovery_observations",
+  "discovery_sync_jobs",
+  "discovery_items",
   "bookmark_tags",
   "update_events",
   "ai_jobs",

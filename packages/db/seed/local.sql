@@ -1,5 +1,5 @@
 -- Local demo seed for Mankr Star (folders era)
--- Login: demo / password123
+-- Login: mankr / mankr123
 
 DELETE FROM bookmark_tags;
 DELETE FROM update_events;
@@ -10,10 +10,10 @@ DELETE FROM folders;
 DELETE FROM sessions;
 DELETE FROM users;
 
--- User: demo / password123
+-- User: mankr / mankr123
 INSERT INTO users (id, username, email, password_hash, created_at, updated_at) VALUES
-('11111111-1111-1111-1111-111111111111', 'demo', 'demo@mankr.star',
- 'pbkdf2$sha256$100000$eHosK1q5xZDWNfdpPFCdDA==$w9aWxT2uEArJUKetT7MtwQjJ07vuJ/Q67YnbNzaLUxk=',
+('11111111-1111-1111-1111-111111111111', 'mankr', 'demo@mankr.star',
+ 'pbkdf2$sha256$100000$Gfiu/2yNMEMuQj77wbpuAQ==$GB/d8UyHAkNuOclwfA3hwOq63tmdxdev3CVKXvfh7RI=',
  datetime('now'), datetime('now'));
 
 -- Preset root folders (depth 0)

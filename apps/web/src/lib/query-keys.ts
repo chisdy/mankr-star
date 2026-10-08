@@ -1,4 +1,4 @@
-import type { BookmarksQueryParams } from "./types"
+import type { BookmarksQueryParams, DiscoveryChannelId } from "./types"
 
 export const queryKeys = {
   auth: {
@@ -14,11 +14,28 @@ export const queryKeys = {
     detail: (id: string) => ["bookmarks", "detail", id] as const,
     /** 排行榜；挂在 bookmarks 前缀下，互动写操作后随列表一起失效 */
     rankings: ["bookmarks", "rankings"] as const,
+    /** 与其他收藏写入口一起失效；身份及公开读开关隔离私人收藏状态。 */
+    discovery: (
+      channel: DiscoveryChannelId,
+      accessScope: string,
+      publicReadEnabled: boolean
+    ) =>
+      [
+        "bookmarks",
+        "discovery",
+        channel,
+        accessScope,
+        publicReadEnabled,
+      ] as const,
     /** 挂在 bookmarks 前缀下，invalidate bookmarks.all 时一并刷新 */
     ownersInfinite: (sourceType?: string, q?: string) =>
       ["bookmarks", "owners", sourceType ?? "github", "infinite", q ?? ""] as const,
     sitesInfinite: (q?: string) =>
       ["bookmarks", "sites", "infinite", q ?? ""] as const,
+  },
+  discovery: {
+    channels: (accessScope: string, publicReadEnabled: boolean) =>
+      ["discovery", "channels", accessScope, publicReadEnabled] as const,
   },
   /**
    * 已赞 id 集合。刻意不挂 bookmarks 前缀：写操作普遍 invalidate bookmarks.all，

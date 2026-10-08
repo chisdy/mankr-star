@@ -14,5 +14,6 @@
   "searchPlaceholder": "Search name, summary, tags…",
   "clearSearch": "Clear search",
   "addButton": "Add",
-  "importButton": "Import"
+  "importButton": "Import",
+  "discovery": "Discovery"
 }

@@ -15,4 +15,4 @@ pnpm exec wrangler d1 migrations apply mankr-star --local
 echo "→ Seeding demo data…"
 pnpm exec wrangler d1 execute mankr-star --local --file="$SEED"
 
-echo "✓ Done. Login: demo / password123"
+echo "✓ Done. Login: mankr / mankr123"
