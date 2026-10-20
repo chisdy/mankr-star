@@ -11,6 +11,7 @@ import {
   BOOKMARK_PRICING_FILTER_VALUES,
   BOOKMARK_PRICING_VALUES,
   BOOKMARK_SORT_OPTIONS,
+  DEEPSEEK_MODEL_ID_RE,
   DEEPSEEK_MODELS,
   DEFAULT_DEEPSEEK_MODEL,
   DEFAULT_HOT_WITHIN_DAYS,
@@ -20,9 +21,12 @@ import {
   INSIGHTS_RANGES,
   KB_CHAT_MAX_STORED_MESSAGES,
   KB_CHAT_MESSAGE_MAX_CHARS,
-  KB_CHAT_MODEL_IDS,
   KB_CHAT_REQUEST_MAX_MESSAGES,
   KB_CHAT_TOP_K,
+  KB_ORGANIZE_LABEL_MAX_CHARS,
+  KB_ORGANIZE_MAX_BOOKMARK_IDS,
+  KB_ORGANIZE_MAX_OPS,
+  KB_ORGANIZE_REASON_MAX_CHARS,
   MAX_FACET_PAGE_SIZE,
   MAX_TRACKING_DAYS,
   MIN_TRACKING_DAYS,
@@ -151,12 +155,7 @@ export type ListBookmarksQuery = z.infer<typeof listBookmarksQuerySchema>
 const facetQueryShape = {
   q: z.string().trim().optional(),
   page: z.coerce.number().int().min(1).optional(),
-  pageSize: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(MAX_FACET_PAGE_SIZE)
-    .optional(),
+  pageSize: z.coerce.number().int().min(1).max(MAX_FACET_PAGE_SIZE).optional(),
 }
 
 export const listTagsQuerySchema = z.object(facetQueryShape)
@@ -180,7 +179,7 @@ export const createFolderSchema = z.object({
     .max(64)
     .regex(
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      "slug 仅允许小写英文字母、数字与连字符（kebab-case）",
+      "slug 仅允许小写英文字母、数字与连字符（kebab-case）"
     )
     .optional(),
   color: z
@@ -307,7 +306,7 @@ export const embeddingSettingsSchema = z
       v.apiKey !== undefined ||
       v.clearKey === true ||
       v.reuseAiKey !== undefined,
-    { message: "请提供至少一项 embedding 设置" },
+    { message: "请提供至少一项 embedding 设置" }
   )
 export type EmbeddingSettingsInput = z.infer<typeof embeddingSettingsSchema>
 
@@ -355,7 +354,8 @@ export type FeedQuery = z.infer<typeof feedQuerySchema>
 
 export const deepseekSettingsSchema = z.object({
   apiKey: z.string().min(1).optional(),
-  model: z.enum(DEEPSEEK_MODELS).optional(),
+  /** 只校验 id 格式；是否在已同步名单内由设置路由判断 */
+  model: z.string().regex(DEEPSEEK_MODEL_ID_RE).optional(),
   clearKey: z.boolean().optional(),
 })
 export type DeepseekSettingsInput = z.infer<typeof deepseekSettingsSchema>
@@ -377,7 +377,7 @@ export const cloudflareSettingsSchema = z
       data.accountId !== undefined ||
       data.apiToken !== undefined ||
       data.clearToken === true,
-    { message: "请提供 accountId、apiToken 或 clearToken" },
+    { message: "请提供 accountId、apiToken 或 clearToken" }
   )
 export type CloudflareSettingsInput = z.infer<typeof cloudflareSettingsSchema>
 
@@ -510,7 +510,7 @@ export const cloudflareQuotaResponseSchema = z.discriminatedUnion(
         storage_bytes: cloudflareQuotaMetricSchema,
       }),
     }),
-  ],
+  ]
 )
 export type CloudflareQuotaResponse = z.infer<
   typeof cloudflareQuotaResponseSchema
@@ -525,21 +525,19 @@ export type UpdatePublicBrowsingInput = z.infer<
 
 /** 写入 Google Analytics Measurement ID；空串 / null 表示清空 */
 export const updateAnalyticsSettingsSchema = z.object({
-  measurement_id: z
-    .union([z.string(), z.null()])
-    .transform((value, ctx) => {
-      if (value == null) return null
-      const trimmed = value.trim()
-      if (!trimmed) return null
-      if (!GOOGLE_ANALYTICS_MEASUREMENT_ID_RE.test(trimmed)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Measurement ID 格式无效，应为 G-XXXXXXXXXX",
-        })
-        return z.NEVER
-      }
-      return trimmed.toUpperCase()
-    }),
+  measurement_id: z.union([z.string(), z.null()]).transform((value, ctx) => {
+    if (value == null) return null
+    const trimmed = value.trim()
+    if (!trimmed) return null
+    if (!GOOGLE_ANALYTICS_MEASUREMENT_ID_RE.test(trimmed)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Measurement ID 格式无效，应为 G-XXXXXXXXXX",
+      })
+      return z.NEVER
+    }
+    return trimmed.toUpperCase()
+  }),
 })
 export type UpdateAnalyticsSettingsInput = z.infer<
   typeof updateAnalyticsSettingsSchema
@@ -598,8 +596,11 @@ export const kbChatRequestSchema = z.object({
     .min(1)
     .max(KB_CHAT_REQUEST_MAX_MESSAGES),
   webSearch: z.boolean().optional().default(false),
-  /** 按轮次生效的模型覆盖；缺省时回落到用户设置里的 deepseek_model */
-  model: z.enum(KB_CHAT_MODEL_IDS).optional(),
+  /**
+   * 按轮次生效的模型覆盖；缺省时回落到用户设置里的 deepseek_model。
+   * 这里只校验 id 格式。是否属于内置表、已同步目录或当前保存的模型，由路由判定。
+   */
+  model: z.string().regex(DEEPSEEK_MODEL_ID_RE).optional(),
   /**
    * 当前会话 id。带上它服务端才能读写滚动摘要；缺省时按无摘要处理，
    * 对话照常进行，只是长会话会退化成硬截断。
@@ -669,6 +670,7 @@ export const KB_CHAT_STAGES = [
   "search_bookmarks",
   "search_web",
   "generate",
+  "organize",
 ] as const
 export type KbChatStage = (typeof KB_CHAT_STAGES)[number]
 
@@ -701,7 +703,7 @@ export const kbChatActivityItemSchema = z.discriminatedUnion("type", [
           title: z.string(),
           domain: z.string().optional(),
           url: z.string().optional(),
-        }),
+        })
       )
       .optional(),
     moreCount: z.number().optional(),
@@ -740,6 +742,7 @@ export type KbChatStreamEvent =
   | { type: "plan"; items: KbChatPlanItem[] }
   | { type: "plan_update"; id: string; status: KbChatPlanStatus }
   | { type: "activity"; item: KbChatActivityItem }
+  | { type: "organize_proposal"; proposal: KbOrganizeProposal }
   | { type: "delta"; text: string }
   | { type: "empty" }
   | { type: "done" }
@@ -756,6 +759,98 @@ export const KB_TURN_STATES = [
 ] as const
 export type KbTurnState = (typeof KB_TURN_STATES)[number]
 
+export const KB_ORGANIZE_STATUSES = ["pending", "applied", "dismissed"] as const
+export type KbOrganizeStatus = (typeof KB_ORGANIZE_STATUSES)[number]
+
+const organizeReasonSchema = z.string().min(1).max(KB_ORGANIZE_REASON_MAX_CHARS)
+const organizeLabelSchema = z.string().min(1).max(KB_ORGANIZE_LABEL_MAX_CHARS)
+const organizeOpIdSchema = z.string().min(1).max(32)
+const organizeKeySchema = z.string().min(1).max(32)
+
+/**
+ * 整理方案里的一项。id 由服务端分配；文件夹与收藏 id 只来自库里的真实记录，
+ * 或本次方案里已接受的新建 key。客户端确认时只回传这些 id，不能另写目标。
+ */
+export const kbOrganizeOpSchema = z.discriminatedUnion("type", [
+  z.object({
+    id: organizeOpIdSchema,
+    type: z.literal("rename_folder"),
+    folderId: z.string().uuid(),
+    fromName: organizeLabelSchema,
+    name: z.string().min(1).max(64),
+    reason: organizeReasonSchema,
+  }),
+  z.object({
+    id: organizeOpIdSchema,
+    type: z.literal("create_folder"),
+    key: organizeKeySchema,
+    name: z.string().min(1).max(64),
+    parentId: z.string().uuid().nullable(),
+    parentKey: organizeKeySchema.nullable(),
+    /** 同级已有同名文件夹时引用它，不再插入 */
+    reuseId: z.string().uuid().nullable(),
+    placeLabel: organizeLabelSchema,
+    reason: organizeReasonSchema,
+  }),
+  z.object({
+    id: organizeOpIdSchema,
+    type: z.literal("move_folder"),
+    folderId: z.string().uuid(),
+    parentId: z.string().uuid().nullable(),
+    parentKey: organizeKeySchema.nullable(),
+    fromLabel: organizeLabelSchema,
+    toLabel: organizeLabelSchema,
+    reason: organizeReasonSchema,
+  }),
+  z.object({
+    id: organizeOpIdSchema,
+    type: z.literal("move_bookmarks"),
+    bookmarkIds: z
+      .array(z.string().uuid())
+      .min(1)
+      .max(KB_ORGANIZE_MAX_BOOKMARK_IDS),
+    titles: z.array(organizeLabelSchema).max(8),
+    extraCount: z.number().int().nonnegative(),
+    folderId: z.string().uuid().nullable(),
+    folderKey: organizeKeySchema.nullable(),
+    fromLabel: organizeLabelSchema,
+    toLabel: organizeLabelSchema,
+    reason: organizeReasonSchema,
+  }),
+  z.object({
+    id: organizeOpIdSchema,
+    type: z.literal("merge_folders"),
+    sourceId: z.string().uuid(),
+    targetId: z.string().uuid().nullable(),
+    targetKey: organizeKeySchema.nullable(),
+    fromLabel: organizeLabelSchema,
+    toLabel: organizeLabelSchema,
+    reason: organizeReasonSchema,
+  }),
+])
+export type KbOrganizeOp = z.infer<typeof kbOrganizeOpSchema>
+
+export const kbOrganizeSkippedSchema = z.object({
+  id: z.string().min(1).max(64),
+  reason: z.string().min(1).max(KB_ORGANIZE_REASON_MAX_CHARS),
+})
+export type KbOrganizeSkipped = z.infer<typeof kbOrganizeSkippedSchema>
+
+export const kbOrganizeProposalSchema = z.object({
+  status: z.enum(KB_ORGANIZE_STATUSES),
+  ops: z.array(kbOrganizeOpSchema).max(KB_ORGANIZE_MAX_OPS),
+  skipped: z.array(kbOrganizeSkippedSchema).max(KB_ORGANIZE_MAX_OPS).optional(),
+})
+export type KbOrganizeProposal = z.infer<typeof kbOrganizeProposalSchema>
+
+/** 确认写入。只提交会话、消息和勾选的操作 id，目标从已存方案里读 */
+export const kbOrganizeApplySchema = z.object({
+  conversationId: z.string().uuid(),
+  messageId: z.string().min(1).max(64),
+  opIds: z.array(organizeOpIdSchema).min(1).max(KB_ORGANIZE_MAX_OPS),
+})
+export type KbOrganizeApplyInput = z.infer<typeof kbOrganizeApplySchema>
+
 /**
  * 存档里的单条消息。SSE 产出的过程数据（plan / activity）一并保留，
  * 重开会话时能完整回放检索过程与任务清单。
@@ -771,10 +866,15 @@ export const kbStoredMessageSchema = z.object({
   content: z.string().max(KB_CHAT_MESSAGE_MAX_CHARS),
   state: z.enum(KB_TURN_STATES).optional(),
   errorCode: z.string().max(64).optional(),
-  sources: z.array(kbChatSourceSchema).max(KB_CHAT_TOP_K * 4).optional(),
+  sources: z
+    .array(kbChatSourceSchema)
+    .max(KB_CHAT_TOP_K * 4)
+    .optional(),
   warnings: z.array(z.enum(KB_CHAT_WARNINGS)).optional(),
   plan: z.array(kbChatPlanItemSchema).max(20).optional(),
   activity: z.array(kbChatActivityItemSchema).max(60).optional(),
+  /** 整理方案。刷新或重开会话后卡片仍在 */
+  organize: kbOrganizeProposalSchema.optional(),
 })
 export type KbStoredMessage = z.infer<typeof kbStoredMessageSchema>
 
@@ -787,7 +887,7 @@ export const kbConversationUpsertSchema = z.object({
     // 会话内 id 唯一由客户端保证，这里拦一道，免得撞唯一索引冒成 500
     .refine(
       (items) => new Set(items.map((m) => m.id)).size === items.length,
-      "消息 id 在同一会话内必须唯一",
+      "消息 id 在同一会话内必须唯一"
     ),
 })
 export type KbConversationUpsert = z.infer<typeof kbConversationUpsertSchema>

@@ -53,6 +53,7 @@ import { FolderTreePanel } from "@/features/folders/folder-tree-panel"
 import { useAuth } from "@/hooks/use-auth"
 import { useLoginDialog } from "@/hooks/login-dialog-context"
 import { useDiscoveryChannels } from "@/features/discovery/use-discovery"
+import { isDiscoveryNavigationVisible } from "@/features/discovery/discovery-access"
 import { getLocale, setLocale } from "@/i18n"
 import { LOCALES, LOCALE_LABELS, type Locale } from "@/i18n/locales"
 
@@ -95,9 +96,10 @@ export const SETTINGS_ITEM: NavItem = {
 }
 
 function useVisibleNavItems(includeSettings = false) {
-  const { isAuthenticated } = useAuth()
+  const auth = useAuth()
+  const { isAuthenticated } = auth
   const { data: discovery } = useDiscoveryChannels()
-  const discoveryVisible = Boolean(discovery?.enabled && discovery.ready)
+  const discoveryVisible = isDiscoveryNavigationVisible(auth, discovery)
   return React.useMemo(() => {
     const base = NAV_ITEMS.filter(
       (item) =>

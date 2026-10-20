@@ -403,13 +403,13 @@ GitHub 以数字仓库 ID 保持改名后的连续基线；各频道最多 20 �
 
 `GET /api/discovery/channels` 返回固定频道、实例有效 `enabled` 及发布 `ready`；`GET /api/discovery?channel=ai` 返回最新版本、来源状态、当前任务状态及最多 20 条内容。复用 `requireAuthOrPublicRead`；访客省略私人收藏字段，登录后对当前内容和别名执行有界收藏匹配。关闭功能时隐藏导航和热点读接口内容。`POST /api/bookmarks` 保持原唯一收藏写入口，不增加公众或运维抓取接口。
 
-设置页提供「每日热点」开关。复用现有 `settings` 存储，键 `discovery` 的值为 `{ enabled: boolean }`，无需 schema 迁移。明确保存的布尔值覆盖环境变量的两种取值；缺记录时才使用 `DISCOVERY_ENABLED` 初始值，注册不预写该键。`GET/PUT /api/settings/discovery` 返回有效 `enabled` 与 `ready`，使用登录鉴权及 `requireAuthWrite`，不允许公开浏览修改设置，响应为 `private,no-store`。保存只修改配置；后续专用 Cron 读取开关，不在设置请求中调用 GitHub/HN/RSS。关闭停止后续同步但不删除任务、版本或原收藏；开启后无首版时在设置页显示等待首次同步，原 `enabled && ready` 导航门禁继续生效。
+设置页提供「每日热点」开关。复用现有 `settings` 存储，键 `discovery` 的值为 `{ enabled: boolean }`，无需 schema 迁移。明确保存的布尔值覆盖环境变量的两种取值；缺记录时才使用 `DISCOVERY_ENABLED` 初始值，注册不预写该键。`GET/PUT /api/settings/discovery` 返回有效 `enabled` 与发布就绪 `ready`，使用登录鉴权及 `requireAuthWrite`，不允许公开浏览修改设置，响应为 `private,no-store`。保存只修改配置；后续专用 Cron 读取开关，不在设置请求中调用 GitHub/HN/RSS。关闭停止后续同步但不删除任务、版本或原收藏；开启后设置页始终提供进入热点的链接，无首版时显示等待首次同步和「查看同步状态」。已确认登录的实例用户导航只要求 `enabled`，发布 `ready` 用于展示初始化/结果状态；访客导航仍要求公开浏览允许且 `enabled && ready`。
 
 `/discover` 在频道内提供全部 / GitHub / Hacker News / RSS 单选按钮。页面 URL 的 `source` 参数（`github`、`hn` 或 `rss`）保存所选平台，默认全部省略参数，未知值回退全部，切换频道保留来源。前端从当前频道已发布的最多 20 条内容派生结果，按 `evidence` 中任一匹配平台过滤；归并条目不重复，保留原排名和全部证据。显示筛选数量，无匹配时提供恢复全部的操作。来源筛选不传入读接口、不增加请求或 Query key 维度，也不触发抓取或增加数据 API 费用。
 
-共享 Zod schema 位于 `packages/shared/src/discovery.ts`。带收藏状态的 Query key 放在 `bookmarks` 前缀下并包含频道、guest/用户 ID 与公开读状态；既有收藏失效逻辑能同步全部热点频道，登录/退出/401 不串用缓存。普通内容五分钟新鲜度，重新进入/聚焦刷新；Service Worker 继续不缓存 `/api`。导航要求 `enabled && ready`，未就绪可短暂轮询读状态，页面刷新始终不抓外部来源。
+共享 Zod schema 位于 `packages/shared/src/discovery.ts`。带收藏状态的 Query key 放在 `bookmarks` 前缀下并包含频道、guest/用户 ID 与公开读状态；既有收藏失效逻辑能同步全部热点频道，登录/退出/401 不串用缓存。普通内容五分钟新鲜度，重新进入/聚焦刷新；Service Worker 继续不缓存 `/api`。会话尚未确认时不按实例用户开放入口；确认登录后使用 `enabled`，访客使用公开读状态及 `enabled && ready`，关闭时两者均隐藏。未就绪可短暂轮询读状态，页面刷新始终不抓外部来源。
 
-上线顺序为确认目标数据库迁移记录及 Workers/D1 套餐 → 增量迁移 → 保持实例有效开关关闭部署 → 来源及完整 Cron 平台资源验证 → 在设置页开启 → 生产 Cron 发布首版 → 开放导航；回滚在设置页关闭，保留新增表。仅将环境变量设为 false 不能覆盖已保存的开启设置，运维须检查有效状态。本地开发也优先使用设置页，但仍须手动调用 scheduled 测试路径，`pnpm dev` 和保存开关均不自动抓取。本地纯来源 sampled JS 的冷启动曾超过 Free 的 10 ms CPU 限制，不能宣称免费部署已验收；staging 未通过时保持关闭并评估 Paid Workers。更细的预算、恢复与验收以每日热点实施计划为准。
+上线顺序为确认目标数据库迁移记录及 Workers/D1 套餐 → 增量迁移 → 保持实例有效开关关闭部署 → 来源及完整 Cron 平台资源验证 → 在设置页开启并向已登录用户显示同步入口 → 生产 Cron 分片发布首版 → 向允许公开浏览的访客显示入口；回滚在设置页关闭，保留新增表。仅将环境变量设为 false 不能覆盖已保存的开启设置，运维须检查有效状态。本地开发也优先使用设置页，但仍须手动调用 scheduled 测试路径，`pnpm dev` 和保存开关均不自动抓取。本地纯来源 sampled JS 的冷启动曾超过 Free 的 10 ms CPU 限制，不能宣称免费部署已验收；staging 未通过时保持关闭并评估 Paid Workers。更细的预算、恢复与验收以每日热点实施计划为准。
 
 ---
 

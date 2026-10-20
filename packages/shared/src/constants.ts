@@ -99,6 +99,9 @@ export const DEEPSEEK_MODELS = ["deepseek-v4-flash", "deepseek-v4-pro"] as const
 export type DeepSeekModel = (typeof DEEPSEEK_MODELS)[number]
 export const DEFAULT_DEEPSEEK_MODEL: DeepSeekModel = "deepseek-v4-flash"
 export const DEEPSEEK_API_BASE = "https://api.deepseek.com"
+/** 官方模型 id：首字符为字母或数字，其余可含 . _ : -，最长 64 */
+export const DEEPSEEK_MODEL_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/
+export const DEEPSEEK_MODEL_CATALOG_LIMIT = 50
 
 /** AnySearch 联网搜索（通用 search 接口） */
 export const ANYSEARCH_API_BASE = "https://api.anysearch.com/v1"
@@ -166,6 +169,21 @@ export const KB_AGENT_TOOL_RESULT_LIMIT = 6
 export const KB_AGENT_TOOL_RESULT_MAX_CHARS = 6000
 
 /**
+ * 收藏库整理。快照和检查的条数与收藏列表默认口径一致：
+ * 子树、未删除、未归档。模型只提交方案，写入要等用户确认。
+ */
+export const KB_ORGANIZE_SNAPSHOT_BOOKMARK_LIMIT = 24
+export const KB_ORGANIZE_INSPECT_FOLDER_LIMIT = 40
+export const KB_ORGANIZE_SAMPLE_TITLE_LIMIT = 4
+export const KB_ORGANIZE_INDEX_DEFAULT = 20
+export const KB_ORGANIZE_INDEX_MAX = 40
+export const KB_ORGANIZE_MAX_OPS = 24
+export const KB_ORGANIZE_MAX_BOOKMARK_IDS = 80
+export const KB_ORGANIZE_REASON_MAX_CHARS = 200
+export const KB_ORGANIZE_LABEL_MAX_CHARS = 300
+export const KB_ORGANIZE_SUMMARY_MAX_CHARS = 80
+
+/**
  * 知识库对话可选模型。provider 两级描述，为后续接入其他厂商预留；
  * tools 表示该模型是否支持 function calling（决定能否走 agent 循环路径）。
  */
@@ -175,20 +193,33 @@ export type KbChatProvider = (typeof KB_CHAT_PROVIDERS)[number]
 export const KB_CHAT_MODELS = [
   { provider: "deepseek", model: "deepseek-v4-flash", tools: true },
   { provider: "deepseek", model: "deepseek-v4-pro", tools: true },
-] as const satisfies ReadonlyArray<
-  // provider 分支各自约束 model 的取值域，新增厂商时在此追加一支。
-  // deepseek 收紧到 DEEPSEEK_MODELS，保证 DEEPSEEK_PRICE_USD_PER_1M 不会漏配定价。
-  { provider: "deepseek"; model: DeepSeekModel; tools: boolean }
->
+] as const satisfies ReadonlyArray<// provider 分支各自约束 model 的取值域，新增厂商时在此追加一支。
+// deepseek 收紧到 DEEPSEEK_MODELS，保证 DEEPSEEK_PRICE_USD_PER_1M 不会漏配定价。
+{ provider: "deepseek"; model: DeepSeekModel; tools: boolean }>
 
 export type KbChatModelId = (typeof KB_CHAT_MODELS)[number]["model"]
 
-/** 供 zod 枚举与前端白名单校验使用的模型 id 列表 */
+/** 内置对话模型 id。已同步的官方模型不在这张表里，由调用方另做名单校验。 */
 export const KB_CHAT_MODEL_IDS = KB_CHAT_MODELS.map((entry) => entry.model)
 
 export function findKbChatModel(model: string | undefined | null) {
   if (!model) return undefined
   return KB_CHAT_MODELS.find((entry) => entry.model === model)
+}
+
+/**
+ * 收藏库对话可以用的模型：内置表、已同步的官方目录，或设置里当前保存的模型。
+ * 格式不合法的 id 一律拒绝，避免把任意字符串交给上游。
+ */
+export function isAllowedKbChatModel(
+  model: string,
+  catalogIds: readonly string[],
+  savedModel?: string | null
+): boolean {
+  if (!DEEPSEEK_MODEL_ID_RE.test(model)) return false
+  if (KB_CHAT_MODELS.some((entry) => entry.model === model)) return true
+  if (catalogIds.includes(model)) return true
+  return savedModel != null && model === savedModel
 }
 
 export const AI_USAGE_KINDS = [

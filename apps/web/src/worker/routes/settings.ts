@@ -17,6 +17,7 @@ import {
 } from "@mankr/db"
 import {
   DEFAULT_DEEPSEEK_MODEL,
+  DEEPSEEK_MODELS,
   anysearchSettingsSchema,
   bookmarkPaginationSettingsSchema,
   changePasswordSchema,
@@ -37,10 +38,13 @@ import { Hono } from "hono"
 import type { Context } from "hono"
 import type { AppEnv } from "../env"
 import { getAnySearchKey, testAnySearchConnection } from "../lib/anysearch"
-import { testCloudflareAnalyticsAccess, clearCloudflareQuotaCache } from "../lib/cloudflare-analytics"
+import {
+  testCloudflareAnalyticsAccess,
+  clearCloudflareQuotaCache,
+} from "../lib/cloudflare-analytics"
 import { decryptSecret, encryptSecret, last4 } from "../lib/crypto"
 import { recordAiUsage } from "../lib/ai-usage"
-import { testDeepSeekConnection } from "../lib/deepseek"
+import { listDeepSeekModels, testDeepSeekConnection } from "../lib/deepseek"
 import { readDiscoveryChannels } from "../lib/discovery/repository"
 import { readDiscoveryEnabled } from "../lib/discovery/settings"
 import { hashPassword, verifyPassword } from "../lib/password"
@@ -95,18 +99,29 @@ async function upsertDeepseek(c: Context<AppEnv>) {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
   if (!parsed.data.clearKey && !parsed.data.apiKey && !parsed.data.model) {
     return c.json(
       { error: "请提供 apiKey、model 或 clearKey", code: "BAD_REQUEST" },
-      400,
+      400
     )
   }
 
   const db = c.get("db")
+  if (parsed.data.model) {
+    const current = await readSetting(db, "ai")
+    const allowed =
+      (DEEPSEEK_MODELS as readonly string[]).includes(parsed.data.model) ||
+      parsed.data.model === current.deepseekModel ||
+      current.deepseekModels.some((entry) => entry.id === parsed.data.model)
+    if (!allowed) {
+      return c.json({ error: "参数校验失败", code: "VALIDATION_ERROR" }, 400)
+    }
+  }
+
   const encKey = c.env.AI_KEY_ENCRYPTION_KEY || c.env.PAT_ENCRYPTION_KEY
 
   // 只传 model 时不带 key 字段，避免把已保存的密钥合并掉
@@ -122,7 +137,7 @@ async function upsertDeepseek(c: Context<AppEnv>) {
   } else if (parsed.data.apiKey) {
     patch.deepseekApiKeyEncrypted = await encryptSecret(
       parsed.data.apiKey,
-      encKey,
+      encKey
     )
     patch.deepseekKeyLast4 = last4(parsed.data.apiKey)
   }
@@ -156,7 +171,7 @@ settingsRoutes.post("/settings/deepseek/test", async (c) => {
         error: "尚未配置 DeepSeek API Key",
         code: "NOT_CONFIGURED",
       },
-      400,
+      400
     )
   }
 
@@ -170,20 +185,65 @@ settingsRoutes.post("/settings/deepseek/test", async (c) => {
 
   const result = await testDeepSeekConnection(
     apiKey,
-    ai.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
+    ai.deepseekModel || DEFAULT_DEEPSEEK_MODEL
   )
   await recordAiUsage(db, {
     kind: "connection_test",
     model: result.model,
     status: result.ok ? "ok" : "error",
     usage: result.usage,
-    errorCode: result.ok ? null : (result.error?.slice(0, 120) ?? "TEST_FAILED"),
+    errorCode: result.ok
+      ? null
+      : (result.error?.slice(0, 120) ?? "TEST_FAILED"),
     latencyMs: result.latencyMs,
   })
   if (!result.ok) {
     return c.json({ ok: false, error: result.error }, 502)
   }
   return c.json({ ok: true })
+})
+
+settingsRoutes.post("/settings/deepseek/models", async (c) => {
+  const ip = getClientIp(c.req.raw)
+  const rl = rateLimit(`deepseek-models:${ip}`, 10, 60_000)
+  if (!rl.ok) {
+    return c.json({ error: "请求过于频繁", code: "RATE_LIMITED" }, 429)
+  }
+
+  const db = c.get("db")
+  const ai = await readSetting(db, "ai")
+  if (!ai.deepseekApiKeyEncrypted) {
+    return c.json(
+      {
+        error: "尚未配置 DeepSeek API Key",
+        code: "NOT_CONFIGURED",
+      },
+      400
+    )
+  }
+
+  const encKey = c.env.AI_KEY_ENCRYPTION_KEY || c.env.PAT_ENCRYPTION_KEY
+  let apiKey: string
+  try {
+    apiKey = await decryptSecret(ai.deepseekApiKeyEncrypted, encKey)
+  } catch {
+    return c.json({ error: "解密 Key 失败" }, 500)
+  }
+
+  let models: Awaited<ReturnType<typeof listDeepSeekModels>>
+  try {
+    models = await listDeepSeekModels(apiKey)
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "同步官方模型失败"
+    return c.json({ error: message, code: "UPSTREAM_ERROR" }, 502)
+  }
+
+  if (models.length === 0) {
+    return c.json({ error: "官方模型列表为空", code: "UPSTREAM_ERROR" }, 502)
+  }
+
+  await writeSetting(db, "ai", { deepseekModels: models })
+  return c.json({ deepseek_models: models })
 })
 
 settingsRoutes.put("/settings/embedding", async (c) => {
@@ -208,7 +268,7 @@ settingsRoutes.put("/settings/embedding", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -237,7 +297,7 @@ settingsRoutes.put("/settings/embedding", async (c) => {
   } else if (parsed.data.apiKey) {
     patch.embeddingApiKeyEncrypted = await encryptSecret(
       parsed.data.apiKey,
-      encKey,
+      encKey
     )
     patch.embeddingKeyLast4 = last4(parsed.data.apiKey)
   }
@@ -261,10 +321,8 @@ settingsRoutes.post("/settings/embedding/test", async (c) => {
   }
 
   const db = c.get("db")
-  const {
-    resolveEmbeddingCredentials,
-    testEmbeddingConnection,
-  } = await import("../lib/embeddings")
+  const { resolveEmbeddingCredentials, testEmbeddingConnection } =
+    await import("../lib/embeddings")
   const creds = await resolveEmbeddingCredentials(db, c.env)
   if (!creds) {
     return c.json(
@@ -273,7 +331,7 @@ settingsRoutes.post("/settings/embedding/test", async (c) => {
         error: "尚未配置 Embedding（baseUrl + Key）",
         code: "NOT_CONFIGURED",
       },
-      400,
+      400
     )
   }
   const result = await testEmbeddingConnection(creds)
@@ -324,14 +382,14 @@ async function upsertAnysearch(c: Context<AppEnv>) {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
   if (!parsed.data.clearKey && !parsed.data.apiKey) {
     return c.json(
       { error: "请提供 apiKey 或 clearKey", code: "BAD_REQUEST" },
-      400,
+      400
     )
   }
 
@@ -349,7 +407,7 @@ async function upsertAnysearch(c: Context<AppEnv>) {
   } else if (parsed.data.apiKey) {
     patch.anysearchApiKeyEncrypted = await encryptSecret(
       parsed.data.apiKey,
-      encKey,
+      encKey
     )
     patch.anysearchKeyLast4 = last4(parsed.data.apiKey)
   }
@@ -378,7 +436,7 @@ settingsRoutes.post("/settings/anysearch/test", async (c) => {
         error: "尚未配置 AnySearch API Key",
         code: "NOT_CONFIGURED",
       },
-      400,
+      400
     )
   }
 
@@ -437,7 +495,7 @@ async function upsertCloudflare(c: Context<AppEnv>) {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -490,7 +548,7 @@ settingsRoutes.post("/settings/cloudflare/test", async (c) => {
         error: "尚未配置 Cloudflare Account ID 与 API Token",
         code: "NOT_CONFIGURED",
       },
-      400,
+      400
     )
   }
 
@@ -504,7 +562,7 @@ settingsRoutes.post("/settings/cloudflare/test", async (c) => {
 
   const result = await testCloudflareAnalyticsAccess(
     cloudflare.accountId,
-    apiToken,
+    apiToken
   )
   if (!result.ok) {
     return c.json({ ok: false, error: result.error }, 502)
@@ -531,7 +589,7 @@ settingsRoutes.put("/settings/tracking", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -547,7 +605,7 @@ settingsRoutes.put("/settings/tracking", async (c) => {
         error: "近期活跃天数须小于疑似停更天数",
         code: "VALIDATION_ERROR",
       },
-      400,
+      400
     )
   }
 
@@ -573,8 +631,8 @@ settingsRoutes.put("/settings/tracking", async (c) => {
       and(
         eq(bookmarks.sourceType, "github"),
         eq(bookmarks.syncStatus, "ok"),
-        isNull(bookmarks.deletedAt),
-      ),
+        isNull(bookmarks.deletedAt)
+      )
     )
 
   const now = nowIso()
@@ -632,7 +690,7 @@ async function upsertGithubPat(c: Context<AppEnv>) {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -649,7 +707,7 @@ async function upsertGithubPat(c: Context<AppEnv>) {
 
   const encrypted = await encryptSecret(
     parsed.data.pat,
-    c.env.PAT_ENCRYPTION_KEY,
+    c.env.PAT_ENCRYPTION_KEY
   )
   await writeSetting(db, "github", { patEncrypted: encrypted })
 
@@ -672,7 +730,7 @@ settingsRoutes.post("/settings/password", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -709,7 +767,7 @@ settingsRoutes.put("/settings/public-browsing", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -744,7 +802,7 @@ settingsRoutes.put("/settings/discovery", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
   const enabled = parsed.data.enabled
@@ -770,7 +828,7 @@ settingsRoutes.put("/settings/analytics", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -801,7 +859,7 @@ settingsRoutes.put("/settings/bookmark-pagination", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 

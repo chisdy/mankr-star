@@ -135,6 +135,9 @@ export function KbChatBody({
             messages={chat.messages}
             busy={chat.isBusy}
             onRetry={chat.retry}
+            canApplyOrganize={chat.canApplyOrganize}
+            onApplyOrganize={chat.applyOrganize}
+            onDismissOrganize={chat.dismissOrganize}
             emptyState={
               <KbChatWelcome
                 onPick={setInput}
@@ -152,6 +155,8 @@ export function KbChatBody({
             onStop={chat.stop}
             model={chat.model}
             onModelChange={chat.setModel}
+            syncedModels={user?.deepseek_models}
+            savedModel={user?.deepseek_model}
             webSearch={chat.webSearch}
             onWebSearchChange={chat.setWebSearch}
             anysearchConfigured={anysearchConfigured}

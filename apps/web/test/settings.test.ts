@@ -1,3 +1,4 @@
+import { DEEPSEEK_MODEL_CATALOG_LIMIT } from "@mankr/shared"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import {
   OWNER,
@@ -77,7 +78,7 @@ describe("PUT /api/settings/deepseek", () => {
     await client.put("/api/settings/deepseek", { apiKey: FAKE_KEY })
     const { status, body } = await client.put<DeepSeekSettingsResponse>(
       "/api/settings/deepseek",
-      { model: "deepseek-v4-pro" },
+      { model: "deepseek-v4-pro" }
     )
     expect(status).toBe(200)
     expect(body.deepseek_configured).toBe(true)
@@ -88,14 +89,14 @@ describe("PUT /api/settings/deepseek", () => {
   it("空请求体返回 400，非法模型返回 400", async () => {
     const empty = await client.put<DeepSeekSettingsResponse>(
       "/api/settings/deepseek",
-      {},
+      {}
     )
     expect(empty.status).toBe(400)
     expect(empty.body.code).toBe("BAD_REQUEST")
 
     const badModel = await client.put<DeepSeekSettingsResponse>(
       "/api/settings/deepseek",
-      { model: "gpt-4o" },
+      { model: "gpt-4o" }
     )
     expect(badModel.status).toBe(400)
     expect(badModel.body.code).toBe("VALIDATION_ERROR")
@@ -105,14 +106,14 @@ describe("PUT /api/settings/deepseek", () => {
     await client.put("/api/settings/deepseek", { apiKey: FAKE_KEY })
     const cleared = await client.put<DeepSeekSettingsResponse>(
       "/api/settings/deepseek",
-      { clearKey: true },
+      { clearKey: true }
     )
     expect(cleared.body.deepseek_configured).toBe(false)
     expect(cleared.body.deepseek_last4).toBeNull()
 
     await client.put("/api/settings/deepseek", { apiKey: FAKE_KEY })
     const deleted = await client.delete<DeepSeekSettingsResponse>(
-      "/api/settings/deepseek",
+      "/api/settings/deepseek"
     )
     expect(deleted.status).toBe(200)
     expect(deleted.body.deepseek_configured).toBe(false)
@@ -122,10 +123,158 @@ describe("PUT /api/settings/deepseek", () => {
   })
 })
 
+describe("POST /api/settings/deepseek/models", () => {
+  const MODELS = "https://api.deepseek.com/models"
+
+  it("未配置 Key 时返回 400 NOT_CONFIGURED", async () => {
+    const { status, body } = await client.post<{ code: string }>(
+      "/api/settings/deepseek/models"
+    )
+    expect(status).toBe(400)
+    expect(body.code).toBe("NOT_CONFIGURED")
+  })
+
+  it("同步后 /me 带回名单且不含 Key，并允许保存同步到的模型", async () => {
+    await client.put("/api/settings/deepseek", { apiKey: FAKE_KEY })
+    let accept = ""
+    let authorization = ""
+    outbound.on(MODELS, (request) => {
+      accept = request.headers.get("accept") ?? ""
+      authorization = request.headers.get("authorization") ?? ""
+      return new Response(
+        JSON.stringify({
+          object: "list",
+          data: [
+            { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash" },
+            { id: "deepseek-chat", name: "  " },
+            { id: "not valid", name: "Nope" },
+            { id: "deepseek-chat", name: "duplicate" },
+            { id: "a".repeat(65), name: "too-long" },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    })
+
+    const res = await client.fetch("/api/settings/deepseek/models", {
+      method: "POST",
+    })
+    const text = await res.text()
+    const body = JSON.parse(text) as {
+      deepseek_models: { id: string; name: string }[]
+    }
+
+    expect(res.status).toBe(200)
+    expect(accept).toBe("application/json")
+    expect(authorization).toBe(`Bearer ${FAKE_KEY}`)
+    expect(body.deepseek_models).toEqual([
+      { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash" },
+      { id: "deepseek-chat", name: "deepseek-chat" },
+    ])
+    expect(text).not.toContain(FAKE_KEY)
+
+    const me = await client.json<{
+      deepseek_models: { id: string; name: string }[]
+    }>("/api/me")
+    expect(me.body.deepseek_models).toEqual(body.deepseek_models)
+
+    const saved = await client.put<DeepSeekSettingsResponse>(
+      "/api/settings/deepseek",
+      { model: "deepseek-chat" }
+    )
+    expect(saved.status).toBe(200)
+    expect(saved.body.deepseek_model).toBe("deepseek-chat")
+  })
+
+  it("上游失败或空列表不覆盖已有名单", async () => {
+    await client.put("/api/settings/deepseek", { apiKey: FAKE_KEY })
+    outbound.json(MODELS, {
+      object: "list",
+      data: [{ id: "deepseek-reasoner", name: "Reasoner" }],
+    })
+    const synced = await client.post("/api/settings/deepseek/models")
+    expect(synced.status).toBe(200)
+
+    outbound.json(MODELS, { error: "upstream" }, 503)
+    const failed = await client.post<{ code: string }>(
+      "/api/settings/deepseek/models"
+    )
+    expect(failed.status).toBe(502)
+    expect(failed.body.code).toBe("UPSTREAM_ERROR")
+
+    outbound.json(MODELS, { object: "list", data: [] })
+    const empty = await client.post<{ code: string }>(
+      "/api/settings/deepseek/models"
+    )
+    expect(empty.status).toBe(502)
+    expect(empty.body.code).toBe("UPSTREAM_ERROR")
+
+    const me = await client.json<{ deepseek_models: { id: string }[] }>(
+      "/api/me"
+    )
+    expect(me.body.deepseek_models.map((model) => model.id)).toEqual([
+      "deepseek-reasoner",
+    ])
+  })
+
+  it("超过 50 条时只保存前 50 个合法模型", async () => {
+    await client.put("/api/settings/deepseek", { apiKey: FAKE_KEY })
+    const data = Array.from(
+      { length: DEEPSEEK_MODEL_CATALOG_LIMIT + 1 },
+      (_, index) => ({
+        id: `model-${index + 1}`,
+        name: `Model ${index + 1}`,
+      })
+    )
+    outbound.json(MODELS, { object: "list", data })
+
+    const synced = await client.post<{
+      deepseek_models: { id: string }[]
+    }>("/api/settings/deepseek/models")
+    expect(synced.status).toBe(200)
+    expect(synced.body.deepseek_models).toHaveLength(
+      DEEPSEEK_MODEL_CATALOG_LIMIT
+    )
+    expect(synced.body.deepseek_models.at(-1)?.id).toBe(
+      `model-${DEEPSEEK_MODEL_CATALOG_LIMIT}`
+    )
+    expect(synced.body.deepseek_models.map((model) => model.id)).not.toContain(
+      `model-${DEEPSEEK_MODEL_CATALOG_LIMIT + 1}`
+    )
+  })
+
+  it("同一 IP 第 11 次同步返回 429，且不占用测试连接额度", async () => {
+    await client.put("/api/settings/deepseek", { apiKey: FAKE_KEY })
+    outbound.json(MODELS, {
+      object: "list",
+      data: [{ id: "deepseek-chat", name: "DeepSeek Chat" }],
+    })
+    outbound.json(DEEPSEEK, { choices: [{ message: { content: "pong" } }] })
+
+    for (let i = 0; i < 10; i++) {
+      const ok = await client.post("/api/settings/deepseek/models")
+      expect(ok.status).toBe(200)
+    }
+
+    const limited = await client.post<{ code: string }>(
+      "/api/settings/deepseek/models"
+    )
+    expect(limited.status).toBe(429)
+    expect(limited.body.code).toBe("RATE_LIMITED")
+
+    const tested = await client.post<{ ok: boolean; code?: string }>(
+      "/api/settings/deepseek/test"
+    )
+    expect(tested.status).toBe(200)
+    expect(tested.body.ok).toBe(true)
+    expect(tested.body.code).not.toBe("RATE_LIMITED")
+  })
+})
+
 describe("POST /api/settings/deepseek/test", () => {
   it("未配置 Key 时返回 400 NOT_CONFIGURED", async () => {
     const { status, body } = await client.post<{ ok: boolean; code: string }>(
-      "/api/settings/deepseek/test",
+      "/api/settings/deepseek/test"
     )
     expect(status).toBe(400)
     expect(body.ok).toBe(false)
@@ -142,7 +291,7 @@ describe("POST /api/settings/deepseek/test", () => {
 
     outbound.json(DEEPSEEK, { error: "invalid api key" }, 401)
     const failed = await client.post<{ ok: boolean; error: string }>(
-      "/api/settings/deepseek/test",
+      "/api/settings/deepseek/test"
     )
     expect(failed.status).toBe(502)
     expect(failed.body.ok).toBe(false)
@@ -183,13 +332,13 @@ describe("AnySearch 设置", () => {
   it("既无 apiKey 也无 clearKey 返回 400；DELETE 后回到未配置", async () => {
     const empty = await client.put<{ code: string }>(
       "/api/settings/anysearch",
-      {},
+      {}
     )
     expect(empty.status).toBe(400)
 
     await client.put("/api/settings/anysearch", { apiKey: ANYSEARCH_KEY })
     const cleared = await client.delete<AnySearchSettingsResponse>(
-      "/api/settings/anysearch",
+      "/api/settings/anysearch"
     )
     expect(cleared.status).toBe(200)
     expect(cleared.body.anysearch_configured).toBe(false)
@@ -198,7 +347,7 @@ describe("AnySearch 设置", () => {
 
   it("测试连接：未配置 400，配置后成功 200，上游失败 502", async () => {
     const notConfigured = await client.post<{ ok: boolean; code: string }>(
-      "/api/settings/anysearch/test",
+      "/api/settings/anysearch/test"
     )
     expect(notConfigured.status).toBe(400)
     expect(notConfigured.body.code).toBe("NOT_CONFIGURED")
@@ -209,13 +358,15 @@ describe("AnySearch 设置", () => {
       code: 0,
       data: { results: [{ title: "t", url: "https://e.com", snippet: "s" }] },
     })
-    const ok = await client.post<{ ok: boolean }>("/api/settings/anysearch/test")
+    const ok = await client.post<{ ok: boolean }>(
+      "/api/settings/anysearch/test"
+    )
     expect(ok.status).toBe(200)
     expect(ok.body.ok).toBe(true)
 
     outbound.json(ANYSEARCH, { code: 401, message: "invalid key" }, 401)
     const failed = await client.post<{ ok: boolean; error: string }>(
-      "/api/settings/anysearch/test",
+      "/api/settings/anysearch/test"
     )
     expect(failed.status).toBe(502)
     expect(failed.body.ok).toBe(false)
@@ -300,7 +451,7 @@ describe("GitHub PAT 设置", () => {
     expect(me.body.github_pat_configured).toBe(true)
 
     const cleared = await client.delete<{ github_pat_configured: boolean }>(
-      "/api/settings/github-pat",
+      "/api/settings/github-pat"
     )
     expect(cleared.body.github_pat_configured).toBe(false)
   })
@@ -308,7 +459,7 @@ describe("GitHub PAT 设置", () => {
   it("既未提供 pat 也未 clear 时返回 400", async () => {
     const { status, body } = await client.put<{ code: string }>(
       "/api/settings/github-pat",
-      {},
+      {}
     )
     expect(status).toBe(400)
     expect(body.code).toBe("BAD_REQUEST")
@@ -326,7 +477,9 @@ describe("GitHub PAT 设置", () => {
       })
     })
 
-    const created = await client.post("/api/bookmarks", { url: "facebook/react" })
+    const created = await client.post("/api/bookmarks", {
+      url: "facebook/react",
+    })
     expect(created.status).toBe(201)
     expect(authHeader).toBe(`Bearer ${pat}`)
   })
@@ -336,7 +489,7 @@ describe("POST /api/settings/password", () => {
   it("当前密码错误返回 401", async () => {
     const { status, body } = await client.post<{ code: string }>(
       "/api/settings/password",
-      { currentPassword: "wrong-password", newPassword: "brand-new-pass-1" },
+      { currentPassword: "wrong-password", newPassword: "brand-new-pass-1" }
     )
     expect(status).toBe(401)
     expect(body.code).toBe("INVALID_PASSWORD")
@@ -345,7 +498,7 @@ describe("POST /api/settings/password", () => {
   it("新密码过短返回 400", async () => {
     const { status, body } = await client.post<{ code: string }>(
       "/api/settings/password",
-      { currentPassword: OWNER.password, newPassword: "123" },
+      { currentPassword: OWNER.password, newPassword: "123" }
     )
     expect(status).toBe(400)
     expect(body.code).toBe("VALIDATION_ERROR")
@@ -353,10 +506,13 @@ describe("POST /api/settings/password", () => {
 
   it("修改成功后新密码可登录、旧密码失效", async () => {
     const newPassword = "brand-new-pass-1"
-    const changed = await client.post<{ ok: boolean }>("/api/settings/password", {
-      currentPassword: OWNER.password,
-      newPassword,
-    })
+    const changed = await client.post<{ ok: boolean }>(
+      "/api/settings/password",
+      {
+        currentPassword: OWNER.password,
+        newPassword,
+      }
+    )
     expect(changed.status).toBe(200)
     expect(changed.body.ok).toBe(true)
 
@@ -378,7 +534,9 @@ describe("POST /api/settings/clear-data", () => {
   it("清空业务数据但保留账号", async () => {
     await client.post("/api/bookmarks", { url: "facebook/react" })
 
-    const cleared = await client.post<{ ok: boolean }>("/api/settings/clear-data")
+    const cleared = await client.post<{ ok: boolean }>(
+      "/api/settings/clear-data"
+    )
     expect(cleared.status).toBe(200)
     expect(cleared.body.ok).toBe(true)
 
@@ -542,7 +700,7 @@ describe("PUT /api/settings/bookmark-pagination", () => {
     ]) {
       const res = await client.put<{ code: string }>(
         "/api/settings/bookmark-pagination",
-        body,
+        body
       )
       expect(res.status).toBe(400)
     }
@@ -551,7 +709,7 @@ describe("PUT /api/settings/bookmark-pagination", () => {
   it("未登录访客不能修改", async () => {
     const res = await new TestClient().put<{ code: string }>(
       "/api/settings/bookmark-pagination",
-      { paginationMode: "manual" },
+      { paginationMode: "manual" }
     )
     expect(res.status).toBe(401)
   })
@@ -559,7 +717,7 @@ describe("PUT /api/settings/bookmark-pagination", () => {
   it("pageSize 生效于收藏列表切片", async () => {
     await client.post("/api/bookmarks", { url: "facebook/react" })
     const list = await client.json<{ page: number; pageSize: number }>(
-      "/api/bookmarks?pageSize=1&page=1",
+      "/api/bookmarks?pageSize=1&page=1"
     )
     expect(list.body.pageSize).toBe(1)
   })
@@ -575,7 +733,7 @@ describe("清空数据后保留实例设置", () => {
     await client.put("/api/settings/public-browsing", { enabled: true })
 
     const cleared = await client.post<{ ok: boolean }>(
-      "/api/settings/clear-data",
+      "/api/settings/clear-data"
     )
     expect(cleared.status).toBe(200)
 

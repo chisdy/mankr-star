@@ -118,12 +118,16 @@ export function DiscoverySettingsSection() {
                     : "discovery.preparingHint"
               )}
             </p>
-            {settings.data.enabled && settings.data.ready && (
+            {settings.data.enabled && (
               <Link
                 to="/discover"
                 className="inline-block rounded-sm text-xs text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >
-                {t("discovery.view")}
+                {t(
+                  settings.data.ready
+                    ? "discovery.view"
+                    : "discovery.viewStatus"
+                )}
               </Link>
             )}
           </div>

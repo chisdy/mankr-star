@@ -20,6 +20,7 @@ describe("defaultSettingValue", () => {
       deepseekApiKeyEncrypted: null,
       deepseekKeyLast4: null,
       deepseekModel: DEFAULT_DEEPSEEK_MODEL,
+      deepseekModels: [],
       embeddingBaseUrl: "",
       embeddingModel: "text-embedding-3-small",
       embeddingApiKeyEncrypted: null,
@@ -80,9 +81,12 @@ describe("每日热点设置契约", () => {
 
 describe("parseSettingValue", () => {
   it("缺字段时按领域默认值补齐", () => {
-    expect(parseSettingValue("bookmarks", { paginationMode: "manual" })).toEqual(
-      { paginationMode: "manual", pageSize: DEFAULT_BOOKMARK_PAGE_SIZE },
-    )
+    expect(
+      parseSettingValue("bookmarks", { paginationMode: "manual" })
+    ).toEqual({
+      paginationMode: "manual",
+      pageSize: DEFAULT_BOOKMARK_PAGE_SIZE,
+    })
   })
 
   it("analytics Measurement ID 空串与非法格式归一为 null", () => {
@@ -93,22 +97,24 @@ describe("parseSettingValue", () => {
       measurementId: null,
     })
     expect(
-      parseSettingValue("analytics", { measurementId: "<script>alert(1)</script>" }),
+      parseSettingValue("analytics", {
+        measurementId: "<script>alert(1)</script>",
+      })
     ).toEqual({ measurementId: null })
     expect(
-      parseSettingValue("analytics", { measurementId: "UA-123456-1" }),
+      parseSettingValue("analytics", { measurementId: "UA-123456-1" })
     ).toEqual({ measurementId: null })
   })
 
   it("analytics 接受合法 G- ID 并规范化为大写", () => {
     expect(
-      parseSettingValue("analytics", { measurementId: "g-abc123xyz" }),
+      parseSettingValue("analytics", { measurementId: "g-abc123xyz" })
     ).toEqual({ measurementId: "G-ABC123XYZ" })
   })
 
   it("坏字段只回退自己，不牵连同领域的其他字段", () => {
     expect(
-      parseSettingValue("bookmarks", { paginationMode: "spiral", pageSize: 50 }),
+      parseSettingValue("bookmarks", { paginationMode: "spiral", pageSize: 50 })
     ).toEqual({
       paginationMode: DEFAULT_BOOKMARK_PAGINATION_MODE,
       pageSize: 50,
@@ -123,11 +129,12 @@ describe("parseSettingValue", () => {
         deepseekApiKeyEncrypted: "v1$cipher",
         deepseekKeyLast4: "60eb",
         deepseekModel: "",
-      }),
+      })
     ).toEqual({
       deepseekApiKeyEncrypted: "v1$cipher",
       deepseekKeyLast4: "60eb",
       deepseekModel: DEFAULT_DEEPSEEK_MODEL,
+      deepseekModels: [],
       embeddingBaseUrl: "",
       embeddingModel: "text-embedding-3-small",
       embeddingApiKeyEncrypted: null,
@@ -138,7 +145,7 @@ describe("parseSettingValue", () => {
 
   it("阈值越界只重置越界的那一项", () => {
     expect(
-      parseSettingValue("tracking", { hotWithinDays: 0, staleAfterDays: 200 }),
+      parseSettingValue("tracking", { hotWithinDays: 0, staleAfterDays: 200 })
     ).toMatchObject({
       hotWithinDays: DEFAULT_HOT_WITHIN_DAYS,
       staleAfterDays: 200,
@@ -154,26 +161,26 @@ describe("parseSettingValue", () => {
       eventMetaChange: true,
     })
     expect(
-      parseSettingValue("tracking", { eventPush: false, eventRelease: "no" }),
+      parseSettingValue("tracking", { eventPush: false, eventRelease: "no" })
     ).toMatchObject({ eventPush: false, eventRelease: true })
   })
 
   it("整体不是对象时仍回退该领域默认值", () => {
     expect(parseSettingValue("ai", "cipher")).toEqual(defaultSettingValue("ai"))
     expect(parseSettingValue("bookmarks", null)).toEqual(
-      defaultSettingValue("bookmarks"),
+      defaultSettingValue("bookmarks")
     )
   })
 
   it("pageSize 越界回退默认值", () => {
     expect(parseSettingValue("bookmarks", { pageSize: 0 }).pageSize).toBe(
-      DEFAULT_BOOKMARK_PAGE_SIZE,
+      DEFAULT_BOOKMARK_PAGE_SIZE
     )
     expect(parseSettingValue("bookmarks", { pageSize: 101 }).pageSize).toBe(
-      DEFAULT_BOOKMARK_PAGE_SIZE,
+      DEFAULT_BOOKMARK_PAGE_SIZE
     )
     expect(parseSettingValue("bookmarks", { pageSize: 7.5 }).pageSize).toBe(
-      DEFAULT_BOOKMARK_PAGE_SIZE,
+      DEFAULT_BOOKMARK_PAGE_SIZE
     )
   })
 
@@ -186,16 +193,16 @@ describe("parseSettingValue", () => {
 describe("parseSettingJson", () => {
   it("非法 JSON 回退默认值", () => {
     expect(parseSettingJson("ai", "{ not json")).toEqual(
-      defaultSettingValue("ai"),
+      defaultSettingValue("ai")
     )
     expect(parseSettingJson("tracking", null)).toEqual(
-      defaultSettingValue("tracking"),
+      defaultSettingValue("tracking")
     )
   })
 
   it("合法 JSON 正常解析", () => {
     expect(
-      parseSettingJson("github", JSON.stringify({ patEncrypted: "cipher" })),
+      parseSettingJson("github", JSON.stringify({ patEncrypted: "cipher" }))
     ).toEqual({ patEncrypted: "cipher" })
   })
 })
@@ -205,7 +212,7 @@ describe("bookmarkPaginationSettingsSchema", () => {
     for (const mode of ["auto", "manual", "pagination"]) {
       expect(
         bookmarkPaginationSettingsSchema.safeParse({ paginationMode: mode })
-          .success,
+          .success
       ).toBe(true)
     }
   })
@@ -213,16 +220,16 @@ describe("bookmarkPaginationSettingsSchema", () => {
   it("拒绝未知模式与越界 pageSize", () => {
     expect(
       bookmarkPaginationSettingsSchema.safeParse({ paginationMode: "spiral" })
-        .success,
+        .success
     ).toBe(false)
     expect(
-      bookmarkPaginationSettingsSchema.safeParse({ pageSize: 0 }).success,
+      bookmarkPaginationSettingsSchema.safeParse({ pageSize: 0 }).success
     ).toBe(false)
     expect(
-      bookmarkPaginationSettingsSchema.safeParse({ pageSize: 101 }).success,
+      bookmarkPaginationSettingsSchema.safeParse({ pageSize: 101 }).success
     ).toBe(false)
     expect(
-      bookmarkPaginationSettingsSchema.safeParse({ pageSize: 12.5 }).success,
+      bookmarkPaginationSettingsSchema.safeParse({ pageSize: 12.5 }).success
     ).toBe(false)
   })
 

@@ -18,7 +18,7 @@ let outbound: OutboundMock
 function deepseekStream(text: string): Response {
   const chunks = [
     ...Array.from(text).map((ch) =>
-      JSON.stringify({ choices: [{ delta: { content: ch } }] }),
+      JSON.stringify({ choices: [{ delta: { content: ch } }] })
     ),
     JSON.stringify({
       choices: [{ delta: {} }],
@@ -27,7 +27,7 @@ function deepseekStream(text: string): Response {
   ]
   return new Response(
     chunks.map((c) => `data: ${c}\n\n`).join("") + "data: [DONE]\n\n",
-    { headers: { "content-type": "text/event-stream" } },
+    { headers: { "content-type": "text/event-stream" } }
   )
 }
 
@@ -41,7 +41,7 @@ function jsonResponse(payload: unknown, tokens = 20): Response {
         total_tokens: tokens,
       },
     }),
-    { headers: { "content-type": "application/json" } },
+    { headers: { "content-type": "application/json" } }
   )
 }
 
@@ -70,7 +70,7 @@ function toolCallStream(name: string, args: string): Response {
   ]
   return new Response(
     chunks.map((c) => `data: ${c}\n\n`).join("") + "data: [DONE]\n\n",
-    { headers: { "content-type": "text/event-stream" } },
+    { headers: { "content-type": "text/event-stream" } }
   )
 }
 
@@ -105,7 +105,7 @@ beforeEach(async () => {
   outbound.json(`${GITHUB}facebook/react`, githubRepoPayload("facebook/react"))
   outbound.text(
     `${GITHUB}facebook/react/readme`,
-    "# React\n用于构建用户界面的状态管理与渲染库",
+    "# React\n用于构建用户界面的状态管理与渲染库"
   )
   client = await registerOwner()
   await client.put("/api/settings/deepseek", { apiKey: DEEPSEEK_KEY })
@@ -160,7 +160,9 @@ describe("收藏库分类进入对话上下文", () => {
     })
 
     const prompts = capturePrompts(() => deepseekStream("答案"))
-    await readEvents(await chat({ messages: [{ role: "user", content: "react" }] }))
+    await readEvents(
+      await chat({ messages: [{ role: "user", content: "react" }] })
+    )
 
     const last = prompts.at(-1) ?? ""
     expect(last).toContain("<收藏库分类>")
@@ -176,12 +178,12 @@ describe("收藏库分类进入对话上下文", () => {
     const events = await readEvents(
       await chat({
         messages: [{ role: "user", content: "帮我总结一下 读书清单 里的收藏" }],
-      }),
+      })
     )
 
     const meta = events.find((e) => e.type === "meta")
     expect(meta?.type === "meta" && meta.sources.map((s) => s.id)).toContain(
-      bookmarkId,
+      bookmarkId
     )
   })
 
@@ -195,12 +197,12 @@ describe("收藏库分类进入对话上下文", () => {
     const events = await readEvents(
       await chat({
         messages: [{ role: "user", content: "待读清单 里有什么" }],
-      }),
+      })
     )
 
     const meta = events.find((e) => e.type === "meta")
     expect(meta?.type === "meta" && meta.sources.map((s) => s.id)).toContain(
-      bookmarkId,
+      bookmarkId
     )
   })
 
@@ -209,7 +211,7 @@ describe("收藏库分类进入对话上下文", () => {
     await client.patch(`/api/bookmarks/${bookmarkId}`, { archived: true })
 
     const events = await readEvents(
-      await chat({ messages: [{ role: "user", content: "读书清单 里有什么" }] }),
+      await chat({ messages: [{ role: "user", content: "读书清单 里有什么" }] })
     )
     expect(events.map((e) => e.type)).toEqual(["meta", "empty"])
   })
@@ -221,7 +223,7 @@ describe("收藏库分类进入对话上下文", () => {
     const events = await readEvents(
       await chat({
         messages: [{ role: "user", content: "我的收藏都是怎么分类的？" }],
-      }),
+      })
     )
 
     expect(events.some((e) => e.type === "empty")).toBe(false)
@@ -234,11 +236,11 @@ describe("收藏库分类进入对话上下文", () => {
     const before = outbound.calls.length
 
     const events = await readEvents(
-      await chat({ messages: [{ role: "user", content: "量子退火超导材料" }] }),
+      await chat({ messages: [{ role: "user", content: "量子退火超导材料" }] })
     )
     expect(events.map((e) => e.type)).toEqual(["meta", "empty"])
     expect(
-      outbound.calls.slice(before).some((u) => u.startsWith(DEEPSEEK)),
+      outbound.calls.slice(before).some((u) => u.startsWith(DEEPSEEK))
     ).toBe(false)
   })
 })
@@ -248,7 +250,6 @@ describe("list_folder_bookmarks 工具", () => {
     const { bookmarkId } = await seedFoldered("读书清单", "reading-list")
 
     queueDeepSeek([
-      () => jsonResponse({ mode: "complex" }),
       () => jsonResponse({ steps: ["看分类内容", "评估归类"] }),
       () => toolCallStream("list_folder_bookmarks", '{"folder":"读书清单"}'),
       () => deepseekStream("这条归类合理 [#1]"),
@@ -260,7 +261,7 @@ describe("list_folder_bookmarks 工具", () => {
         messages: [
           { role: "user", content: "逐条对比我的收藏，说明归类是否合理" },
         ],
-      }),
+      })
     )
 
     const meta = events.find((e) => e.type === "meta")
@@ -268,14 +269,14 @@ describe("list_folder_bookmarks 工具", () => {
 
     const appended = events.filter((e) => e.type === "sources_append")
     expect(
-      appended.flatMap((e) => (e.type === "sources_append" ? e.sources : [])).map(
-        (s) => s.id,
-      ),
+      appended
+        .flatMap((e) => (e.type === "sources_append" ? e.sources : []))
+        .map((s) => s.id)
     ).toContain(bookmarkId)
     expect(
       events.some(
-        (e) => e.type === "activity" && e.item.label === "list_folder_bookmarks",
-      ),
+        (e) => e.type === "activity" && e.item.label === "list_folder_bookmarks"
+      )
     ).toBe(true)
   })
 
@@ -295,12 +296,11 @@ describe("list_folder_bookmarks 工具", () => {
     })
 
     queueDeepSeek([
-      () => jsonResponse({ mode: "complex" }),
       () => jsonResponse({ steps: ["看子分类"] }),
       () =>
         toolCallStream(
           "list_folder_bookmarks",
-          '{"folder":"读书清单 / 睡前读物"}',
+          '{"folder":"读书清单 / 睡前读物"}'
         ),
       () => deepseekStream("子分类里有 1 条 [#1]"),
     ])
@@ -310,14 +310,14 @@ describe("list_folder_bookmarks 工具", () => {
         messages: [
           { role: "user", content: "逐条对比我的收藏，说明归类是否合理" },
         ],
-      }),
+      })
     )
 
     expect(
       events
         .filter((e) => e.type === "sources_append")
         .flatMap((e) => (e.type === "sources_append" ? e.sources : []))
-        .map((s) => s.id),
+        .map((s) => s.id)
     ).toContain(created.body.id)
   })
 
@@ -333,12 +333,14 @@ describe("list_folder_bookmarks 工具", () => {
         if (m.role === "tool") toolReplies.push(m.content)
       }
       calls++
-      if (calls === 1) return jsonResponse({ mode: "complex" })
-      if (calls === 2) return jsonResponse({ steps: ["查分类"] })
-      if (calls === 3) {
-        return toolCallStream("list_folder_bookmarks", '{"folder":"不存在的夹"}')
+      if (calls === 1) return jsonResponse({ steps: ["查分类"] })
+      if (calls === 2) {
+        return toolCallStream(
+          "list_folder_bookmarks",
+          '{"folder":"不存在的夹"}'
+        )
       }
-      if (calls === 4) {
+      if (calls === 3) {
         return toolCallStream("list_folder_bookmarks", '{"folder":"空夹子"}')
       }
       return deepseekStream("两个分类都没有内容")
@@ -352,12 +354,14 @@ describe("list_folder_bookmarks 工具", () => {
             content: "分别看看不存在的夹和空夹子里的内容，逐条对比归类是否合理",
           },
         ],
-      }),
+      })
     )
 
-    expect(toolReplies.some((c) => c.includes("没有名为“不存在的夹”的分类"))).toBe(
-      true,
+    expect(
+      toolReplies.some((c) => c.includes("没有名为“不存在的夹”的分类"))
+    ).toBe(true)
+    expect(toolReplies.some((c) => c.includes("分类“空夹子”下没有收藏"))).toBe(
+      true
     )
-    expect(toolReplies.some((c) => c.includes("分类“空夹子”下没有收藏"))).toBe(true)
   })
 })

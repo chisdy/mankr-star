@@ -3,12 +3,12 @@ import {
   KB_CHAT_REQUEST_MAX_MESSAGES,
   type KbChatActivityItem,
   type KbChatMessage,
-  type KbChatModelId,
   type KbChatPlanItem,
   type KbChatPlanStatus,
   type KbChatSource,
   type KbChatStreamEvent,
   type KbChatWarning,
+  type KbOrganizeProposal,
 } from "@mankr/shared"
 import { ApiError } from "./api"
 
@@ -25,8 +25,12 @@ import { ApiError } from "./api"
  * 这里只是省流量的优化。
  */
 export function buildKbChatPayload(
-  history: readonly { id: string; role: "user" | "assistant"; content: string }[],
-  coversThroughId: string | null = null,
+  history: readonly {
+    id: string
+    role: "user" | "assistant"
+    content: string
+  }[],
+  coversThroughId: string | null = null
 ): KbChatMessage[] {
   const sendable = history
     .map((m) => ({
@@ -54,6 +58,8 @@ export type KbChatHandlers = {
   onPlan?: (items: KbChatPlanItem[]) => void
   onPlanUpdate?: (id: string, status: KbChatPlanStatus) => void
   onActivity?: (item: KbChatActivityItem) => void
+  /** 同一轮里后一次方案覆盖前一次 */
+  onOrganize?: (proposal: KbOrganizeProposal) => void
   onDelta?: (text: string) => void
   /** 检索无命中，服务端未调用生成模型 */
   onEmpty?: () => void
@@ -69,14 +75,14 @@ export async function streamKbChat(
     messages: KbChatMessage[]
     webSearch: boolean
     /** 按轮次生效的模型；缺省时后端回落到用户设置里的模型 */
-    model?: KbChatModelId
+    model?: string
     /** 带上才能读写该会话的滚动摘要 */
     conversationId?: string
     /** 客户端当前所处的软上下文（如收藏页正在筛选的文件夹） */
     context?: { folderId?: string; folderName?: string }
   },
   handlers: KbChatHandlers,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<void> {
   let response: Response
   try {
@@ -156,6 +162,9 @@ function dispatch(block: string, handlers: KbChatHandlers): void {
       break
     case "activity":
       handlers.onActivity?.(event.item)
+      break
+    case "organize_proposal":
+      handlers.onOrganize?.(event.proposal)
       break
     case "delta":
       handlers.onDelta?.(event.text)

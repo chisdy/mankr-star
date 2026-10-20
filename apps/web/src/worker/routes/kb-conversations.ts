@@ -19,11 +19,11 @@ export const kbConversationRoutes = new Hono<AppEnv>()
 
 kbConversationRoutes.use(
   "/kb/conversations",
-  authByMethod(requireAuth, requireAuthWrite),
+  authByMethod(requireAuth, requireAuthWrite)
 )
 kbConversationRoutes.use(
   "/kb/conversations/*",
-  authByMethod(requireAuth, requireAuthWrite),
+  authByMethod(requireAuth, requireAuthWrite)
 )
 
 kbConversationRoutes.get("/kb/conversations", async (c) => {
@@ -74,7 +74,9 @@ kbConversationRoutes.get("/kb/conversations/:id", async (c) => {
     title: conversation.title,
     created_at: conversation.createdAt,
     updated_at: conversation.updatedAt,
-    messages: rows.map(toStoredMessage).filter((m): m is KbStoredMessage => !!m),
+    messages: rows
+      .map(toStoredMessage)
+      .filter((m): m is KbStoredMessage => !!m),
     summary_covers_through_id: conversation.summaryCoversThroughId,
   }
   return c.json(detail)
@@ -104,7 +106,7 @@ kbConversationRoutes.put("/kb/conversations/:id", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -147,8 +149,9 @@ kbConversationRoutes.put("/kb/conversations/:id", async (c) => {
         warnings: toJson(m.warnings),
         plan: toJson(m.plan),
         activity: toJson(m.activity),
+        organize: toJson(m.organize),
         createdAt: now,
-      })),
+      }))
     )
   }
 
@@ -210,6 +213,7 @@ function toStoredMessage(row: KbMessageRow): KbStoredMessage | null {
     ...fromJson("warnings", row.warnings),
     ...fromJson("plan", row.plan),
     ...fromJson("activity", row.activity),
+    ...fromJson("organize", row.organize),
   }
   const parsed = kbStoredMessageSchema.safeParse(candidate)
   if (!parsed.success) {
@@ -229,7 +233,9 @@ function fromJson(key: string, raw: string | null): Record<string, unknown> {
 }
 
 /** 超出保留上限的会话按最久未更新淘汰；messages 显式删，不依赖 FK 级联 */
-async function pruneConversations(db: AppEnv["Variables"]["db"]): Promise<void> {
+async function pruneConversations(
+  db: AppEnv["Variables"]["db"]
+): Promise<void> {
   const stale = await db.all<{ id: string }>(sql`
     SELECT id FROM kb_conversations
     ORDER BY updated_at DESC

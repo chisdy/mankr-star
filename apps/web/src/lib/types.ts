@@ -35,6 +35,7 @@ export interface User {
   deepseek_configured: boolean
   deepseek_last4?: string | null
   deepseek_model?: string | null
+  deepseek_models?: { id: string; name: string }[]
   embedding_configured?: boolean
   embedding_base_url?: string | null
   embedding_model?: string | null

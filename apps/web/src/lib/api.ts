@@ -11,6 +11,7 @@ import {
   urlExternalId,
   type KbConversationDetail,
   type KbConversationSummary,
+  type KbOrganizeProposal,
   type KbStoredMessage,
 } from "@mankr/shared"
 import type {
@@ -94,9 +95,16 @@ const STATUS_FALLBACK_MESSAGES: Record<number, string> = {
   502: "上游服务不可用，请稍后重试。",
 }
 
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
   const headers = new Headers(options.headers)
-  if (!headers.has("Content-Type") && options.body && typeof options.body === "string") {
+  if (
+    !headers.has("Content-Type") &&
+    options.body &&
+    typeof options.body === "string"
+  ) {
     headers.set("Content-Type", "application/json")
   }
 
@@ -113,10 +121,13 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     })
   }
 
-  const isJson = (response.headers.get("content-type") || "").includes("application/json")
+  const isJson = (response.headers.get("content-type") || "").includes(
+    "application/json"
+  )
 
   if (!response.ok) {
-    let message = STATUS_FALLBACK_MESSAGES[response.status] ?? "请求失败，请稍后重试。"
+    let message =
+      STATUS_FALLBACK_MESSAGES[response.status] ?? "请求失败，请稍后重试。"
     let code: string | undefined
     let details: Record<string, unknown> | undefined
 
@@ -216,10 +227,17 @@ function emptyFeedStats(range: InsightsRange): FeedStatsResponse {
 // ---------------------------------------------------------------------------
 
 interface ApiBookmark extends Omit<Bookmark, "folder_name"> {
-  folder?: (Pick<
+  folder?: Pick<
     Folder,
-    "id" | "name" | "slug" | "color" | "parent_id" | "depth" | "path" | "path_label"
-  >) | null
+    | "id"
+    | "name"
+    | "slug"
+    | "color"
+    | "parent_id"
+    | "depth"
+    | "path"
+    | "path_label"
+  > | null
 }
 
 interface Paginated<T> {
@@ -230,7 +248,7 @@ interface Paginated<T> {
 }
 
 function folderDisplayName(
-  folder?: { path_label?: string; name: string } | null,
+  folder?: { path_label?: string; name: string } | null
 ): string | null {
   if (!folder) return null
   return folder.path_label ?? folder.name
@@ -305,7 +323,7 @@ function toFeedQuery(params?: FeedQueryParams): string {
 /** page 必传：服务端以此判定走分页分支而非全量 */
 function toFacetQuery(
   params: FacetPageParams,
-  extra?: Record<string, string | undefined>,
+  extra?: Record<string, string | undefined>
 ): string {
   const search = new URLSearchParams()
   if (params.q?.trim()) search.set("q", params.q.trim())
@@ -334,7 +352,7 @@ function sliceFacetPage<T>(items: T[], params: FacetPageParams): FacetPage<T> {
 }
 
 function countsToFacetItems(
-  counts: Map<string, number>,
+  counts: Map<string, number>
 ): Array<{ name: string; usage_count: number }> {
   return Array.from(counts.entries())
     .map(([name, usage_count]) => ({ name, usage_count }))
@@ -343,7 +361,7 @@ function countsToFacetItems(
 
 function mockOwners(
   q?: string,
-  sourceType?: "github" | "twitter" | "url",
+  sourceType?: "github" | "twitter" | "url"
 ): BookmarkOwner[] {
   const filterType = sourceType ?? "github"
   const needle = q?.trim().toLowerCase()
@@ -549,7 +567,7 @@ function foldersWithCounts(store: MockDataStore): Folder[] {
 /** 点赞与取消点赞只差方法，mock 兜底也共用同一份去重逻辑 */
 async function toggleLike(
   id: string,
-  liked: boolean,
+  liked: boolean
 ): Promise<BookmarkLikeResult> {
   try {
     return await request<BookmarkLikeResult>(`/api/bookmarks/${id}/like`, {
@@ -559,7 +577,8 @@ async function toggleLike(
     if (shouldFallbackToMock(err)) {
       const store = mockStore()
       const idx = store.bookmarks.findIndex((b) => b.id === id)
-      if (idx === -1) throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
+      if (idx === -1)
+        throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
 
       const likedIds = new Set(store.likedIds ?? [])
       const wasLiked = likedIds.has(id)
@@ -720,7 +739,10 @@ export const api = {
     try {
       const res = await request<{ user: User }>("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ username: data.username, password: data.password }),
+        body: JSON.stringify({
+          username: data.username,
+          password: data.password,
+        }),
       })
       return res.user
     } catch (err) {
@@ -749,7 +771,10 @@ export const api = {
         return
       }
       // 已登出（401）或后端缺失时静默通过，其余错误抛出
-      if (err instanceof ApiError && (err.status === 401 || err.backendUnavailable)) {
+      if (
+        err instanceof ApiError &&
+        (err.status === 401 || err.backendUnavailable)
+      ) {
         return
       }
       throw err
@@ -770,7 +795,9 @@ export const api = {
   },
 
   // Bookmarks ----------------------------------------------------------
-  async getBookmarks(params?: BookmarksQueryParams): Promise<BookmarksResponse> {
+  async getBookmarks(
+    params?: BookmarksQueryParams
+  ): Promise<BookmarksResponse> {
     try {
       const res = await request<Paginated<ApiBookmark>>(
         `/api/bookmarks${toBookmarksQuery(params)}`
@@ -788,13 +815,12 @@ export const api = {
         if (params?.folder_id) {
           const allFolders = mockStore().folders
           const allowed = new Set(
-            collectSubtreeFolderIds(params.folder_id, allFolders),
+            collectSubtreeFolderIds(params.folder_id, allFolders)
           )
-          items = items.filter(
-            (b) => b.folder_id && allowed.has(b.folder_id),
-          )
+          items = items.filter((b) => b.folder_id && allowed.has(b.folder_id))
         }
-        if (params?.tag) items = items.filter((b) => b.tags?.includes(params.tag!))
+        if (params?.tag)
+          items = items.filter((b) => b.tags?.includes(params.tag!))
         if (params?.language) {
           items = items.filter(
             (b) => b.language?.toLowerCase() === params.language!.toLowerCase()
@@ -836,9 +862,7 @@ export const api = {
           items = items.filter((b) => b.pricing === params.pricing)
         }
         if (params?.featured !== undefined) {
-          items = items.filter(
-            (b) => Boolean(b.featured) === params.featured
-          )
+          items = items.filter((b) => Boolean(b.featured) === params.featured)
         }
         if (params?.ai_status) {
           items = items.filter((b) => b.ai_status === params.ai_status)
@@ -866,7 +890,9 @@ export const api = {
           })
         } else {
           items.sort(
-            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
           )
         }
         // total 取过滤后的全量条数，再按 page/limit 切片，与 Worker 保持一致
@@ -989,7 +1015,7 @@ export const api = {
           language: null,
           summary_ai: null,
           folder_id: data.folder_id || null,
-          folder_name: folder ? folder.path_label ?? folder.name : null,
+          folder_name: folder ? (folder.path_label ?? folder.name) : null,
           tags: [],
           notes: data.notes || "",
           pricing: null,
@@ -1097,7 +1123,8 @@ export const api = {
       if (shouldFallbackToMock(err)) {
         const store = mockStore()
         const idx = store.bookmarks.findIndex((b) => b.id === id)
-        if (idx === -1) throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
+        if (idx === -1)
+          throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
         const folder = data.folder_id
           ? store.folders.find((f) => f.id === data.folder_id)
           : null
@@ -1118,16 +1145,20 @@ export const api = {
           ...(data.summary_ai !== undefined && { summary_ai: data.summary_ai }),
           ...(data.folder_id !== undefined && {
             folder_id: data.folder_id,
-            folder_name: folder ? folder.path_label ?? folder.name : null,
+            folder_name: folder ? (folder.path_label ?? folder.name) : null,
           }),
           ...(data.tags !== undefined && { tags: data.tags }),
           ...(data.notes !== undefined && { notes: data.notes }),
-          ...(data.track_updates !== undefined && { track_updates: data.track_updates }),
+          ...(data.track_updates !== undefined && {
+            track_updates: data.track_updates,
+          }),
           ...(data.archived !== undefined && {
             archived_at: data.archived ? new Date().toISOString() : null,
           }),
           ...(data.title !== undefined && { title: data.title }),
-          ...(data.description !== undefined && { description: data.description }),
+          ...(data.description !== undefined && {
+            description: data.description,
+          }),
           ...(data.pricing !== undefined && { pricing: data.pricing }),
           ...(data.featured !== undefined && { featured: data.featured }),
           account_registered: accountRegistered,
@@ -1151,7 +1182,7 @@ export const api = {
   async copyAccountPassword(id: string): Promise<string> {
     const res = await request<{ password: string }>(
       `/api/bookmarks/${id}/account-password/copy`,
-      { method: "POST" },
+      { method: "POST" }
     )
     return res.password
   },
@@ -1183,7 +1214,7 @@ export const api = {
           type: "setPricing"
           pricing: "free" | "freemium" | "paid" | null
         }
-      | { type: "regenerateAi" },
+      | { type: "regenerateAi" }
   ): Promise<{
     ok: boolean
     processed: number
@@ -1250,19 +1281,20 @@ export const api = {
    */
   async recordBookmarkOpen(
     id: string,
-    type: "detail" | "external" = "external",
+    type: "detail" | "external" = "external"
   ): Promise<Bookmark> {
     try {
       const raw = await request<ApiBookmark>(
         `/api/bookmarks/${id}/open?type=${type}`,
-        { method: "POST" },
+        { method: "POST" }
       )
       return toBookmark(raw)
     } catch (err) {
       if (shouldFallbackToMock(err)) {
         const store = mockStore()
         const idx = store.bookmarks.findIndex((b) => b.id === id)
-        if (idx === -1) throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
+        if (idx === -1)
+          throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
         const prev = store.bookmarks[idx]!
         const updated: Bookmark = {
           ...prev,
@@ -1341,8 +1373,12 @@ export const api = {
       if (shouldFallbackToMock(err)) {
         const store = mockStore()
         const idx = store.bookmarks.findIndex((b) => b.id === id)
-        if (idx === -1) throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
-        store.bookmarks[idx] = { ...store.bookmarks[idx]!, ai_status: "pending" }
+        if (idx === -1)
+          throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
+        store.bookmarks[idx] = {
+          ...store.bookmarks[idx]!,
+          ai_status: "pending",
+        }
         saveMockStore()
         return store.bookmarks[idx]!
       }
@@ -1355,15 +1391,19 @@ export const api = {
     try {
       await request<{ ok: boolean; ai_status: string }>(
         `/api/bookmarks/${id}/sync`,
-        { method: "POST" },
+        { method: "POST" }
       )
       return toBookmark(await request<ApiBookmark>(`/api/bookmarks/${id}`))
     } catch (err) {
       if (shouldFallbackToMock(err)) {
         const store = mockStore()
         const idx = store.bookmarks.findIndex((b) => b.id === id)
-        if (idx === -1) throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
-        store.bookmarks[idx] = { ...store.bookmarks[idx]!, ai_status: "pending" }
+        if (idx === -1)
+          throw new ApiError("收藏不存在", 404, { code: "NOT_FOUND" })
+        store.bookmarks[idx] = {
+          ...store.bookmarks[idx]!,
+          ai_status: "pending",
+        }
         saveMockStore()
         return store.bookmarks[idx]!
       }
@@ -1396,12 +1436,12 @@ export const api = {
         method: "POST",
         body: JSON.stringify({
           name: data.name,
-          ...(normalizeSlug(data.slug) ? { slug: normalizeSlug(data.slug) } : {}),
+          ...(normalizeSlug(data.slug)
+            ? { slug: normalizeSlug(data.slug) }
+            : {}),
           ...(data.color ? { color: data.color } : {}),
           ...(data.description ? { description: data.description } : {}),
-          ...(data.parent_id !== undefined
-            ? { parentId: data.parent_id }
-            : {}),
+          ...(data.parent_id !== undefined ? { parentId: data.parent_id } : {}),
         }),
       })
     } catch (err) {
@@ -1416,7 +1456,8 @@ export const api = {
         const newFolder: Folder = {
           id,
           name: data.name,
-          slug: normalizeSlug(data.slug) || `folder-${store.folders.length + 1}`,
+          slug:
+            normalizeSlug(data.slug) || `folder-${store.folders.length + 1}`,
           color: data.color || "#64748B",
           description: data.description || null,
           parent_id: data.parent_id ?? null,
@@ -1455,7 +1496,7 @@ export const api = {
               ? { excludeId: data.exclude_id }
               : {}),
           }),
-        },
+        }
       )
     } catch (err) {
       if (shouldFallbackToMock(err)) {
@@ -1503,7 +1544,8 @@ export const api = {
       if (shouldFallbackToMock(err)) {
         const store = mockStore()
         const idx = store.folders.findIndex((f) => f.id === id)
-        if (idx === -1) throw new ApiError("文件夹不存在", 404, { code: "NOT_FOUND" })
+        if (idx === -1)
+          throw new ApiError("文件夹不存在", 404, { code: "NOT_FOUND" })
         const updated = { ...store.folders[idx]!, ...data }
         store.folders[idx] = updated
         saveMockStore()
@@ -1518,7 +1560,7 @@ export const api = {
     options?: {
       bookmarkAction?: "detach" | "delete" | "move"
       moveToFolderId?: string | null
-    },
+    }
   ): Promise<void> {
     const bookmarkAction = options?.bookmarkAction ?? "detach"
     const body = {
@@ -1538,13 +1580,11 @@ export const api = {
         if (bookmarkAction === "delete") {
           const now = new Date().toISOString()
           store.bookmarks = store.bookmarks.map((b) =>
-            b.folder_id === id
-              ? { ...b, deleted_at: now, updated_at: now }
-              : b,
+            b.folder_id === id ? { ...b, deleted_at: now, updated_at: now } : b
           )
         } else if (bookmarkAction === "move" && options?.moveToFolderId) {
           const target = store.folders.find(
-            (f) => f.id === options.moveToFolderId,
+            (f) => f.id === options.moveToFolderId
           )
           store.bookmarks = store.bookmarks.map((b) =>
             b.folder_id === id
@@ -1553,11 +1593,13 @@ export const api = {
                   folder_id: options.moveToFolderId!,
                   folder_name: target?.name ?? b.folder_name,
                 }
-              : b,
+              : b
           )
         } else {
           store.bookmarks = store.bookmarks.map((b) =>
-            b.folder_id === id ? { ...b, folder_id: null, folder_name: null } : b,
+            b.folder_id === id
+              ? { ...b, folder_id: null, folder_name: null }
+              : b
           )
         }
         store.folders = store.folders.filter((f) => f.id !== id)
@@ -1640,8 +1682,7 @@ export const api = {
           const nextSlug = slugify(name)
           const dup = store.tags.some(
             (t) =>
-              t.id !== id &&
-              (t.name === name || slugify(t.name) === nextSlug),
+              t.id !== id && (t.name === name || slugify(t.name) === nextSlug)
           )
           if (dup) {
             throw new ApiError("标签名称或标识已存在", 409, {
@@ -1699,7 +1740,7 @@ export const api = {
         })
         store.tags = store.tags.filter((t) => t.id !== sourceId)
         const count = store.bookmarks.filter((b) =>
-          (b.tags ?? []).includes(target.name),
+          (b.tags ?? []).includes(target.name)
         ).length
         const updated = { ...target, count }
         const idx = store.tags.findIndex((t) => t.id === targetId)
@@ -1713,7 +1754,7 @@ export const api = {
 
   async previewMergeTags(
     sourceIds: string[],
-    targetId: string,
+    targetId: string
   ): Promise<{
     unique_count: number
     additive_count: number
@@ -1734,15 +1775,15 @@ export const api = {
         })
         const additive_count = per_tag.reduce(
           (sum, row) => sum + row.usage_count,
-          0,
+          0
         )
         const names = new Set(
           tagIds
             .map((id) => store.tags.find((t) => t.id === id)?.name)
-            .filter((name): name is string => Boolean(name)),
+            .filter((name): name is string => Boolean(name))
         )
         const unique_count = store.bookmarks.filter((b) =>
-          (b.tags ?? []).some((name) => names.has(name)),
+          (b.tags ?? []).some((name) => names.has(name))
         ).length
         return { unique_count, additive_count, per_tag }
       }
@@ -1752,7 +1793,7 @@ export const api = {
 
   async batchTags(
     ids: string[],
-    action: { type: "merge"; targetId: string },
+    action: { type: "merge"; targetId: string }
   ): Promise<{
     ok: boolean
     processed: number
@@ -1768,7 +1809,7 @@ export const api = {
       if (shouldFallbackToMock(err)) {
         const store = mockStore()
         const uniqueIds = Array.from(new Set(ids)).filter(
-          (id) => id !== action.targetId,
+          (id) => id !== action.targetId
         )
         const failed: Array<{ id: string; code: string }> = []
         let processed = 0
@@ -1796,7 +1837,7 @@ export const api = {
             processed += 1
           }
           const usage_count = store.bookmarks.filter((b) =>
-            (b.tags ?? []).includes(target.name),
+            (b.tags ?? []).includes(target.name)
           ).length
           const idx = store.tags.findIndex((t) => t.id === action.targetId)
           if (idx >= 0) store.tags[idx] = { ...target, count: usage_count }
@@ -1842,7 +1883,7 @@ export const api = {
     try {
       const res = await request<{ ok: boolean; deleted: number }>(
         "/api/tags/empty",
-        { method: "DELETE" },
+        { method: "DELETE" }
       )
       return { deleted: res.deleted }
     } catch (err) {
@@ -1884,7 +1925,7 @@ export const api = {
 
   /** 分页版开发者列表；getOwners() 仍返回全量数组 */
   async getOwnersPage(
-    params: FacetPageParams & { sourceType?: "github" | "twitter" | "url" },
+    params: FacetPageParams & { sourceType?: "github" | "twitter" | "url" }
   ): Promise<FacetPage<BookmarkOwner>> {
     try {
       const res = await request<{
@@ -1895,7 +1936,7 @@ export const api = {
       }>(
         `/api/bookmarks/owners${toFacetQuery(params, {
           sourceType: params.sourceType,
-        })}`,
+        })}`
       )
       return {
         items: res.items.map((o) => ({
@@ -1931,7 +1972,9 @@ export const api = {
   },
 
   /** 分页版站点列表；getSites() 仍返回全量数组 */
-  async getSitesPage(params: FacetPageParams): Promise<FacetPage<BookmarkSite>> {
+  async getSitesPage(
+    params: FacetPageParams
+  ): Promise<FacetPage<BookmarkSite>> {
     try {
       const res = await request<{
         items: Array<{ name: string; usage_count?: number }>
@@ -2008,7 +2051,7 @@ export const api = {
   async getFeedStats(range: InsightsRange = "30d"): Promise<FeedStatsResponse> {
     try {
       return await request<FeedStatsResponse>(
-        `/api/feed/stats?range=${encodeURIComponent(range)}`,
+        `/api/feed/stats?range=${encodeURIComponent(range)}`
       )
     } catch (err) {
       if (shouldFallbackToMock(err)) {
@@ -2023,7 +2066,7 @@ export const api = {
    * 后端不可用时直接抛错，不做本地 mock。
    */
   async importGithubStars(
-    params?: GithubImportParams,
+    params?: GithubImportParams
   ): Promise<GithubImportStartResult> {
     return await request<GithubImportStartResult>(
       "/api/bookmarks/import/github",
@@ -2036,83 +2079,83 @@ export const api = {
             ? { maxPages: params.maxPages }
             : {}),
         }),
-      },
+      }
     )
   },
 
   async getGithubImportActive(): Promise<{ job: GithubImportJob | null }> {
     return await request<{ job: GithubImportJob | null }>(
-      "/api/bookmarks/import/github/active",
+      "/api/bookmarks/import/github/active"
     )
   },
 
   async cancelGithubImport(): Promise<{ job: GithubImportJob }> {
     return await request<{ job: GithubImportJob }>(
       "/api/bookmarks/import/github/cancel",
-      { method: "POST" },
+      { method: "POST" }
     )
   },
 
   async createBrowserImport(
-    source: "html" | "extension",
+    source: "html" | "extension"
   ): Promise<{ job: BrowserImportJob }> {
     return await request<{ job: BrowserImportJob }>(
       "/api/bookmarks/import/browser",
-      { method: "POST", body: JSON.stringify({ source }) },
+      { method: "POST", body: JSON.stringify({ source }) }
     )
   },
 
   async appendBrowserImportBatch(
     jobId: string,
     batchIndex: number,
-    items: BrowserImportItemInput[],
+    items: BrowserImportItemInput[]
   ): Promise<{ ok: boolean; accepted: number; duplicate: boolean }> {
     return await request(
       `/api/bookmarks/import/browser/jobs/${jobId}/batches`,
       {
         method: "POST",
         body: JSON.stringify({ batchIndex, items }),
-      },
+      }
     )
   },
 
   async scanBrowserImport(jobId: string): Promise<{ job: BrowserImportJob }> {
     return await request<{ job: BrowserImportJob }>(
       `/api/bookmarks/import/browser/jobs/${jobId}/scan`,
-      { method: "POST" },
+      { method: "POST" }
     )
   },
 
   async getBrowserImportActive(): Promise<{ job: BrowserImportJob | null }> {
     return await request<{ job: BrowserImportJob | null }>(
-      "/api/bookmarks/import/browser/active",
+      "/api/bookmarks/import/browser/active"
     )
   },
 
   async getBrowserImportJob(jobId: string): Promise<{ job: BrowserImportJob }> {
     return await request<{ job: BrowserImportJob }>(
-      `/api/bookmarks/import/browser/jobs/${jobId}`,
+      `/api/bookmarks/import/browser/jobs/${jobId}`
     )
   },
 
   async chooseBrowserImport(
     jobId: string,
     placement: BrowserImportPlacement,
-    deadPolicy: BrowserImportDeadPolicy,
+    deadPolicy: BrowserImportDeadPolicy
   ): Promise<{ job: BrowserImportJob }> {
     return await request<{ job: BrowserImportJob }>(
       `/api/bookmarks/import/browser/jobs/${jobId}/choice`,
       {
         method: "POST",
         body: JSON.stringify({ placement, dead_policy: deadPolicy }),
-      },
+      }
     )
   },
 
   async cancelBrowserImport(jobId: string): Promise<{ job: BrowserImportJob }> {
     return await request<{ job: BrowserImportJob }>(
       `/api/bookmarks/import/browser/jobs/${jobId}/cancel`,
-      { method: "POST" },
+      { method: "POST" }
     )
   },
 
@@ -2120,7 +2163,7 @@ export const api = {
   async getInsights(range: InsightsRange = "30d"): Promise<InsightsResponse> {
     try {
       return await request<InsightsResponse>(
-        `/api/insights?range=${encodeURIComponent(range)}`,
+        `/api/insights?range=${encodeURIComponent(range)}`
       )
     } catch (err) {
       if (shouldFallbackToMock(err)) {
@@ -2136,7 +2179,7 @@ export const api = {
     const qs = opts?.refresh ? "?refresh=1" : ""
     try {
       return await request<CloudflareQuotaResponse>(
-        `/api/insights/cloudflare-quota${qs}`,
+        `/api/insights/cloudflare-quota${qs}`
       )
     } catch (err) {
       if (shouldFallbackToMock(err)) {
@@ -2172,7 +2215,8 @@ export const api = {
       if (shouldFallbackToMock(err)) {
         const store = mockStore()
         if (store.user) {
-          store.user.deepseek_configured = !!data.api_key || store.user.deepseek_configured
+          store.user.deepseek_configured =
+            !!data.api_key || store.user.deepseek_configured
           if (data.api_key) store.user.deepseek_last4 = data.api_key.slice(-4)
           if (data.model) store.user.deepseek_model = data.model
           saveMockStore()
@@ -2204,7 +2248,32 @@ export const api = {
     }
   },
 
-  async testDeepSeekConnection(): Promise<{ success: boolean; message: string }> {
+  async syncDeepSeekModels(): Promise<{
+    ok: boolean
+    message: string
+    models: { id: string; name: string }[]
+  }> {
+    try {
+      const res = await request<{
+        deepseek_models: { id: string; name: string }[]
+      }>("/api/settings/deepseek/models", { method: "POST" })
+      return { ok: true, message: "", models: res.deepseek_models }
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        return {
+          ok: false,
+          message: "后端未就绪，无法同步 DeepSeek 模型。",
+          models: [],
+        }
+      }
+      throw err
+    }
+  },
+
+  async testDeepSeekConnection(): Promise<{
+    success: boolean
+    message: string
+  }> {
     try {
       const res = await request<{ ok: boolean; error?: string }>(
         "/api/settings/deepseek/test",
@@ -2212,11 +2281,16 @@ export const api = {
       )
       return {
         success: res.ok,
-        message: res.ok ? "DeepSeek API 连接正常。" : res.error || "DeepSeek API 测试失败",
+        message: res.ok
+          ? "DeepSeek API 连接正常。"
+          : res.error || "DeepSeek API 测试失败",
       }
     } catch (err) {
       if (shouldFallbackToMock(err)) {
-        return { success: false, message: "后端未就绪，无法测试 DeepSeek 连接。" }
+        return {
+          success: false,
+          message: "后端未就绪，无法测试 DeepSeek 连接。",
+        }
       }
       throw err
     }
@@ -2257,7 +2331,7 @@ export const api = {
     try {
       const res = await request<{ ok: boolean; error?: string; dims?: number }>(
         "/api/settings/embedding/test",
-        { method: "POST" },
+        { method: "POST" }
       )
       return {
         success: res.ok,
@@ -2285,7 +2359,10 @@ export const api = {
         method: "PUT",
         body: JSON.stringify({ apiKey: data.api_key }),
       })
-      return { configured: res.anysearch_configured, last4: res.anysearch_last4 }
+      return {
+        configured: res.anysearch_configured,
+        last4: res.anysearch_last4,
+      }
     } catch (err) {
       if (shouldFallbackToMock(err)) {
         const store = mockStore()
@@ -2334,7 +2411,10 @@ export const api = {
       }
     } catch (err) {
       if (shouldFallbackToMock(err)) {
-        return { success: false, message: "后端未就绪，无法测试 AnySearch 连接。" }
+        return {
+          success: false,
+          message: "后端未就绪，无法测试 AnySearch 连接。",
+        }
       }
       throw err
     }
@@ -2375,7 +2455,7 @@ export const api = {
           }
           store.user.cloudflare_configured = Boolean(
             store.user.cloudflare_account_id &&
-              (store.user.cloudflare_token_last4 || data.api_token),
+            (store.user.cloudflare_token_last4 || data.api_token)
           )
           saveMockStore()
         }
@@ -2414,7 +2494,7 @@ export const api = {
     try {
       const res = await request<{ ok: boolean; error?: string }>(
         "/api/settings/cloudflare/test",
-        { method: "POST" },
+        { method: "POST" }
       )
       return {
         success: res.ok,
@@ -2466,7 +2546,7 @@ export const api = {
   },
 
   async updateTrackingSettings(
-    data: Partial<TrackingSettings>,
+    data: Partial<TrackingSettings>
   ): Promise<TrackingSettings> {
     try {
       return await request<TrackingSettings>("/api/settings/tracking", {
@@ -2539,7 +2619,7 @@ export const api = {
         {
           method: "PUT",
           body: JSON.stringify({ enabled: data.enabled }),
-        },
+        }
       )
     } catch (err) {
       if (shouldFallbackToMock(err)) {
@@ -2557,7 +2637,7 @@ export const api = {
   async getDiscoverySettings(): Promise<DiscoverySettingsResponse> {
     try {
       return discoverySettingsResponseSchema.parse(
-        await request<unknown>("/api/settings/discovery"),
+        await request<unknown>("/api/settings/discovery")
       )
     } catch (err) {
       if (shouldFallbackToMock(err)) {
@@ -2566,7 +2646,10 @@ export const api = {
           throw new ApiError("未登录", 401, { code: "UNAUTHORIZED" })
         }
         const enabled = store.discoveryEnabled ?? true
-        return discoverySettingsResponseSchema.parse({ enabled, ready: enabled })
+        return discoverySettingsResponseSchema.parse({
+          enabled,
+          ready: enabled,
+        })
       }
       throw err
     }
@@ -2580,7 +2663,7 @@ export const api = {
         await request<unknown>("/api/settings/discovery", {
           method: "PUT",
           body: JSON.stringify(data),
-        }),
+        })
       )
     } catch (err) {
       if (shouldFallbackToMock(err)) {
@@ -2608,7 +2691,7 @@ export const api = {
         {
           method: "PUT",
           body: JSON.stringify({ measurement_id: data.measurement_id }),
-        },
+        }
       )
     } catch (err) {
       if (shouldFallbackToMock(err)) {
@@ -2618,9 +2701,13 @@ export const api = {
         }
         const trimmed = String(raw).trim()
         if (!GOOGLE_ANALYTICS_MEASUREMENT_ID_RE.test(trimmed)) {
-          throw new ApiError("Measurement ID 格式无效，应为 G-XXXXXXXXXX", 400, {
-            code: "VALIDATION_ERROR",
-          })
+          throw new ApiError(
+            "Measurement ID 格式无效，应为 G-XXXXXXXXXX",
+            400,
+            {
+              code: "VALIDATION_ERROR",
+            }
+          )
         }
         return {
           google_analytics_measurement_id: trimmed.toUpperCase(),
@@ -2631,7 +2718,7 @@ export const api = {
   },
 
   async updateBookmarkPagination(
-    data: Partial<BookmarkPaginationSettings>,
+    data: Partial<BookmarkPaginationSettings>
   ): Promise<BookmarkPaginationSettings> {
     try {
       // 请求体走 camelCase、响应走 snake_case，与 tracking 等既有设置接口一致
@@ -2643,7 +2730,7 @@ export const api = {
             paginationMode: data.bookmark_pagination_mode,
             pageSize: data.bookmark_page_size,
           }),
-        },
+        }
       )
     } catch (err) {
       if (shouldFallbackToMock(err)) {
@@ -2673,24 +2760,24 @@ export const api = {
   // 再引一套 localStorage 存档会变成两个互相打架的真相源。
   async getKbConversations(): Promise<KbConversationSummary[]> {
     const res = await request<{ items: KbConversationSummary[] }>(
-      "/api/kb/conversations",
+      "/api/kb/conversations"
     )
     return res.items
   },
 
   async getKbConversation(id: string): Promise<KbConversationDetail> {
     return await request<KbConversationDetail>(
-      `/api/kb/conversations/${encodeURIComponent(id)}`,
+      `/api/kb/conversations/${encodeURIComponent(id)}`
     )
   },
 
   async saveKbConversation(
     id: string,
-    messages: KbStoredMessage[],
+    messages: KbStoredMessage[]
   ): Promise<KbConversationSummary> {
     return await request<KbConversationSummary>(
       `/api/kb/conversations/${encodeURIComponent(id)}`,
-      { method: "PUT", body: JSON.stringify({ messages }) },
+      { method: "PUT", body: JSON.stringify({ messages }) }
     )
   },
 
@@ -2702,6 +2789,18 @@ export const api = {
 
   async clearKbConversations(): Promise<void> {
     await request("/api/kb/conversations", { method: "DELETE" })
+  },
+
+  /** 确认整理方案。只提交勾选的操作 id，目标以已存消息为准 */
+  async applyKbOrganize(input: {
+    conversationId: string
+    messageId: string
+    opIds: string[]
+  }): Promise<{ organize: KbOrganizeProposal }> {
+    return await request<{ organize: KbOrganizeProposal }>("/api/kb/organize", {
+      method: "POST",
+      body: JSON.stringify(input),
+    })
   },
 
   /**
@@ -2773,7 +2872,7 @@ export const api = {
     if (!response.ok) {
       throw new ApiError(
         STATUS_FALLBACK_MESSAGES[response.status] ?? "请求失败，请稍后重试。",
-        response.status,
+        response.status
       )
     }
     return await response.text()

@@ -466,6 +466,8 @@ export const kbMessages = sqliteTable(
     warnings: text("warnings"),
     plan: text("plan"),
     activity: text("activity"),
+    /** 整理方案 JSON。确认前只是提案，确认后是写入结果 */
+    organize: text("organize"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),

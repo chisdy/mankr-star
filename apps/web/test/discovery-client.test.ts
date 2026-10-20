@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { QueryClient } from "@tanstack/react-query"
 import { discoveryResponseSchema } from "@mankr/shared"
 import { queryKeys } from "../src/lib/query-keys"
-import { resolveDiscoveryAccess } from "../src/features/discovery/discovery-access"
+import {
+  isDiscoveryNavigationVisible,
+  resolveDiscoveryAccess,
+} from "../src/features/discovery/discovery-access"
 import { createMockDiscovery } from "../src/features/discovery/mock-data"
 import {
   filterDiscoveryItems,
@@ -137,6 +140,61 @@ describe("发现访问范围与收藏缓存", () => {
     })
     expect(loggedIn.accessScope).toBe("user-b")
     expect(loggedIn.canRead).toBe(true)
+  })
+
+  it("首次榜单未准备好时入口对已确认登录用户可见，对公开访客隐藏", () => {
+    const enabled = { enabled: true, ready: false }
+    const owner = {
+      ...guest,
+      isAuthenticated: true,
+      status: { authenticated: true },
+      user: { id: "owner" },
+      publicBrowsingEnabled: false,
+    }
+    expect(isDiscoveryNavigationVisible(owner, enabled)).toBe(true)
+    expect(isDiscoveryNavigationVisible(guest, enabled)).toBe(false)
+    expect(
+      isDiscoveryNavigationVisible(owner, { enabled: true, ready: true })
+    ).toBe(true)
+    expect(
+      isDiscoveryNavigationVisible(guest, { enabled: true, ready: true })
+    ).toBe(true)
+    for (const auth of [owner, guest]) {
+      expect(isDiscoveryNavigationVisible(auth, undefined)).toBe(false)
+      expect(
+        isDiscoveryNavigationVisible(auth, { enabled: false, ready: true })
+      ).toBe(false)
+      expect(
+        isDiscoveryNavigationVisible(auth, { enabled: false, ready: false })
+      ).toBe(false)
+    }
+  })
+
+  it("旧账号缓存、未确认身份与失效会话不能绕过首次榜单的访客门槛", () => {
+    const pending = { enabled: true, ready: false }
+    const owner = {
+      ...guest,
+      isAuthenticated: true,
+      status: { authenticated: true },
+      user: { id: "owner" },
+    }
+    for (const auth of [
+      { ...owner, isLoading: true },
+      { ...owner, status: null },
+      { ...owner, statusQuery: { isError: true } },
+      { ...owner, meQuery: { isError: true } },
+      { ...owner, status: { authenticated: false } },
+      { ...owner, isAuthenticated: false },
+      { ...owner, user: null },
+    ]) {
+      expect(isDiscoveryNavigationVisible(auth, pending)).toBe(false)
+    }
+    expect(
+      isDiscoveryNavigationVisible(
+        { ...guest, publicBrowsingEnabled: false },
+        { enabled: true, ready: true }
+      )
+    ).toBe(false)
   })
 
   it("频道、用户、访客和公开开关分别缓存，所有频道随收藏前缀失效", async () => {

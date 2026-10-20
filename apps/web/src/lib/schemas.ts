@@ -12,6 +12,9 @@ export const UserSchema = z.object({
   deepseek_configured: z.boolean().default(false),
   deepseek_last4: z.string().nullable().optional(),
   deepseek_model: z.string().nullable().optional(),
+  deepseek_models: z
+    .array(z.object({ id: z.string(), name: z.string() }))
+    .optional(),
   anysearch_configured: z.boolean().default(false),
   anysearch_last4: z.string().nullable().optional(),
   github_pat_configured: z.boolean().default(false),
@@ -74,7 +77,9 @@ export const BookmarkSchema = z.object({
   folder: FolderSchema.nullable().optional(),
   tags: z.array(z.string()).default([]),
   notes: z.string().nullable().optional(),
-  ai_status: z.enum(["pending", "done", "fallback", "failed"]).default("pending"),
+  ai_status: z
+    .enum(["pending", "done", "fallback", "failed"])
+    .default("pending"),
   track_updates: z.boolean().default(true),
   last_synced_at: z.string().nullable().optional(),
   pushed_at: z.string().nullable().optional(),
@@ -131,5 +136,7 @@ export const AddBookmarkSchema = z.object({
 
 export const DeepSeekConfigSchema = z.object({
   api_key: z.string().optional(),
-  model: z.enum(["deepseek-v4-flash", "deepseek-v4-pro"]).default("deepseek-v4-flash"),
+  model: z
+    .enum(["deepseek-v4-flash", "deepseek-v4-pro"])
+    .default("deepseek-v4-flash"),
 })

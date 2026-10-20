@@ -24,7 +24,6 @@ function AuthLoading() {
     <div className="flex min-h-screen items-center justify-center p-6 bg-background">
       <div className="flex flex-col items-center gap-3">
         <BrandLogo
-          variant="flat"
           className="size-10 rounded-lg bg-primary text-primary-foreground"
           iconClassName="size-6"
         />

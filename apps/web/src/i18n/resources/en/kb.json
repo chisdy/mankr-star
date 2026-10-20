@@ -90,8 +90,42 @@
         "meta_one": "{{count}} result",
         "meta_other": "{{count}} results"
       },
-      "generate": { "label": "Generating answer" }
+      "generate": { "label": "Generating answer" },
+      "organize": {
+        "label": "Organizing",
+        "meta_one": "{{count}} change",
+        "meta_other": "{{count}} changes"
+      }
     }
+  },
+  "organize": {
+    "title": "Organize",
+    "applied": "Saved to your library",
+    "noneWritten": "Nothing was saved",
+    "dismissed": "Skipped. Nothing was changed",
+    "saving": "Saving the plan. You can apply it once that finishes",
+    "reason": "Why: {{reason}}",
+    "apply": "Apply selected",
+    "applying": "Saving…",
+    "dismiss": "Not now",
+    "check": "Include this change",
+    "skipped": "Not applied",
+    "groups": {
+      "rename_folder": "Rename",
+      "create_folder": "New folders",
+      "move_folder": "Move folders",
+      "move_bookmarks": "Move bookmarks",
+      "merge_folders": "Merge"
+    },
+    "rename": "Rename “{{from}}” to “{{to}}”",
+    "create": "Create “{{name}}” under “{{place}}”",
+    "reuse": "“{{name}}” already exists under “{{place}}”. Use that folder",
+    "moveFolder": "Move “{{from}}” under “{{to}}”",
+    "moveBookmarks_one": "Move {{count}} bookmark from “{{from}}” to “{{to}}”",
+    "moveBookmarks_other": "Move {{count}} bookmarks from “{{from}}” to “{{to}}”",
+    "moreTitles_one": "{{count}} more",
+    "moreTitles_other": "{{count}} more",
+    "merge": "Merge “{{from}}” into “{{to}}”"
   },
   "states": {
     "thinking": "Searching and thinking…",
@@ -118,6 +152,9 @@
     "DEEPSEEK_FAILED": "Generation failed. Please retry.",
     "RATE_LIMITED": "Too many requests. Please try again later.",
     "UNAUTHORIZED": "Your session expired. Please sign in again.",
-    "UNKNOWN": "Something went wrong. Please retry."
+    "UNKNOWN": "Something went wrong. Please retry.",
+    "ORGANIZE_NOT_SAVED": "The plan is not saved yet. Try again in a moment.",
+    "ORGANIZE_DISMISSED": "This plan was already skipped.",
+    "ORGANIZE_FAILED": "Could not save the changes. Please retry."
   }
 }

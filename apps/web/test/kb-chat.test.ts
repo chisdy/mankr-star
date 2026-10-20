@@ -23,7 +23,7 @@ let outbound: OutboundMock
 function deepseekStream(text: string): Response {
   const chunks = [
     ...Array.from(text).map((ch) =>
-      JSON.stringify({ choices: [{ delta: { content: ch } }] }),
+      JSON.stringify({ choices: [{ delta: { content: ch } }] })
     ),
     JSON.stringify({
       choices: [{ delta: {} }],
@@ -58,7 +58,7 @@ beforeEach(async () => {
   outbound.json(`${GITHUB}facebook/react`, githubRepoPayload("facebook/react"))
   outbound.text(
     `${GITHUB}facebook/react/readme`,
-    "# React\n用于构建用户界面的状态管理与渲染库",
+    "# React\n用于构建用户界面的状态管理与渲染库"
   )
   client = await registerOwner()
 })
@@ -133,7 +133,7 @@ describe("POST /api/kb/chat 知识库检索", () => {
     expect(meta?.type).toBe("meta")
     if (meta?.type !== "meta") throw new Error("expected meta")
     expect(meta.sources.some((s) => s.type === "bookmark" && s.id === id)).toBe(
-      true,
+      true
     )
     expect(meta.warnings).toBeUndefined()
 
@@ -157,7 +157,7 @@ describe("POST /api/kb/chat 知识库检索", () => {
     const events = await readEvents(res)
     expect(events.map((e) => e.type)).toEqual(["meta", "empty"])
     expect(
-      outbound.calls.slice(before).some((u) => u.startsWith(DEEPSEEK)),
+      outbound.calls.slice(before).some((u) => u.startsWith(DEEPSEEK))
     ).toBe(false)
   })
 
@@ -203,11 +203,13 @@ describe("POST /api/kb/chat 知识库检索", () => {
     await seedBookmark()
     outbound.on(DEEPSEEK, () => deepseekStream("答案"))
     await readEvents(
-      await chat({ messages: [{ role: "user", content: "react" }] }),
+      await chat({ messages: [{ role: "user", content: "react" }] })
     )
 
     const insights = await client.json<{
-      ai: { by_kind: Array<{ kind: string; calls: number; total_tokens: number }> }
+      ai: {
+        by_kind: Array<{ kind: string; calls: number; total_tokens: number }>
+      }
     }>("/api/insights?range=all")
     const kbChat = insights.body.ai.by_kind.find((k) => k.kind === "kb_chat")
     expect(kbChat?.calls).toBe(1)
@@ -233,7 +235,7 @@ describe("POST /api/kb/chat 模型选择", () => {
       await chat({
         messages: [{ role: "user", content: "react" }],
         model: "deepseek-v4-pro",
-      }),
+      })
     )
 
     expect(models).toContain("deepseek-v4-pro")
@@ -241,11 +243,11 @@ describe("POST /api/kb/chat 模型选择", () => {
       ai: { by_kind: Array<{ kind: string; calls: number }> }
     }>("/api/insights?range=all")
     expect(
-      insights.body.ai.by_kind.find((k) => k.kind === "kb_chat")?.calls,
+      insights.body.ai.by_kind.find((k) => k.kind === "kb_chat")?.calls
     ).toBe(1)
   })
 
-  it("未知模型被 schema 拦在 400，不发出任何上游请求", async () => {
+  it("不在可用名单里的模型返回 400，不发出任何上游请求", async () => {
     await seedBookmark()
     const before = outbound.calls.length
     const res = await client.post<{ code: string }>("/api/kb/chat", {
@@ -255,8 +257,32 @@ describe("POST /api/kb/chat 模型选择", () => {
     expect(res.status).toBe(400)
     expect(res.body.code).toBe("VALIDATION_ERROR")
     expect(
-      outbound.calls.slice(before).some((u) => u.startsWith(DEEPSEEK)),
+      outbound.calls.slice(before).some((u) => u.startsWith(DEEPSEEK))
     ).toBe(false)
+  })
+
+  it("已同步的官方模型会进入上游调用", async () => {
+    await seedBookmark()
+    outbound.json("https://api.deepseek.com/models", {
+      data: [{ id: "deepseek-flash", name: "DeepSeek-V4.1-Flash" }],
+    })
+    const synced = await client.post("/api/settings/deepseek/models")
+    expect(synced.status).toBe(200)
+
+    const models: string[] = []
+    outbound.on(DEEPSEEK, async (req) => {
+      const body = (await req.json()) as { model?: string }
+      if (body.model) models.push(body.model)
+      return deepseekStream("答案")
+    })
+
+    const res = await chat({
+      messages: [{ role: "user", content: "react" }],
+      model: "deepseek-flash",
+    })
+    expect(res.status).toBe(200)
+    await readEvents(res)
+    expect(models).toContain("deepseek-flash")
   })
 })
 
@@ -296,8 +322,12 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
       return new Response(
         JSON.stringify({
           choices: [{ message: { content: JSON.stringify({ summary }) } }],
-          usage: { prompt_tokens: 500, completion_tokens: 30, total_tokens: 530 },
-        }),
+          usage: {
+            prompt_tokens: 500,
+            completion_tokens: 30,
+            total_tokens: 530,
+          },
+        })
       )
     })
     return models
@@ -316,11 +346,11 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
           { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
         ],
         conversationId: id,
-      }),
+      })
     )
 
     const row = await env.DB.prepare(
-      "SELECT context_summary, summary_covers_through_id FROM kb_conversations WHERE id = ?",
+      "SELECT context_summary, summary_covers_through_id FROM kb_conversations WHERE id = ?"
     )
       .bind(id)
       .first<{ context_summary: string; summary_covers_through_id: string }>()
@@ -341,9 +371,11 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
       if (body.response_format) {
         return new Response(
           JSON.stringify({
-            choices: [{ message: { content: JSON.stringify({ summary: "摘要" }) } }],
+            choices: [
+              { message: { content: JSON.stringify({ summary: "摘要" }) } },
+            ],
             usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
-          }),
+          })
         )
       }
       prompt = body.messages
@@ -357,7 +389,7 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
           { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
         ],
         conversationId: crypto.randomUUID(),
-      }),
+      })
     )
 
     const joined = prompt.map((m) => m.content).join("\n")
@@ -381,14 +413,14 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
           { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
         ],
         conversationId: id,
-      }),
+      })
     )
 
     expect(events.some((e) => e.type === "delta")).toBe(true)
     expect(events.some((e) => e.type === "error")).toBe(false)
 
     const row = await env.DB.prepare(
-      "SELECT summary_covers_through_id FROM kb_conversations WHERE id = ?",
+      "SELECT summary_covers_through_id FROM kb_conversations WHERE id = ?"
     )
       .bind(id)
       .first<{ summary_covers_through_id: string | null }>()
@@ -399,7 +431,7 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
     await seedBookmark()
     const id = crypto.randomUUID()
     await env.DB.prepare(
-      "INSERT INTO kb_conversations (id, title, context_summary, summary_covers_through_id) VALUES (?, ?, ?, ?)",
+      "INSERT INTO kb_conversations (id, title, context_summary, summary_covers_through_id) VALUES (?, ?, ?, ?)"
     )
       .bind(id, "旧会话", "用户此前确认偏好 TypeScript", "h6")
       .run()
@@ -415,9 +447,11 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
 
     await readEvents(
       await chat({
-        messages: [{ id: "q", role: "user", content: "有哪些和 react 相关的收藏？" }],
+        messages: [
+          { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
+        ],
         conversationId: id,
-      }),
+      })
     )
 
     const at = (needle: string) =>
@@ -432,7 +466,7 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
     await seedBookmark()
     const id = crypto.randomUUID()
     await env.DB.prepare(
-      "INSERT INTO kb_conversations (id, title, context_summary, summary_covers_through_id) VALUES (?, ?, ?, ?)",
+      "INSERT INTO kb_conversations (id, title, context_summary, summary_covers_through_id) VALUES (?, ?, ?, ?)"
     )
       .bind(id, "旧会话", "早期摘要", "h6")
       .run()
@@ -446,9 +480,11 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
       if (body.response_format) {
         return new Response(
           JSON.stringify({
-            choices: [{ message: { content: JSON.stringify({ summary: "x" }) } }],
+            choices: [
+              { message: { content: JSON.stringify({ summary: "x" }) } },
+            ],
             usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
-          }),
+          })
         )
       }
       prompt = body.messages
@@ -462,7 +498,7 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
           { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
         ],
         conversationId: id,
-      }),
+      })
     )
 
     const joined = prompt.map((m) => m.content).join("\n")
@@ -477,9 +513,11 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
 
     await readEvents(
       await chat({
-        messages: [{ id: "q", role: "user", content: "有哪些和 react 相关的收藏？" }],
+        messages: [
+          { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
+        ],
         conversationId: crypto.randomUUID(),
-      }),
+      })
     )
 
     const calls = outbound.calls.filter((u) => u.startsWith(DEEPSEEK)).length
@@ -498,7 +536,7 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
           { role: "user", content: "有哪些和 react 相关的收藏？" },
         ],
         conversationId: id,
-      }),
+      })
     )
 
     expect(models).toEqual([])
@@ -514,7 +552,7 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
           ...longHistory(),
           { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
         ],
-      }),
+      })
     )
     expect(events.some((e) => e.type === "delta")).toBe(true)
     expect(models).toEqual([])
@@ -542,11 +580,11 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
     })
 
     await readEvents(
-      await chat({ messages: [{ role: "user", content: "react" }] }),
+      await chat({ messages: [{ role: "user", content: "react" }] })
     )
 
     const row = await env.DB.prepare(
-      "SELECT cache_read_tokens, cache_write_tokens, prompt_tokens FROM ai_usage_logs WHERE kind = 'kb_chat'",
+      "SELECT cache_read_tokens, cache_write_tokens, prompt_tokens FROM ai_usage_logs WHERE kind = 'kb_chat'"
     ).first<{
       cache_read_tokens: number
       cache_write_tokens: number
@@ -569,14 +607,14 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
           { id: "q", role: "user", content: "有哪些和 react 相关的收藏？" },
         ],
         conversationId: crypto.randomUUID(),
-      }),
+      })
     )
 
     const chatRow = await env.DB.prepare(
-      "SELECT total_tokens FROM ai_usage_logs WHERE kind = 'kb_chat'",
+      "SELECT total_tokens FROM ai_usage_logs WHERE kind = 'kb_chat'"
     ).first<{ total_tokens: number }>()
     const compressRow = await env.DB.prepare(
-      "SELECT total_tokens, status, model FROM ai_usage_logs WHERE kind = 'kb_compress'",
+      "SELECT total_tokens, status, model FROM ai_usage_logs WHERE kind = 'kb_compress'"
     ).first<{ total_tokens: number; status: string; model: string }>()
 
     expect(chatRow?.total_tokens).toBe(120)
@@ -597,7 +635,7 @@ describe("POST /api/kb/chat 上下文压缩与缓存计量", () => {
         ],
         model: "deepseek-v4-pro",
         conversationId: crypto.randomUUID(),
-      }),
+      })
     )
 
     expect(models).toEqual([DEFAULT_DEEPSEEK_MODEL])
@@ -634,7 +672,7 @@ describe("POST /api/kb/chat agent 循环", () => {
           total_tokens: usageTokens,
         },
       }),
-      { headers: { "content-type": "application/json" } },
+      { headers: { "content-type": "application/json" } }
     )
   }
 
@@ -667,9 +705,13 @@ describe("POST /api/kb/chat agent 循环", () => {
       ...argChunks.map((ch) =>
         JSON.stringify({
           choices: [
-            { delta: { tool_calls: [{ index: 0, function: { arguments: ch } }] } },
+            {
+              delta: {
+                tool_calls: [{ index: 0, function: { arguments: ch } }],
+              },
+            },
           ],
-        }),
+        })
       ),
       JSON.stringify({
         choices: [{ delta: {} }],
@@ -678,7 +720,7 @@ describe("POST /api/kb/chat agent 循环", () => {
     ]
     return new Response(
       chunks.map((c) => `data: ${c}\n\n`).join("") + "data: [DONE]\n\n",
-      { headers: { "content-type": "text/event-stream" } },
+      { headers: { "content-type": "text/event-stream" } }
     )
   }
 
@@ -692,7 +734,7 @@ describe("POST /api/kb/chat agent 循环", () => {
     ])
 
     const events = await readEvents(
-      await chat({ messages: [{ role: "user", content: COMPLEX_QUESTION }] }),
+      await chat({ messages: [{ role: "user", content: COMPLEX_QUESTION }] })
     )
 
     expect(events[0]?.type).toBe("meta")
@@ -731,7 +773,7 @@ describe("POST /api/kb/chat agent 循环", () => {
     })
 
     const events = await readEvents(
-      await chat({ messages: [{ role: "user", content: COMPLEX_QUESTION }] }),
+      await chat({ messages: [{ role: "user", content: COMPLEX_QUESTION }] })
     )
     expect(events.at(-1)?.type).toBe("done")
 
@@ -744,13 +786,10 @@ describe("POST /api/kb/chat agent 循环", () => {
 
   it("上游失败时先落用量日志再发 error 事件", async () => {
     await seedBookmark()
-    outbound.on(
-      DEEPSEEK,
-      () => new Response("upstream down", { status: 503 }),
-    )
+    outbound.on(DEEPSEEK, () => new Response("upstream down", { status: 503 }))
 
     const events = await readEvents(
-      await chat({ messages: [{ role: "user", content: "react" }] }),
+      await chat({ messages: [{ role: "user", content: "react" }] })
     )
     expect(events.at(-1)?.type).toBe("error")
 
@@ -758,7 +797,7 @@ describe("POST /api/kb/chat agent 循环", () => {
       ai: { by_kind: Array<{ kind: string; calls: number }> }
     }>("/api/insights?range=all")
     expect(
-      insights.body.ai.by_kind.find((k) => k.kind === "kb_chat")?.calls,
+      insights.body.ai.by_kind.find((k) => k.kind === "kb_chat")?.calls
     ).toBe(1)
   })
 
@@ -772,7 +811,7 @@ describe("POST /api/kb/chat agent 循环", () => {
     ])
 
     const events = await readEvents(
-      await chat({ messages: [{ role: "user", content: COMPLEX_QUESTION }] }),
+      await chat({ messages: [{ role: "user", content: COMPLEX_QUESTION }] })
     )
 
     const plan = events.find((e) => e.type === "plan")
@@ -794,7 +833,7 @@ describe("POST /api/kb/chat agent 循环", () => {
     ])
 
     await readEvents(
-      await chat({ messages: [{ role: "user", content: COMPLEX_QUESTION }] }),
+      await chat({ messages: [{ role: "user", content: COMPLEX_QUESTION }] })
     )
 
     const insights = await client.json<{
@@ -823,7 +862,7 @@ describe("POST /api/kb/chat agent 循环", () => {
     })
 
     const events = await readEvents(
-      await chat({ messages: [{ role: "user", content: COMPLEX_QUESTION }] }),
+      await chat({ messages: [{ role: "user", content: COMPLEX_QUESTION }] })
     )
     expect(events.some((e) => e.type === "plan")).toBe(false)
     expect(events.at(-1)?.type).toBe("done")
@@ -855,7 +894,7 @@ describe("POST /api/kb/chat 联网搜索", () => {
             ],
           },
         }),
-        { headers: { "content-type": "application/json" } },
+        { headers: { "content-type": "application/json" } }
       )
     })
 
@@ -893,7 +932,7 @@ describe("POST /api/kb/chat 联网搜索", () => {
       await chat({
         messages: [{ role: "user", content: "量子退火超导材料" }],
         webSearch: true,
-      }),
+      })
     )
     const meta = events[0]
     if (meta?.type !== "meta") throw new Error("expected meta")
@@ -957,7 +996,7 @@ describe("POST /api/kb/chat 联网搜索", () => {
 describe("bookmarks_fts 触发器", () => {
   const ftsTitle = async (id: string) => {
     const row = await env.DB.prepare(
-      "SELECT title FROM bookmarks_fts WHERE bookmark_id = ?",
+      "SELECT title FROM bookmarks_fts WHERE bookmark_id = ?"
     )
       .bind(id)
       .first<{ title: string }>()
@@ -982,7 +1021,7 @@ describe("bookmarks_fts 触发器", () => {
     const id = await seedBookmark()
     // 篡改索引内容作为哨兵：若点击计数唤起了触发器，哨兵会被真实标题覆盖
     await env.DB.prepare(
-      "UPDATE bookmarks_fts SET title = 'SENTINEL' WHERE bookmark_id = ?",
+      "UPDATE bookmarks_fts SET title = 'SENTINEL' WHERE bookmark_id = ?"
     )
       .bind(id)
       .run()

@@ -1,7 +1,7 @@
 import {
   DEFAULT_DEEPSEEK_MODEL,
-  findKbChatModel,
-  type KbChatModelId,
+  DEEPSEEK_MODEL_ID_RE,
+  isAllowedKbChatModel,
   type KbChatSource,
   type KbStoredMessage,
   type KbTurnState,
@@ -92,11 +92,13 @@ function readStoredWebSearch(): boolean {
 }
 
 /**
- * 存量值必须过白名单：模型下线后浏览器里的旧 id 会让每一轮请求都被
- * kbChatRequestSchema 判成 VALIDATION_ERROR，用户无法自愈。
+ * 先按 id 格式收下本地记录。是否还在内置表或已同步目录里，要等 /me 到达后再判断，
+ * 否则目录还没加载就会把刚选的官方模型清掉。
  */
-function readStoredModel(): KbChatModelId {
-  return findKbChatModel(readStored(MODEL_KEY))?.model ?? DEFAULT_DEEPSEEK_MODEL
+function readStoredModel(): string {
+  const stored = readStored(MODEL_KEY)
+  if (stored && DEEPSEEK_MODEL_ID_RE.test(stored)) return stored
+  return DEFAULT_DEEPSEEK_MODEL
 }
 
 /**
@@ -105,12 +107,21 @@ function readStoredModel(): KbChatModelId {
  */
 function signature(id: string, messages: readonly KbMessage[]): string {
   const last = messages.at(-1)
+  const organize = messages
+    .map((message) => {
+      const proposal = message.organize
+      if (!proposal) return ""
+      const skipped = proposal.skipped?.map((item) => item.id).join(".") ?? ""
+      return `${message.id}:${proposal.status}:${proposal.ops.map((op) => op.id).join(".")}:${skipped}`
+    })
+    .join(",")
   return [
     id,
     messages.length,
     last?.id ?? "",
     last?.state ?? "",
     last?.content.length ?? 0,
+    organize,
   ].join("|")
 }
 
@@ -119,8 +130,20 @@ function signature(id: string, messages: readonly KbMessage[]): string {
  * 会话落 D1：每轮收尾整体回写一次，提问在发出时先写一次，
  * 这样生成中途刷新页面至少保留提问，可以直接重试。
  */
-export function useKbChat(options: { anysearchConfigured: boolean }) {
-  const { anysearchConfigured } = options
+export function useKbChat(options: {
+  anysearchConfigured: boolean
+  /** 设置页已经同步下来的官方模型；缺省表示还没拿到 */
+  syncedModels?: readonly { id: string; name: string }[]
+  /** 设置里当前保存的模型，即使不在目录里也允许继续使用 */
+  savedModel?: string | null
+  /** /me 已返回后才把本地过期模型清回默认，避免目录未到就误清 */
+  modelCatalogReady?: boolean
+}) {
+  const { anysearchConfigured, savedModel, modelCatalogReady } = options
+  const catalogIds = React.useMemo(
+    () => (options.syncedModels ?? []).map((item) => item.id),
+    [options.syncedModels]
+  )
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const folderId = searchParams.get("folder_id") || undefined
@@ -140,7 +163,7 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     : undefined
   const folderContext = React.useMemo(
     () => (folderId && folderName ? { folderId, folderName } : undefined),
-    [folderId, folderName],
+    [folderId, folderName]
   )
 
   const [messages, setMessages] = React.useState<KbMessage[]>([])
@@ -149,9 +172,14 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
    * 恢复完成前恒为 null。若一开始就填上 localStorage 里的 id，
    * 在恢复请求返回之前提问会把那条旧会话整体覆盖成只剩新提问。
    */
-  const [conversationId, setConversationId] = React.useState<string | null>(null)
-  const [wantsWebSearch, setWantsWebSearch] = React.useState(readStoredWebSearch)
-  const [model, setModelState] = React.useState<KbChatModelId>(readStoredModel)
+  const [conversationId, setConversationId] = React.useState<string | null>(
+    null
+  )
+  const [wantsWebSearch, setWantsWebSearch] =
+    React.useState(readStoredWebSearch)
+  const [model, setModelState] = React.useState(readStoredModel)
+  /** 最近一次存档成功时的指纹。按钮不能看 persist 发出前写下的指纹 */
+  const [savedSignature, setSavedSignature] = React.useState("")
 
   const abortRef = React.useRef<AbortController | null>(null)
   const persistedRef = React.useRef<string>("")
@@ -174,12 +202,21 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     setWantsWebSearch(next)
   }, [])
 
-  const setModel = React.useCallback((next: string) => {
-    const resolved = findKbChatModel(next)?.model
-    if (!resolved) return
-    writeStored(MODEL_KEY, resolved)
-    setModelState(resolved)
-  }, [])
+  const setModel = React.useCallback(
+    (next: string) => {
+      if (!isAllowedKbChatModel(next, catalogIds, savedModel)) return
+      writeStored(MODEL_KEY, next)
+      setModelState(next)
+    },
+    [catalogIds, savedModel]
+  )
+
+  React.useEffect(() => {
+    if (!modelCatalogReady) return
+    if (isAllowedKbChatModel(model, catalogIds, savedModel)) return
+    writeStored(MODEL_KEY, DEFAULT_DEEPSEEK_MODEL)
+    setModelState(DEFAULT_DEEPSEEK_MODEL)
+  }, [catalogIds, model, modelCatalogReady, savedModel])
 
   React.useEffect(() => {
     return () => abortRef.current?.abort()
@@ -195,6 +232,8 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
         .then((saved) => {
           // 存档响应顺带回传摘要水位：压缩在后台跑，流里没法通告
           coversRef.current = saved.summary_covers_through_id
+          const sig = signature(id, next)
+          if (persistedRef.current === sig) setSavedSignature(sig)
           void queryClient.invalidateQueries({
             queryKey: queryKeys.kb.conversations,
           })
@@ -219,9 +258,9 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     async (
       history: KbMessage[],
       useWeb: boolean,
-      useModel: KbChatModelId,
+      useModel: string,
       convId: string,
-      context?: { folderId: string; folderName: string },
+      context?: { folderId: string; folderName: string }
     ) => {
       const assistantId = crypto.randomUUID()
       setMessages([
@@ -235,7 +274,7 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
 
       const patch = (updater: (prev: KbMessage) => KbMessage) => {
         setMessages((prev) =>
-          prev.map((m) => (m.id === assistantId ? updater(m) : m)),
+          prev.map((m) => (m.id === assistantId ? updater(m) : m))
         )
       }
 
@@ -255,7 +294,10 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
               patch((m) => ({ ...m, sources, warnings }))
             },
             onSourcesAppend: (sources) => {
-              patch((m) => ({ ...m, sources: mergeSources(m.sources, sources) }))
+              patch((m) => ({
+                ...m,
+                sources: mergeSources(m.sources, sources),
+              }))
             },
             onPlan: (items) => {
               patch((m) => ({ ...m, plan: items }))
@@ -278,6 +320,9 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
                 return { ...m, activity: next }
               })
             },
+            onOrganize: (proposal) => {
+              patch((m) => ({ ...m, organize: proposal }))
+            },
             onDelta: (text) => {
               setStatus("streaming")
               patch((m) => ({
@@ -290,10 +335,12 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
               patch((m) => ({ ...m, state: "empty" }))
             },
           },
-          controller.signal,
+          controller.signal
         )
         patch((m) =>
-          m.state === "empty" ? m : { ...settleProgress(m, "completed"), state: "done" },
+          m.state === "empty"
+            ? m
+            : { ...settleProgress(m, "completed"), state: "done" }
         )
       } catch (err) {
         if (controller.signal.aborted) {
@@ -316,7 +363,7 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
         setStatus("idle")
       }
     },
-    [],
+    []
   )
 
   /**
@@ -353,7 +400,7 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
       const id = ensureConversation(history)
       void run(history, webSearch, model, id, folderContext)
     },
-    [ensureConversation, folderContext, messages, model, run, status, webSearch],
+    [ensureConversation, folderContext, messages, model, run, status, webSearch]
   )
 
   const retry = React.useCallback(() => {
@@ -363,7 +410,15 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     const upToUser = messages.slice(0, messages.indexOf(lastUser) + 1)
     const id = ensureConversation(upToUser)
     void run(upToUser, webSearch, model, id, folderContext)
-  }, [ensureConversation, folderContext, messages, model, run, status, webSearch])
+  }, [
+    ensureConversation,
+    folderContext,
+    messages,
+    model,
+    run,
+    status,
+    webSearch,
+  ])
 
   const stop = React.useCallback(() => {
     abortRef.current?.abort()
@@ -376,6 +431,7 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     loadTokenRef.current += 1
     persistedRef.current = ""
     coversRef.current = null
+    setSavedSignature("")
     setConversationId(null)
     writeStored(CONVERSATION_KEY, null)
     setMessages([])
@@ -396,7 +452,9 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     // 摘要水位的权威值在服务端，切会话时一律以库里的为准
     coversRef.current = detail.summary_covers_through_id
     // 刚从库里读出来的内容不需要再写回去
-    persistedRef.current = signature(id, detail.messages)
+    const loaded = signature(id, detail.messages)
+    persistedRef.current = loaded
+    setSavedSignature(loaded)
     setStatus("idle")
   }, [])
 
@@ -411,6 +469,46 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
       }
     })
   }, [openConversation])
+
+  const canApplyOrganize =
+    status === "idle" &&
+    conversationId !== null &&
+    savedSignature !== "" &&
+    savedSignature === signature(conversationId, messages)
+
+  const applyOrganize = React.useCallback(
+    async (messageId: string, opIds: string[]) => {
+      if (!conversationId) throw new Error("会话还没准备好")
+      const result = await api.applyKbOrganize({
+        conversationId,
+        messageId,
+        opIds,
+      })
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === messageId
+            ? { ...message, organize: result.organize }
+            : message
+        )
+      )
+      await queryClient.invalidateQueries({ queryKey: queryKeys.folders.all })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.all })
+    },
+    [conversationId, queryClient]
+  )
+
+  const dismissOrganize = React.useCallback((messageId: string) => {
+    setMessages((prev) =>
+      prev.map((message) =>
+        message.id === messageId && message.organize?.status === "pending"
+          ? {
+              ...message,
+              organize: { ...message.organize, status: "dismissed" },
+            }
+          : message
+      )
+    )
+  }, [])
 
   return {
     messages,
@@ -429,5 +527,8 @@ export function useKbChat(options: { anysearchConfigured: boolean }) {
     stop,
     startNew,
     openConversation,
+    canApplyOrganize,
+    applyOrganize,
+    dismissOrganize,
   }
 }

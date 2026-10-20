@@ -1,4 +1,6 @@
 import { KB_CHAT_MODELS } from "@mankr/shared"
+
+import { buildDeepseekModelOptions } from "@/features/settings/deepseek-model-options"
 import * as React from "react"
 import { useTranslation } from "react-i18next"
 import { GlobeIcon } from "@phosphor-icons/react"
@@ -14,6 +16,7 @@ import { cn } from "@workspace/ui/lib/utils"
 
 /** 比 KB_CHAT_MESSAGE_MAX_CHARS 更严的输入上限，沿用改造前的取值 */
 const INPUT_MAX_CHARS = 2000
+const EMPTY_SYNCED_MODELS: readonly { id: string; name: string }[] = []
 
 export function KbChatComposer({
   value,
@@ -23,6 +26,8 @@ export function KbChatComposer({
   onStop,
   model,
   onModelChange,
+  syncedModels,
+  savedModel,
   webSearch,
   onWebSearchChange,
   anysearchConfigured,
@@ -36,6 +41,10 @@ export function KbChatComposer({
   onStop: () => void
   model: string
   onModelChange: (model: string) => void
+  /** 设置页已同步的官方模型；有目录时下拉改用官方名称 */
+  syncedModels?: readonly { id: string; name: string }[]
+  /** 设置里当前保存的模型，需要留在选项里，避免选择后下拉把值弹回去 */
+  savedModel?: string | null
   webSearch: boolean
   onWebSearchChange: (next: boolean) => void
   anysearchConfigured: boolean
@@ -46,7 +55,7 @@ export function KbChatComposer({
   const { t } = useTranslation("kb")
   const [webHint, setWebHint] = React.useState(false)
 
-  const models = React.useMemo(
+  const builtinModels = React.useMemo(
     () =>
       KB_CHAT_MODELS.map((entry) => ({
         value: entry.model,
@@ -55,6 +64,16 @@ export function KbChatComposer({
         }),
       })),
     [t]
+  )
+  const models = React.useMemo(
+    () =>
+      buildDeepseekModelOptions({
+        synced: syncedModels ?? EMPTY_SYNCED_MODELS,
+        savedModel,
+        draftModel: model,
+        builtin: builtinModels,
+      }),
+    [builtinModels, model, savedModel, syncedModels]
   )
 
   const toggleWebSearch = () => {

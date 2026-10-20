@@ -15,11 +15,17 @@ export function KbChatTranscript({
   messages,
   busy,
   onRetry,
+  canApplyOrganize,
+  onApplyOrganize,
+  onDismissOrganize,
   emptyState,
 }: {
   messages: KbMessage[]
   busy: boolean
   onRetry: () => void
+  canApplyOrganize: boolean
+  onApplyOrganize: (messageId: string, opIds: string[]) => Promise<void>
+  onDismissOrganize: (messageId: string) => void
   emptyState: React.ReactNode
 }) {
   const { t } = useTranslation("kb")
@@ -53,6 +59,10 @@ export function KbChatTranscript({
                 key={message.id}
                 message={message}
                 onRetry={onRetry}
+                canApplyOrganize={canApplyOrganize}
+                busy={busy}
+                onApplyOrganize={onApplyOrganize}
+                onDismissOrganize={onDismissOrganize}
               />
             ))}
           </MessageGroup>

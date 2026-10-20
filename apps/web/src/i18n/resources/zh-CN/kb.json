@@ -85,8 +85,39 @@
         "label": "联网搜索",
         "meta_other": "命中 {{count}} 条"
       },
-      "generate": { "label": "生成回答" }
+      "generate": { "label": "生成回答" },
+      "organize": {
+        "label": "整理方案",
+        "meta_other": "{{count}} 项可执行"
+      }
     }
+  },
+  "organize": {
+    "title": "整理方案",
+    "applied": "已写入收藏库",
+    "noneWritten": "没有写入收藏库",
+    "dismissed": "已跳过，没有改动",
+    "saving": "正在保存方案，保存完成后才能应用",
+    "reason": "原因：{{reason}}",
+    "apply": "应用所选",
+    "applying": "正在写入…",
+    "dismiss": "暂不调整",
+    "check": "执行这一项",
+    "skipped": "未执行",
+    "groups": {
+      "rename_folder": "改名",
+      "create_folder": "新建",
+      "move_folder": "移动文件夹",
+      "move_bookmarks": "调整归属",
+      "merge_folders": "合并"
+    },
+    "rename": "把「{{from}}」改成「{{to}}」",
+    "create": "新建「{{name}}」，放在「{{place}}」",
+    "reuse": "已有同名文件夹「{{name}}」，直接使用它（{{place}}）",
+    "moveFolder": "把「{{from}}」挪到「{{to}}」",
+    "moveBookmarks_other": "把 {{count}} 条收藏从「{{from}}」调到「{{to}}」",
+    "moreTitles_other": "还有 {{count}} 条",
+    "merge": "把「{{from}}」并入「{{to}}」"
   },
   "states": {
     "thinking": "正在检索并思考…",
@@ -112,6 +143,9 @@
     "DEEPSEEK_FAILED": "生成失败，请重试。",
     "RATE_LIMITED": "请求过于频繁，请稍后再试。",
     "UNAUTHORIZED": "登录已过期，请重新登录。",
-    "UNKNOWN": "出错了，请重试。"
+    "UNKNOWN": "出错了，请重试。",
+    "ORGANIZE_NOT_SAVED": "方案还没存上，请稍后再试。",
+    "ORGANIZE_DISMISSED": "这份方案已经跳过。",
+    "ORGANIZE_FAILED": "写入失败，请重试。"
   }
 }

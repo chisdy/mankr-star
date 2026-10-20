@@ -18,6 +18,7 @@ import {
 import { StreamingResponse } from "@workspace/ui/components/agents/streaming-response"
 import { TodoList } from "@workspace/ui/components/agents/todo-list"
 import { KbAnswerText, toCitationItems } from "./kb-citations"
+import { KbOrganizeCard } from "./kb-organize-card"
 import type { KbMessage } from "./use-kb-chat"
 import { useBookmarkDetail } from "@/hooks/use-bookmark-detail"
 
@@ -50,14 +51,29 @@ function localizeActivity(
 export function KbChatTurn({
   message,
   onRetry,
+  canApplyOrganize,
+  busy,
+  onApplyOrganize,
+  onDismissOrganize,
 }: {
   message: KbMessage
   onRetry: () => void
+  canApplyOrganize: boolean
+  busy: boolean
+  onApplyOrganize: (messageId: string, opIds: string[]) => Promise<void>
+  onDismissOrganize: (messageId: string) => void
 }) {
   return message.role === "user" ? (
     <KbUserTurn content={message.content} />
   ) : (
-    <KbAssistantTurn message={message} onRetry={onRetry} />
+    <KbAssistantTurn
+      message={message}
+      onRetry={onRetry}
+      canApplyOrganize={canApplyOrganize}
+      busy={busy}
+      onApplyOrganize={onApplyOrganize}
+      onDismissOrganize={onDismissOrganize}
+    />
   )
 }
 
@@ -80,9 +96,17 @@ function KbUserTurn({ content }: { content: string }) {
 function KbAssistantTurn({
   message,
   onRetry,
+  canApplyOrganize,
+  busy,
+  onApplyOrganize,
+  onDismissOrganize,
 }: {
   message: KbMessage
   onRetry: () => void
+  canApplyOrganize: boolean
+  busy: boolean
+  onApplyOrganize: (messageId: string, opIds: string[]) => Promise<void>
+  onDismissOrganize: (messageId: string) => void
 }) {
   const { t } = useTranslation("kb")
   const { openDetail } = useBookmarkDetail()
@@ -128,9 +152,7 @@ function KbAssistantTurn({
             title={t("plan.title")}
             sectionLabel={t("plan.title")}
             emptyLabel={t("plan.empty")}
-            progressLabel={(done, total) =>
-              t("plan.progress", { done, total })
-            }
+            progressLabel={(done, total) => t("plan.progress", { done, total })}
             statusLabels={{
               pending: t("plan.status.pending"),
               "in-progress": t("plan.status.in-progress"),
@@ -147,6 +169,18 @@ function KbAssistantTurn({
             activeLabel={t("activity.active")}
             summary={t("activity.summary", { count: activity.length })}
             moreResultsLabel={(count) => t("activity.more", { count })}
+          />
+        ) : null}
+
+        {message.organize ? (
+          <KbOrganizeCard
+            key={`${message.id}:${message.organize.status}:${message.organize.ops.map((op) => op.id).join(".")}`}
+            messageId={message.id}
+            proposal={message.organize}
+            canApply={canApplyOrganize}
+            busy={busy}
+            onApply={onApplyOrganize}
+            onDismiss={onDismissOrganize}
           />
         ) : null}
 
@@ -230,7 +264,7 @@ function KbTurnError({
         <button
           type="button"
           onClick={onRetry}
-          className="rounded-md px-1.5 py-0.5 text-xs text-muted-foreground underline underline-offset-2 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-md px-1.5 py-0.5 text-xs text-muted-foreground underline underline-offset-2 transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
           {t("actions.retry")}
         </button>

@@ -3,6 +3,8 @@ import {
   DEFAULT_DEEPSEEK_MODEL,
   DEFAULT_HOT_WITHIN_DAYS,
   DEFAULT_STALE_AFTER_DAYS,
+  DEEPSEEK_MODEL_CATALOG_LIMIT,
+  DEEPSEEK_MODEL_ID_RE,
   MAX_TRACKING_DAYS,
   MIN_TRACKING_DAYS,
 } from "./constants"
@@ -54,6 +56,20 @@ export const aiSettingsValueSchema = z.object({
     .min(1)
     .catch(DEFAULT_DEEPSEEK_MODEL)
     .default(DEFAULT_DEEPSEEK_MODEL),
+  /**
+   * 从官方 /models 同步来的可选模型。
+   * 整段损坏时回退 []；上游必须先逐条过滤，不能靠 catch 洗掉坏条目。
+   */
+  deepseekModels: z
+    .array(
+      z.object({
+        id: z.string().regex(DEEPSEEK_MODEL_ID_RE),
+        name: z.string().min(1).max(128),
+      })
+    )
+    .max(DEEPSEEK_MODEL_CATALOG_LIMIT)
+    .catch([])
+    .default([]),
   /** OpenAI 兼容 embeddings base，如 https://api.openai.com/v1 */
   embeddingBaseUrl: z.string().catch("").default(""),
   embeddingModel: z
@@ -148,7 +164,9 @@ export const bookmarksSettingsValueSchema = z.object({
     .catch(DEFAULT_BOOKMARK_PAGE_SIZE)
     .default(DEFAULT_BOOKMARK_PAGE_SIZE),
 })
-export type BookmarksSettingsValue = z.infer<typeof bookmarksSettingsValueSchema>
+export type BookmarksSettingsValue = z.infer<
+  typeof bookmarksSettingsValueSchema
+>
 
 /** Cloudflare Analytics 凭证（Account ID 明文 + API Token 密文） */
 export const cloudflareSettingsValueSchema = z.object({
@@ -209,13 +227,13 @@ export type SettingsValueMap = {
 
 /** 已配置：Account ID 非空且 Token 已加密保存 */
 export function isCloudflareConfigured(
-  value: CloudflareSettingsValue,
+  value: CloudflareSettingsValue
 ): boolean {
   return Boolean(value.accountId.trim() && value.apiTokenEncrypted)
 }
 
 export function defaultSettingValue<K extends SettingKey>(
-  key: K,
+  key: K
 ): SettingsValueMap[K] {
   return SETTINGS_SCHEMAS[key].parse({}) as SettingsValueMap[K]
 }
@@ -226,7 +244,7 @@ export function defaultSettingValue<K extends SettingKey>(
  */
 export function parseSettingValue<K extends SettingKey>(
   key: K,
-  raw: unknown,
+  raw: unknown
 ): SettingsValueMap[K] {
   const parsed = SETTINGS_SCHEMAS[key].safeParse(raw)
   if (parsed.success) return parsed.data as SettingsValueMap[K]
@@ -236,7 +254,7 @@ export function parseSettingValue<K extends SettingKey>(
 /** 直接解析数据库里的 JSON 文本；非法 JSON 同样回退默认值 */
 export function parseSettingJson<K extends SettingKey>(
   key: K,
-  text: string | null | undefined,
+  text: string | null | undefined
 ): SettingsValueMap[K] {
   if (!text) return defaultSettingValue(key)
   try {
@@ -259,7 +277,7 @@ export const bookmarkPaginationSettingsSchema = z
   })
   .refine(
     (data) => data.paginationMode !== undefined || data.pageSize !== undefined,
-    { message: "请提供 paginationMode 或 pageSize" },
+    { message: "请提供 paginationMode 或 pageSize" }
   )
 export type BookmarkPaginationSettingsInput = z.infer<
   typeof bookmarkPaginationSettingsSchema

@@ -2,6 +2,8 @@ import {
   AI_FOLDER_AUTO_CREATE_MAX_DEPTH,
   AI_SUMMARY_MAX_CHARS,
   DEEPSEEK_API_BASE,
+  DEEPSEEK_MODEL_CATALOG_LIMIT,
+  DEEPSEEK_MODEL_ID_RE,
   DEFAULT_DEEPSEEK_MODEL,
   PRESET_FOLDERS,
   type AiOutput,
@@ -102,7 +104,7 @@ function formatFolderCatalogForPrompt(catalog: FolderCatalogEntry[]): string {
   if (catalog.length === 0) {
     return PRESET_FOLDERS.map(
       (c) =>
-        `- (preset) ${c.name}：${c.description} — 请优先匹配已 seed 的同名文件夹 id`,
+        `- (preset) ${c.name}：${c.description} — 请优先匹配已 seed 的同名文件夹 id`
     ).join("\n")
   }
   return JSON.stringify(
@@ -114,7 +116,7 @@ function formatFolderCatalogForPrompt(catalog: FolderCatalogEntry[]): string {
       description: c.description ?? null,
     })),
     null,
-    0,
+    0
   )
 }
 
@@ -126,9 +128,7 @@ const URL_FOLDER_HINTS: Array<{ folder: string[]; patterns: RegExp[] }> = [
   },
   {
     folder: ["AI / LLM"],
-    patterns: [
-      /\bllm\b|大模型|gpt|claude|prompt|agent|embedding|向量|生成式/i,
-    ],
+    patterns: [/\bllm\b|大模型|gpt|claude|prompt|agent|embedding|向量|生成式/i],
   },
   {
     folder: ["前端框架"],
@@ -296,7 +296,7 @@ export function ruleBasedClassify(input: {
     new Set([
       ...input.topics.slice(0, 5),
       ...(input.language ? [input.language.toLowerCase()] : []),
-    ]),
+    ])
   ).slice(0, 8)
 
   if (tags.length < 3) {
@@ -368,9 +368,7 @@ ${catalogJson}
 
   const excerpt = opts.input.contentExcerpt?.trim()
   // 网页给模型稍多正文，但控制体积
-  const excerptForPrompt = excerpt
-    ? excerpt.slice(0, isUrl ? 3500 : 4000)
-    : ""
+  const excerptForPrompt = excerpt ? excerpt.slice(0, isUrl ? 3500 : 4000) : ""
   const user = [
     `来源类型：${opts.input.sourceType}`,
     `标题：${opts.input.title}`,
@@ -378,9 +376,7 @@ ${catalogJson}
     opts.input.siteName ? `站点：${opts.input.siteName}` : "",
     `描述：${opts.input.description ?? "无"}`,
     opts.input.language ? `语言：${opts.input.language}` : "",
-    opts.input.topics?.length
-      ? `Topics：${opts.input.topics.join(", ")}`
-      : "",
+    opts.input.topics?.length ? `Topics：${opts.input.topics.join(", ")}` : "",
     excerptForPrompt ? `正文摘录：\n${excerptForPrompt}` : "",
   ]
     .filter(Boolean)
@@ -409,14 +405,11 @@ ${catalogJson}
     })
   } catch (e) {
     const latencyMs = Date.now() - started
-    throw new DeepSeekCallError(
-      e instanceof Error ? e.message : String(e),
-      {
-        model,
-        latencyMs,
-        errorCode: "NETWORK_ERROR",
-      },
-    )
+    throw new DeepSeekCallError(e instanceof Error ? e.message : String(e), {
+      model,
+      latencyMs,
+      errorCode: "NETWORK_ERROR",
+    })
   }
 
   const latencyMs = Date.now() - started
@@ -429,7 +422,7 @@ ${catalogJson}
         model,
         latencyMs,
         errorCode: `HTTP_${res.status}`,
-      },
+      }
     )
   }
 
@@ -551,7 +544,7 @@ export async function translateNameToEnglishSlug(
   apiKey: string,
   name: string,
   model?: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<TranslateSlugResult> {
   const resolvedModel = model || DEFAULT_DEEPSEEK_MODEL
   const started = Date.now()
@@ -634,7 +627,7 @@ export function fallbackAsciiSlugFromName(name: string): string {
 
 export async function testDeepSeekConnection(
   apiKey: string,
-  model?: string,
+  model?: string
 ): Promise<TestDeepSeekResult> {
   const resolvedModel = model || DEFAULT_DEEPSEEK_MODEL
   const started = Date.now()
@@ -676,6 +669,71 @@ export async function testDeepSeekConnection(
       latencyMs: Date.now() - started,
     }
   }
+}
+
+export type DeepSeekCatalogModel = { id: string; name: string }
+
+const DEEPSEEK_MODEL_NAME_MAX = 128
+
+/**
+ * 逐条收下官方模型。坏条目只丢掉自己，缺 name 时用 id。
+ * 不要把原始数组丢给设置 schema 的 catch([])，否则一条坏数据会清空整份名单。
+ */
+export function normalizeDeepSeekModelCatalog(
+  raw: unknown
+): DeepSeekCatalogModel[] {
+  if (!Array.isArray(raw)) return []
+  const seen = new Set<string>()
+  const models: DeepSeekCatalogModel[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue
+    const record = item as { id?: unknown; name?: unknown }
+    const id = typeof record.id === "string" ? record.id.trim() : ""
+    if (!DEEPSEEK_MODEL_ID_RE.test(id) || seen.has(id)) continue
+    const nameRaw = typeof record.name === "string" ? record.name.trim() : ""
+    const name = (nameRaw || id).slice(0, DEEPSEEK_MODEL_NAME_MAX)
+    seen.add(id)
+    models.push({ id, name })
+    if (models.length >= DEEPSEEK_MODEL_CATALOG_LIMIT) break
+  }
+  return models
+}
+
+/** 拉取官方模型列表。失败抛错，调用方不得据此覆盖已保存名单。 */
+export async function listDeepSeekModels(
+  apiKey: string
+): Promise<DeepSeekCatalogModel[]> {
+  let res: Response
+  try {
+    res = await fetch(`${DEEPSEEK_API_BASE}/models`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+    })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "网络错误"
+    throw new Error(message, { cause: e })
+  }
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "")
+    throw new Error(`HTTP ${res.status}: ${body.slice(0, 120)}`)
+  }
+
+  let payload: unknown
+  try {
+    payload = await res.json()
+  } catch {
+    throw new Error("DeepSeek 返回非 JSON")
+  }
+
+  const rows =
+    payload && typeof payload === "object" && "data" in payload
+      ? (payload as { data: unknown }).data
+      : null
+  return normalizeDeepSeekModelCatalog(rows)
 }
 
 export type DeepSeekToolCall = {
@@ -773,7 +831,7 @@ export async function* streamDeepSeekChat(opts: {
         model,
         latencyMs: Date.now() - started,
         errorCode: res.ok ? "EMPTY_BODY" : `HTTP_${res.status}`,
-      },
+      }
     )
   }
 
@@ -812,7 +870,8 @@ export async function* streamDeepSeekChat(opts: {
 
         const delta = parsed.choices?.[0]?.delta
         if (delta?.content) yield { type: "delta", text: delta.content }
-        if (delta?.tool_calls) accumulateToolCalls(pendingCalls, delta.tool_calls)
+        if (delta?.tool_calls)
+          accumulateToolCalls(pendingCalls, delta.tool_calls)
         if (parsed.usage) {
           yield { type: "usage", usage: parseDeepSeekUsage(parsed.usage) }
         }
@@ -879,7 +938,7 @@ export async function callDeepSeekJson(opts: {
         model,
         latencyMs: Date.now() - started,
         errorCode: `HTTP_${res.status}`,
-      },
+      }
     )
   }
 
@@ -927,7 +986,8 @@ function accumulateToolCalls(
       function: {
         name: delta.function?.name ?? current.function.name,
         // arguments 是逐字符拼出来的 JSON 串，必须累加
-        arguments: current.function.arguments + (delta.function?.arguments ?? ""),
+        arguments:
+          current.function.arguments + (delta.function?.arguments ?? ""),
       },
     })
   }
@@ -943,7 +1003,7 @@ export type CategoryTreeNode = {
 /** @deprecated */
 export function findCategoryInTree(
   _tree: CategoryTreeNode[],
-  _name: string,
+  _name: string
 ): { name: string; parentName: string | null } | null {
   return null
 }

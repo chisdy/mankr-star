@@ -41,14 +41,16 @@ describe("registerSchema", () => {
 
   it("email 非法时失败", () => {
     expect(
-      registerSchema.safeParse({ email: "not-an-email", password: "password123" })
-        .success,
+      registerSchema.safeParse({
+        email: "not-an-email",
+        password: "password123",
+      }).success
     ).toBe(false)
   })
 
   it(`密码短于 ${PASSWORD_MIN_LENGTH} 位时失败`, () => {
     expect(
-      registerSchema.safeParse({ email: "a@b.com", password: "short" }).success,
+      registerSchema.safeParse({ email: "a@b.com", password: "short" }).success
     ).toBe(false)
   })
 
@@ -58,14 +60,14 @@ describe("registerSchema", () => {
         email: "a@b.com",
         password: "password123",
         username: "有中文",
-      }).success,
+      }).success
     ).toBe(false)
     expect(
       registerSchema.safeParse({
         email: "a@b.com",
         password: "password123",
         username: "owner_1-x",
-      }).success,
+      }).success
     ).toBe(true)
   })
 })
@@ -83,15 +85,17 @@ describe("loginSchema", () => {
 
   it("不接受 identifier 作为唯一凭据字段", () => {
     expect(
-      loginSchema.safeParse({ identifier: "owner", password: "x" }).success,
+      loginSchema.safeParse({ identifier: "owner", password: "x" }).success
     ).toBe(false)
   })
 
   it("username 或 password 为空时失败", () => {
-    expect(loginSchema.safeParse({ username: "", password: "x" }).success).toBe(false)
-    expect(loginSchema.safeParse({ username: "owner", password: "" }).success).toBe(
-      false,
+    expect(loginSchema.safeParse({ username: "", password: "x" }).success).toBe(
+      false
     )
+    expect(
+      loginSchema.safeParse({ username: "owner", password: "" }).success
+    ).toBe(false)
   })
 })
 
@@ -104,16 +108,17 @@ describe("createBookmarkSchema", () => {
 
   it("folderId 必须是 uuid（允许 null）", () => {
     expect(
-      createBookmarkSchema.safeParse({ url: "o/r", folderId: "not-uuid" }).success,
+      createBookmarkSchema.safeParse({ url: "o/r", folderId: "not-uuid" })
+        .success
     ).toBe(false)
     expect(
-      createBookmarkSchema.safeParse({ url: "o/r", folderId: null }).success,
+      createBookmarkSchema.safeParse({ url: "o/r", folderId: null }).success
     ).toBe(true)
     expect(
       createBookmarkSchema.safeParse({
         url: "o/r",
         folderId: crypto.randomUUID(),
-      }).success,
+      }).success
     ).toBe(true)
   })
 })
@@ -148,7 +153,7 @@ describe("updateTagSchema", () => {
     expect(updateTagSchema.safeParse({ name: "" }).success).toBe(false)
     expect(updateTagSchema.safeParse({ name: "   " }).success).toBe(false)
     expect(updateTagSchema.safeParse({ name: "x".repeat(65) }).success).toBe(
-      false,
+      false
     )
   })
 })
@@ -184,7 +189,9 @@ describe("listBookmarksQuerySchema", () => {
   })
 
   it("pageSize 上限 100", () => {
-    expect(listBookmarksQuerySchema.safeParse({ pageSize: "101" }).success).toBe(false)
+    expect(
+      listBookmarksQuerySchema.safeParse({ pageSize: "101" }).success
+    ).toBe(false)
   })
 
   it("接受 healthStatus", () => {
@@ -211,7 +218,7 @@ describe("listBookmarksQuerySchema", () => {
     if (res.success) expect(res.data.aiStatus).toBe("failed")
 
     expect(
-      listBookmarksQuerySchema.safeParse({ aiStatus: "unknown" }).success,
+      listBookmarksQuerySchema.safeParse({ aiStatus: "unknown" }).success
     ).toBe(false)
   })
 })
@@ -220,22 +227,22 @@ describe("createFolderSchema", () => {
   it("接受英文 kebab slug，拒绝中文 slug", () => {
     expect(
       createFolderSchema.safeParse({ name: "UI 组件", slug: "ui-components" })
-        .success,
+        .success
     ).toBe(true)
     expect(
-      createFolderSchema.safeParse({ name: "UI 组件", slug: "ui-组件" }).success,
+      createFolderSchema.safeParse({ name: "UI 组件", slug: "ui-组件" }).success
     ).toBe(false)
   })
 
   it("拒绝大写字母 slug 与非法颜色", () => {
     expect(
-      createFolderSchema.safeParse({ name: "x", slug: "UI-Components" }).success,
+      createFolderSchema.safeParse({ name: "x", slug: "UI-Components" }).success
     ).toBe(false)
-    expect(createFolderSchema.safeParse({ name: "x", color: "blue" }).success).toBe(
-      false,
-    )
     expect(
-      createFolderSchema.safeParse({ name: "x", color: "#3b82f6" }).success,
+      createFolderSchema.safeParse({ name: "x", color: "blue" }).success
+    ).toBe(false)
+    expect(
+      createFolderSchema.safeParse({ name: "x", color: "#3b82f6" }).success
     ).toBe(true)
   })
 })
@@ -244,59 +251,72 @@ describe("deleteFolderSchema", () => {
   it("默认 detach，move 时要求目标", () => {
     expect(deleteFolderSchema.safeParse({}).success).toBe(true)
     expect(
-      deleteFolderSchema.safeParse({ bookmarkAction: "delete" }).success,
+      deleteFolderSchema.safeParse({ bookmarkAction: "delete" }).success
     ).toBe(true)
     expect(
-      deleteFolderSchema.safeParse({ bookmarkAction: "move" }).success,
+      deleteFolderSchema.safeParse({ bookmarkAction: "move" }).success
     ).toBe(false)
     expect(
       deleteFolderSchema.safeParse({
         bookmarkAction: "move",
         moveToFolderId: "00000000-0000-4000-8000-000000000001",
-      }).success,
+      }).success
     ).toBe(true)
   })
 })
 
 describe("deepseekSettingsSchema", () => {
-  it("只接受受支持的模型", () => {
+  it("模型 id 只校验格式，成员资格由路由判断", () => {
     expect(
-      deepseekSettingsSchema.safeParse({ model: DEFAULT_DEEPSEEK_MODEL }).success,
+      deepseekSettingsSchema.safeParse({ model: DEFAULT_DEEPSEEK_MODEL })
+        .success
     ).toBe(true)
-    expect(deepseekSettingsSchema.safeParse({ model: "gpt-4o" }).success).toBe(false)
+    expect(deepseekSettingsSchema.safeParse({ model: "gpt-4o" }).success).toBe(
+      true
+    )
+    expect(deepseekSettingsSchema.safeParse({ model: "" }).success).toBe(false)
+    expect(
+      deepseekSettingsSchema.safeParse({ model: "a".repeat(65) }).success
+    ).toBe(false)
   })
 
   it("支持 apiKey 与 clearKey", () => {
-    expect(deepseekSettingsSchema.safeParse({ apiKey: "sk-test" }).success).toBe(true)
-    expect(deepseekSettingsSchema.safeParse({ clearKey: true }).success).toBe(true)
+    expect(
+      deepseekSettingsSchema.safeParse({ apiKey: "sk-test" }).success
+    ).toBe(true)
+    expect(deepseekSettingsSchema.safeParse({ clearKey: true }).success).toBe(
+      true
+    )
   })
 })
 
 describe("anysearchSettingsSchema", () => {
   it("支持 apiKey 与 clearKey", () => {
-    expect(anysearchSettingsSchema.safeParse({ apiKey: "as-test" }).success).toBe(
-      true,
-    )
+    expect(
+      anysearchSettingsSchema.safeParse({ apiKey: "as-test" }).success
+    ).toBe(true)
     expect(anysearchSettingsSchema.safeParse({ clearKey: true }).success).toBe(
-      true,
+      true
     )
   })
 
   it("拒绝空 apiKey", () => {
-    expect(anysearchSettingsSchema.safeParse({ apiKey: "" }).success).toBe(false)
+    expect(anysearchSettingsSchema.safeParse({ apiKey: "" }).success).toBe(
+      false
+    )
   })
 })
 
 describe("cloudflareSettingsSchema", () => {
   it("支持 accountId、apiToken、clearToken", () => {
     expect(
-      cloudflareSettingsSchema.safeParse({ accountId: "abc123" }).success,
+      cloudflareSettingsSchema.safeParse({ accountId: "abc123" }).success
     ).toBe(true)
     expect(
-      cloudflareSettingsSchema.safeParse({ apiToken: "cf-token" }).success,
+      cloudflareSettingsSchema.safeParse({ apiToken: "cf-token" }).success
     ).toBe(true)
     expect(
-      cloudflareSettingsSchema.safeParse({ clearToken: true }).success,
+      cloudflareSettingsSchema.safeParse({ clearToken: true }).success
     ).toBe(true)
   })
 
@@ -319,11 +339,11 @@ describe("kbChatRequestSchema", () => {
     expect(
       kbChatRequestSchema.safeParse({
         messages: [{ role: "system", content: "hi" }],
-      }).success,
+      }).success
     ).toBe(false)
   })
 
-  it("model 只接受 KB_CHAT_MODELS 内的取值，缺省为 undefined", () => {
+  it("model 只校验 id 格式，缺省为 undefined", () => {
     const messages = [{ role: "user" as const, content: "有哪些收藏？" }]
 
     const omitted = kbChatRequestSchema.safeParse({ messages })
@@ -331,14 +351,20 @@ describe("kbChatRequestSchema", () => {
 
     for (const model of KB_CHAT_MODEL_IDS) {
       expect(kbChatRequestSchema.safeParse({ messages, model }).success).toBe(
-        true,
+        true
       )
     }
 
     expect(
-      kbChatRequestSchema.safeParse({ messages, model: "deepseek-v3-retired" })
-        .success,
+      kbChatRequestSchema.safeParse({ messages, model: "deepseek-flash" })
+        .success
+    ).toBe(true)
+    expect(
+      kbChatRequestSchema.safeParse({ messages, model: "bad id" }).success
     ).toBe(false)
+    expect(kbChatRequestSchema.safeParse({ messages, model: "" }).success).toBe(
+      false
+    )
   })
 
   it("conversationId 可选且必须是 uuid，缺省时按无摘要处理", () => {
@@ -351,12 +377,12 @@ describe("kbChatRequestSchema", () => {
       kbChatRequestSchema.safeParse({
         messages,
         conversationId: crypto.randomUUID(),
-      }).success,
+      }).success
     ).toBe(true)
 
     // 前端的会话 id 一律 crypto.randomUUID()，非 uuid 说明链路串了
     expect(
-      kbChatRequestSchema.safeParse({ messages, conversationId: "abc" }).success,
+      kbChatRequestSchema.safeParse({ messages, conversationId: "abc" }).success
     ).toBe(false)
   })
 
@@ -379,7 +405,7 @@ describe("kbChatRequestSchema", () => {
       kbChatRequestSchema.safeParse({
         messages,
         context: { folderId: "not-a-uuid" },
-      }).success,
+      }).success
     ).toBe(false)
   })
 })
@@ -406,14 +432,14 @@ describe("aiOutputSchema", () => {
         folder_id: null,
         new_folder: { name: "边缘网关", parent_id: null },
         tags: ["gateway"],
-      }).success,
+      }).success
     ).toBe(true)
     expect(
       aiOutputSchema.safeParse({
         summary: "兼容",
         folder_path: ["工具与 CLI"],
         tags: ["cli"],
-      }).success,
+      }).success
     ).toBe(true)
   })
 
@@ -423,11 +449,11 @@ describe("aiOutputSchema", () => {
         summary: "字".repeat(200),
         folder_id: null,
         tags: ["a"],
-      }).success,
+      }).success
     ).toBe(false)
     expect(
       aiOutputSchema.safeParse({ summary: "x", folder_id: null, tags: [] })
-        .success,
+        .success
     ).toBe(false)
   })
 
@@ -438,7 +464,7 @@ describe("aiOutputSchema", () => {
         folder_id: null,
         tags: ["a"],
         confidence: 1.5,
-      }).success,
+      }).success
     ).toBe(false)
   })
 
@@ -459,10 +485,10 @@ describe("createFolderSchema parentId", () => {
   it("接受 uuid parentId 或 null", () => {
     const id = crypto.randomUUID()
     expect(
-      createFolderSchema.safeParse({ name: "子文件夹", parentId: id }).success,
+      createFolderSchema.safeParse({ name: "子文件夹", parentId: id }).success
     ).toBe(true)
     expect(
-      createFolderSchema.safeParse({ name: "一级", parentId: null }).success,
+      createFolderSchema.safeParse({ name: "一级", parentId: null }).success
     ).toBe(true)
   })
 })
@@ -478,15 +504,15 @@ describe("updateAnalyticsSettingsSchema", () => {
 
   it("空串与 null 清空为 null", () => {
     expect(
-      updateAnalyticsSettingsSchema.safeParse({ measurement_id: "" }).success,
+      updateAnalyticsSettingsSchema.safeParse({ measurement_id: "" }).success
     ).toBe(true)
     expect(
       updateAnalyticsSettingsSchema.safeParse({ measurement_id: "  " }).data
-        ?.measurement_id,
+        ?.measurement_id
     ).toBeNull()
     expect(
       updateAnalyticsSettingsSchema.safeParse({ measurement_id: null }).data
-        ?.measurement_id,
+        ?.measurement_id
     ).toBeNull()
   })
 
@@ -494,12 +520,12 @@ describe("updateAnalyticsSettingsSchema", () => {
     expect(
       updateAnalyticsSettingsSchema.safeParse({
         measurement_id: "UA-123456-1",
-      }).success,
+      }).success
     ).toBe(false)
     expect(
       updateAnalyticsSettingsSchema.safeParse({
         measurement_id: "<script>",
-      }).success,
+      }).success
     ).toBe(false)
   })
 })

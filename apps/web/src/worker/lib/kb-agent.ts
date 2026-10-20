@@ -61,6 +61,8 @@ export type KbAgentInput = {
   startedAt?: number
   /** 客户端当前所处的软上下文（如收藏页正在筛选的文件夹） */
   context?: { folderId?: string; folderName?: string }
+  /** 当前文件夹子树或整库范围。缺省时不往 prompt 里加这条消息 */
+  folderSnapshot?: string
 }
 
 /** 一轮对话的聚合结果，供路由写唯一一条 kb_chat 用量日志 */
@@ -84,7 +86,11 @@ export type KbPrefetch = {
 }
 
 /** 结构类提问：检索无命中也答得出来，因为分类目录本身就是答案 */
-const STRUCTURE_HINTS = /分类|归类|文件夹|目录|标签|整理|结构|folder|categor|tag/i
+const STRUCTURE_HINTS =
+  /分类|归类|文件夹|目录|标签|整理|结构|重复|合并|改名|拆分|规整|合理|归属|重名|folder|categor|tag/i
+
+/** 这些提问直接进工具循环，不再为 isComplex 多付一次判定 */
+const ORGANIZE_HINTS = /整理|归类|重复|合并|改名|拆分|规整|合理|归属|重名/
 
 /**
  * 首轮检索。放在 agent 外面是因为路由要先看命中情况：
@@ -117,7 +123,9 @@ export async function prefetchKbContext(input: {
           warnings.push("ANYSEARCH_FAILED")
           return [] as Array<{ title: string; url: string; snippet: string }>
         })
-      : Promise.resolve([] as Array<{ title: string; url: string; snippet: string }>),
+      : Promise.resolve(
+          [] as Array<{ title: string; url: string; snippet: string }>
+        ),
   ])
 
   const folderDigest = formatFolderDigest(digest)
@@ -146,7 +154,7 @@ export function createKbAgentContext(prefetch: KbPrefetch): KbAgentContext {
   const { bookmarkContext, webContext } = registerFastPathSources(
     registry,
     prefetch.hits,
-    prefetch.web,
+    prefetch.web
   )
   return { registry, sources: registry.sources, bookmarkContext, webContext }
 }
@@ -161,7 +169,7 @@ export function createKbAgentContext(prefetch: KbPrefetch): KbAgentContext {
 export async function* runKbAgent(
   input: KbAgentInput,
   prefetch: KbPrefetch,
-  context: KbAgentContext,
+  context: KbAgentContext
 ): AsyncGenerator<KbChatStreamEvent, KbAgentResult> {
   const startedAt = input.startedAt ?? Date.now()
   const deadline = startedAt + KB_AGENT_TIME_BUDGET_MS
@@ -173,24 +181,24 @@ export async function* runKbAgent(
 
   yield* prefetchActivity(prefetch, Boolean(input.anysearchKey))
 
+  const organize = ORGANIZE_HINTS.test(input.query)
   const complex =
     input.supportsTools &&
     !exhausted() &&
-    mayNeedTools(input.query) &&
-    (await isComplex(input, usage))
+    (organize || (mayNeedTools(input.query) && (await isComplex(input, usage))))
 
   if (!complex) {
     return yield* generate({
       input,
       usage,
-      messages: buildMessages({
-        messages: input.messages,
-        contextSummary: input.contextSummary ?? "",
-        folderDigest: prefetch.folderDigest,
-        bookmarkContext: context.bookmarkContext,
-        webContext: context.webContext,
-        folderContext: input.context?.folderName,
-      }),
+      messages: buildMessages(
+        promptLayout(
+          input,
+          prefetch,
+          context.bookmarkContext,
+          context.webContext
+        )
+      ),
     })
   }
 
@@ -200,7 +208,7 @@ export async function* runKbAgent(
 /** 首轮检索已经发生，如实补两条 activity，让面板有可解释的过程 */
 function* prefetchActivity(
   prefetch: KbPrefetch,
-  webEnabled: boolean,
+  webEnabled: boolean
 ): Generator<KbChatStreamEvent> {
   yield {
     type: "activity",
@@ -247,7 +255,7 @@ function mayNeedTools(query: string): boolean {
  */
 async function isComplex(
   input: KbAgentInput,
-  usage: LlmTokenUsage,
+  usage: LlmTokenUsage
 ): Promise<boolean> {
   try {
     const { content, usage: routeUsage } = await callDeepSeekJson({
@@ -283,7 +291,7 @@ async function* runLoop(
   prefetch: KbPrefetch,
   context: KbAgentContext,
   usage: LlmTokenUsage,
-  exhausted: () => boolean,
+  exhausted: () => boolean
 ): AsyncGenerator<KbChatStreamEvent, KbAgentResult> {
   const toolkit = createKbToolkit({
     db: input.db,
@@ -295,14 +303,9 @@ async function* runLoop(
   const plan = await makePlan(input, usage)
   if (plan.length > 0) yield { type: "plan", items: plan }
 
-  const conversation: DeepSeekChatMessage[] = buildLoopMessages({
-    messages: input.messages,
-    contextSummary: input.contextSummary ?? "",
-    folderDigest: prefetch.folderDigest,
-    bookmarkContext: context.bookmarkContext,
-    webContext: context.webContext,
-    folderContext: input.context?.folderName,
-  })
+  const conversation: DeepSeekChatMessage[] = buildLoopMessages(
+    promptLayout(input, prefetch, context.bookmarkContext, context.webContext)
+  )
 
   const gathered: string[] = []
   let planCursor = 0
@@ -356,7 +359,7 @@ async function* runLoop(
 
       const result = await toolkit.execute(
         call.function.name,
-        call.function.arguments,
+        call.function.arguments
       )
       failures = result.failed ? failures + 1 : 0
       const content = truncate(result.content, KB_AGENT_TOOL_RESULT_MAX_CHARS)
@@ -373,6 +376,9 @@ async function* runLoop(
 
       if (result.sources.length > 0) {
         yield { type: "sources_append", sources: result.sources }
+      }
+      if (result.organize && result.organize.ops.length > 0) {
+        yield { type: "organize_proposal", proposal: result.organize }
       }
       yield {
         type: "activity",
@@ -392,16 +398,14 @@ async function* runLoop(
   const result = yield* generate({
     input,
     usage,
-    messages: buildMessages({
-      messages: input.messages,
-      contextSummary: input.contextSummary ?? "",
-      folderDigest: prefetch.folderDigest,
-      bookmarkContext: [context.bookmarkContext, ...gathered]
-        .filter(Boolean)
-        .join("\n\n"),
-      webContext: context.webContext,
-      folderContext: input.context?.folderName,
-    }),
+    messages: buildMessages(
+      promptLayout(
+        input,
+        prefetch,
+        [context.bookmarkContext, ...gathered].filter(Boolean).join("\n\n"),
+        context.webContext
+      )
+    ),
   })
   yield* settlePlan(plan, planCursor)
   return result
@@ -410,7 +414,7 @@ async function* runLoop(
 /** 收尾时把没走到的计划项标完成，避免 TodoList 永久转圈 */
 function* settlePlan(
   plan: KbChatPlanItem[],
-  from: number,
+  from: number
 ): Generator<KbChatStreamEvent> {
   for (const item of plan.slice(from)) {
     yield { type: "plan_update", id: item.id, status: "completed" }
@@ -420,7 +424,7 @@ function* settlePlan(
 /** 让模型先给 3-5 条待办；失败时返回空计划，循环照常跑 */
 async function makePlan(
   input: KbAgentInput,
-  usage: LlmTokenUsage,
+  usage: LlmTokenUsage
 ): Promise<KbChatPlanItem[]> {
   try {
     const { content, usage: planUsage } = await callDeepSeekJson({
@@ -496,10 +500,27 @@ async function* generate(opts: {
  * 工具名直接当 label 兜底，措辞由前端按 stage 本地化。
  * active 与 complete 共用 id，前端按 id 原地更新同一行而不是追加两条。
  */
+function promptLayout(
+  input: KbAgentInput,
+  prefetch: KbPrefetch,
+  bookmarkContext: string,
+  webContext: string
+) {
+  return {
+    messages: input.messages,
+    contextSummary: input.contextSummary ?? "",
+    folderDigest: prefetch.folderDigest,
+    bookmarkContext,
+    webContext,
+    folderContext: input.context?.folderName,
+    folderSnapshot: input.folderSnapshot,
+  }
+}
+
 function toolActivity(
   call: DeepSeekToolCall,
   status: "active" | "complete",
-  count?: number,
+  count?: number
 ): KbChatActivityItem {
   const name = call.function.name
   return {
@@ -510,12 +531,15 @@ function toolActivity(
     stage:
       name === "search_web"
         ? "search_web"
-        : name === "search_bookmarks" ||
-            name === "get_bookmark_detail" ||
-            name === "list_folder_bookmarks"
-          ? "search_bookmarks"
-          : undefined,
+        : name === "propose_organize"
+          ? "organize"
+          : name === "search_bookmarks" ||
+              name === "get_bookmark_detail" ||
+              name === "list_folder_bookmarks" ||
+              name === "inspect_library" ||
+              name === "list_bookmark_index"
+            ? "search_bookmarks"
+            : undefined,
     ...(count === undefined ? {} : { count }),
   }
 }
-

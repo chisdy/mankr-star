@@ -15,6 +15,9 @@ export function KbChatProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   const chat = useKbChat({
     anysearchConfigured: Boolean(user?.anysearch_configured),
+    syncedModels: user?.deepseek_models,
+    savedModel: user?.deepseek_model,
+    modelCatalogReady: user != null,
   })
 
   return <KbChatContext value={chat}>{children}</KbChatContext>

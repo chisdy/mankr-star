@@ -5,6 +5,7 @@ import {
   KB_CHAT_MODELS,
   KB_CHAT_MODEL_IDS,
   findKbChatModel,
+  isAllowedKbChatModel,
 } from "../src/constants"
 
 describe("findKbChatModel", () => {
@@ -12,6 +13,18 @@ describe("findKbChatModel", () => {
     const entry = findKbChatModel(DEFAULT_DEEPSEEK_MODEL)
     expect(entry?.provider).toBe("deepseek")
     expect(entry?.tools).toBe(true)
+  })
+
+  it("内置模型、已同步目录和当前保存的模型可以通过，其余 id 不行", () => {
+    expect(isAllowedKbChatModel("deepseek-v4-flash", [], null)).toBe(true)
+    expect(
+      isAllowedKbChatModel("deepseek-flash", ["deepseek-flash"], null)
+    ).toBe(true)
+    expect(isAllowedKbChatModel("deepseek-flash", [], "deepseek-flash")).toBe(
+      true
+    )
+    expect(isAllowedKbChatModel("deepseek-v3-retired", [], null)).toBe(false)
+    expect(isAllowedKbChatModel("bad id", ["bad id"], null)).toBe(false)
   })
 
   it("空值与下线模型都查不到，调用方可据此回落默认模型", () => {

@@ -24,6 +24,7 @@ export function serializeUser(user: UserRow, s: SettingsValueMap) {
     deepseek_configured: Boolean(s.ai.deepseekApiKeyEncrypted),
     deepseek_last4: s.ai.deepseekKeyLast4,
     deepseek_model: s.ai.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
+    deepseek_models: s.ai.deepseekModels,
     embedding_configured: isEmbeddingConfigured(s.ai),
     embedding_base_url: s.ai.embeddingBaseUrl.trim() || null,
     embedding_model: s.ai.embeddingModel || null,

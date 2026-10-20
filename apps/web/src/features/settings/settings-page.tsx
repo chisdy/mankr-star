@@ -6,6 +6,7 @@ import {
   SignOutIcon,
   DownloadSimpleIcon,
   PlugsConnectedIcon,
+  ArrowsClockwiseIcon,
   LockKeyIcon,
   SunIcon,
   MoonIcon,
@@ -26,13 +27,14 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select"
 import { api } from "@/lib/api"
-import type { TrackingSettings } from "@/lib/types"
+import type { TrackingSettings, User } from "@/lib/types"
 import { formatApiError } from "@/lib/api-error"
 import { queryKeys } from "@/lib/query-keys"
 import { useTheme } from "@/components/theme-provider"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { SectionNav, type SectionNavItem } from "@/components/section-nav"
 import { BookmarkListSection } from "./bookmark-list-section"
+import { buildDeepseekModelOptions } from "./deepseek-model-options"
 import { ApiTokensSection } from "./api-tokens-section"
 import { ClearDataSection } from "./clear-data-section"
 import { CloudflareSettingsSection } from "./cloudflare-settings-section"
@@ -91,6 +93,9 @@ export function SettingsPage() {
     if (user?.deepseek_model) {
       setDeepseekModel(user.deepseek_model)
     }
+  }, [user?.deepseek_model])
+
+  React.useEffect(() => {
     if (user?.hot_within_days != null) {
       setHotWithinDays(String(user.hot_within_days))
     }
@@ -152,6 +157,45 @@ export function SettingsPage() {
       toast.error(formatApiError(err, t))
     },
   })
+
+  const syncDeepSeekModelsMutation = useMutation({
+    mutationFn: () => api.syncDeepSeekModels(),
+    onSuccess: (result) => {
+      if (!result.ok) {
+        toast.error(result.message)
+        return
+      }
+      queryClient.setQueryData<User>(queryKeys.auth.me, (current) =>
+        current ? { ...current, deepseek_models: result.models } : current
+      )
+      toast.success(
+        t("toasts.deepseekModelsSynced", { count: result.models.length })
+      )
+    },
+    onError: (err: Error) => {
+      toast.error(formatApiError(err, t))
+    },
+  })
+
+  const deepseekModelOptions = React.useMemo(
+    () =>
+      buildDeepseekModelOptions({
+        synced: user?.deepseek_models ?? [],
+        savedModel: user?.deepseek_model,
+        draftModel: deepseekModel,
+        builtin: [
+          {
+            value: "deepseek-v4-flash",
+            label: t("deepseek.modelFlash"),
+          },
+          {
+            value: "deepseek-v4-pro",
+            label: t("deepseek.modelPro"),
+          },
+        ],
+      }),
+    [user?.deepseek_models, user?.deepseek_model, deepseekModel, t]
+  )
 
   const updateAnySearchMutation = useMutation({
     mutationFn: () =>
@@ -234,7 +278,7 @@ export function SettingsPage() {
       api.updateTrackingSettings(patch),
     onSuccess: (res) => {
       queryClient.setQueryData(queryKeys.auth.me, (prev: typeof user) =>
-        prev ? { ...prev, ...res } : prev,
+        prev ? { ...prev, ...res } : prev
       )
       void queryClient.invalidateQueries({ queryKey: queryKeys.auth.me })
       toast.success(t("toasts.trackingSaved"))
@@ -248,14 +292,14 @@ export function SettingsPage() {
       queryClient.setQueryData(queryKeys.auth.me, (prev: typeof user) =>
         prev
           ? { ...prev, public_browsing_enabled: res.public_browsing_enabled }
-          : prev,
+          : prev
       )
       void queryClient.invalidateQueries({ queryKey: queryKeys.auth.me })
       void queryClient.invalidateQueries({ queryKey: queryKeys.auth.status })
       toast.success(
         res.public_browsing_enabled
           ? t("toasts.publicBrowsingEnabled")
-          : t("toasts.publicBrowsingDisabled"),
+          : t("toasts.publicBrowsingDisabled")
       )
     },
     onError: (err: Error) => {
@@ -319,10 +363,12 @@ export function SettingsPage() {
     },
   })
 
-  const navItems: SectionNavItem[] = SECTION_NAV_KEYS.map(({ id, labelKey }) => ({
-    id,
-    label: t(labelKey),
-  }))
+  const navItems: SectionNavItem[] = SECTION_NAV_KEYS.map(
+    ({ id, labelKey }) => ({
+      id,
+      label: t(labelKey),
+    })
+  )
 
   return (
     <div className="pb-16 text-foreground">
@@ -335,681 +381,736 @@ export function SettingsPage() {
 
       <SectionNav items={navItems} ariaLabel={t("nav.ariaLabel")}>
         <div className="space-y-8">
-      {/* Section 1: Account */}
-      <section id="account" className="scroll-mt-16 space-y-4 lg:scroll-mt-6">
-        <h2 className="text-sm font-semibold tracking-tight text-foreground">
-          {t("account.section")}
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card p-4 rounded-xl border border-border/60 text-xs">
-          <div>
-            <span className="text-muted-foreground">{t("account.username")}</span>{" "}
-            <span className="font-medium text-foreground">{user?.username || "demo_user"}</span>
-          </div>
-          <div>
-            <span className="text-muted-foreground">{t("account.email")}</span>{" "}
-            <span className="font-medium text-foreground">{user?.email || t("account.noEmail")}</span>
-          </div>
-        </div>
-
-        {/* Change Password */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (!currentPassword) {
-              toast.error(t("password.currentRequired"))
-              return
-            }
-            if (!newPassword || newPassword.length < 8) {
-              toast.error(t("password.newMin"))
-              return
-            }
-            changePasswordMutation.mutate()
-          }}
-          className="space-y-3 bg-card p-4 rounded-xl border border-border/60"
-        >
-          <div className="text-xs font-medium flex items-center gap-1.5">
-            <LockKeyIcon className="size-4 text-muted-foreground" />
-            <span>{t("password.title")}</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="currPass" className="text-[11px] font-normal text-muted-foreground">
-                {t("password.currentLabel")}
-              </Label>
-              <Input
-                id="currPass"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder={t("password.currentPlaceholder")}
-                className="h-8 text-xs"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="newPass" className="text-[11px] font-normal text-muted-foreground">
-                {t("password.newLabel")}
-              </Label>
-              <Input
-                id="newPass"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder={t("password.newPlaceholder")}
-                className="h-8 text-xs"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center pt-1">
-            <Button
-              type="submit"
-              size="sm"
-              variant="outline"
-              disabled={!newPassword || changePasswordMutation.isPending}
-              className="text-xs h-8"
-            >
-              {changePasswordMutation.isPending
-                ? t("common:actions.wait")
-                : t("password.update")}
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => logoutMutation.mutate()}
-              className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
-            >
-              <SignOutIcon className="size-3.5" />
-              <span>{t("common:actions.logout")}</span>
-            </Button>
-          </div>
-        </form>
-      </section>
-
-      <section id="api-tokens" className={SECTION_CLASS}>
-        <ApiTokensSection />
-      </section>
-
-      {/* Section 2: DeepSeek AI */}
-      <section id="deepseek" className={SECTION_CLASS}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
-              <span>{t("deepseek.section")}</span>
-              {user?.deepseek_configured ? (
-                <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-500/30 bg-emerald-500/10 dark:text-emerald-400">
-                  <CheckCircleIcon className="size-3 mr-1" />
-                  {t("deepseek.configuredBadge", {
-                    last4: user.deepseek_last4 || "Key",
-                  })}
-                </Badge>
-              ) : (
-                <Badge variant="secondary" className="text-[10px]">
-                  {t("deepseek.unconfiguredBadge")}
-                </Badge>
-              )}
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {t("deepseek.description")}
-            </p>
-          </div>
-        </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            updateDeepSeekMutation.mutate()
-          }}
-          className="space-y-4 bg-card p-4 rounded-xl border border-border/60"
-        >
-          <div className="space-y-1.5">
-            <Label htmlFor="deepseekKey" className="text-xs font-medium">
-              DeepSeek API Key
-            </Label>
-            <Input
-              id="deepseekKey"
-              type="password"
-              value={deepseekKey}
-              onChange={(e) => setDeepseekKey(e.target.value)}
-              placeholder={
-                user?.deepseek_configured
-                  ? t("deepseek.savedKeyPlaceholder", {
-                      last4: user.deepseek_last4 || "",
-                    })
-                  : t("deepseek.keyPlaceholder")
-              }
-              className="h-9 text-xs md:text-sm font-mono"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="model" className="text-xs font-medium">
-              {t("deepseek.modelLabel")}
-            </Label>
-            <Select
-              items={[
-                {
-                  value: "deepseek-v4-flash",
-                  label: t("deepseek.modelFlash"),
-                },
-                {
-                  value: "deepseek-v4-pro",
-                  label: t("deepseek.modelPro"),
-                },
-              ]}
-              value={deepseekModel}
-              onValueChange={(val) =>
-                setDeepseekModel(val || "deepseek-v4-flash")
-              }
-            >
-              <SelectTrigger id="model" className="h-9 w-full text-xs sm:w-64">
-                <SelectValue placeholder={t("deepseek.modelPlaceholder")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="deepseek-v4-flash">
-                  {t("deepseek.modelFlash")}
-                </SelectItem>
-                <SelectItem value="deepseek-v4-pro">
-                  {t("deepseek.modelPro")}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 pt-2">
-            <Button
-              type="submit"
-              size="sm"
-              disabled={updateDeepSeekMutation.isPending}
-              className="text-xs font-medium"
-            >
-              {updateDeepSeekMutation.isPending
-                ? t("common:actions.wait")
-                : t("deepseek.save")}
-            </Button>
-
-            {user?.deepseek_configured && (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => testDeepSeekMutation.mutate()}
-                  disabled={testDeepSeekMutation.isPending}
-                  className="text-xs gap-1.5"
-                >
-                  <PlugsConnectedIcon className="size-3.5" />
-                  <span>{t("deepseek.test")}</span>
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (confirm(t("deepseek.clearConfirm"))) {
-                      clearDeepSeekMutation.mutate()
-                    }
-                  }}
-                  className="text-xs text-muted-foreground hover:text-destructive"
-                >
-                  {t("deepseek.clear")}
-                </Button>
-              </>
-            )}
-          </div>
-        </form>
-
-        <EmbeddingSettingsSection />
-      </section>
-
-      {/* Section 3: AnySearch 联网搜索 */}
-      <section id="anysearch" className={SECTION_CLASS}>
-        <div>
-          <h2 className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
-            <span>{t("anysearch.section")}</span>
-            {user?.anysearch_configured ? (
-              <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-500/30 bg-emerald-500/10 dark:text-emerald-400">
-                <CheckCircleIcon className="size-3 mr-1" />
-                {t("anysearch.configuredBadge", {
-                  last4: user.anysearch_last4 || "Key",
-                })}
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="text-[10px]">
-                {t("anysearch.unconfiguredBadge")}
-              </Badge>
-            )}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {t("anysearch.description")}
-          </p>
-        </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (!anysearchKey.trim()) {
-              toast.error(t("anysearch.keyRequired"))
-              return
-            }
-            updateAnySearchMutation.mutate()
-          }}
-          className="space-y-4 bg-card p-4 rounded-xl border border-border/60"
-        >
-          <div className="space-y-1.5">
-            <Label htmlFor="anysearchKey" className="text-xs font-medium">
-              AnySearch API Key
-            </Label>
-            <Input
-              id="anysearchKey"
-              type="password"
-              value={anysearchKey}
-              onChange={(e) => setAnysearchKey(e.target.value)}
-              placeholder={
-                user?.anysearch_configured
-                  ? t("anysearch.savedKeyPlaceholder", {
-                      last4: user.anysearch_last4 || "",
-                    })
-                  : t("anysearch.keyPlaceholder")
-              }
-              className="h-9 text-xs md:text-sm font-mono"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              {t("anysearch.hint")}{" "}
-              <a
-                href="https://www.anysearch.com/console/api-keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-2 hover:text-foreground"
-              >
-                {t("anysearch.consoleLink")}
-              </a>
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 pt-2">
-            <Button
-              type="submit"
-              size="sm"
-              disabled={updateAnySearchMutation.isPending}
-              className="text-xs font-medium"
-            >
-              {updateAnySearchMutation.isPending
-                ? t("common:actions.wait")
-                : t("anysearch.save")}
-            </Button>
-
-            {user?.anysearch_configured && (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => testAnySearchMutation.mutate()}
-                  disabled={testAnySearchMutation.isPending}
-                  className="text-xs gap-1.5"
-                >
-                  <PlugsConnectedIcon className="size-3.5" />
-                  <span>{t("anysearch.test")}</span>
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (confirm(t("anysearch.clearConfirm"))) {
-                      clearAnySearchMutation.mutate()
-                    }
-                  }}
-                  className="text-xs text-muted-foreground hover:text-destructive"
-                >
-                  {t("anysearch.clear")}
-                </Button>
-              </>
-            )}
-          </div>
-        </form>
-      </section>
-
-      <CloudflareSettingsSection />
-
-      {/* Section 5: GitHub PAT */}
-      <section id="github" className={SECTION_CLASS}>
-        <div>
-          <h2 className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
-            <span>{t("github.section")}</span>
-            {user?.github_pat_configured && (
-              <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-500/30 bg-emerald-500/10 dark:text-emerald-400">
-                {t("github.configuredBadge", {
-                  last4: user.github_pat_last4 || "",
-                })}
-              </Badge>
-            )}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {t("github.description")}
-          </p>
-        </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            updatePatMutation.mutate()
-          }}
-          className="space-y-3 bg-card p-4 rounded-xl border border-border/60"
-        >
-          <div className="space-y-1.5">
-            <Label htmlFor="pat" className="text-xs font-medium">
-              GitHub PAT
-            </Label>
-            <Input
-              id="pat"
-              type="password"
-              value={githubPat}
-              onChange={(e) => setGithubPat(e.target.value)}
-              placeholder={
-                user?.github_pat_configured
-                  ? t("github.savedPatPlaceholder", {
-                      last4: user.github_pat_last4 || "",
-                    })
-                  : t("github.patPlaceholder")
-              }
-              className="h-9 text-xs md:text-sm font-mono"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="submit"
-              size="sm"
-              disabled={!githubPat || updatePatMutation.isPending}
-              className="text-xs font-medium"
-            >
-              {updatePatMutation.isPending
-                ? t("common:actions.wait")
-                : t("github.save")}
-            </Button>
-
-            {user?.github_pat_configured && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  if (confirm(t("github.clearConfirm"))) {
-                    clearPatMutation.mutate()
-                  }
-                }}
-                disabled={clearPatMutation.isPending}
-                className="text-xs text-muted-foreground hover:text-destructive"
-              >
-                {t("github.clear")}
-              </Button>
-            )}
-          </div>
-        </form>
-      </section>
-
-      {/* Section 5: Import GitHub Stars */}
-      <GithubImportSection user={user} />
-
-      {/* Section 6: Update tracking */}
-      <section id="tracking" className={SECTION_CLASS}>
-        <div>
-          <h2 className="text-sm font-semibold tracking-tight text-foreground">
-            {t("tracking.section")}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {t("tracking.description")}
-          </p>
-        </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            updateTrackingMutation.mutate()
-          }}
-          className="space-y-3 bg-card p-4 rounded-xl border border-border/60"
-        >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="hotDays" className="text-xs font-medium">
-                {t("tracking.hotWithinDays")}
-              </Label>
-              <Input
-                id="hotDays"
-                type="number"
-                min={1}
-                max={3650}
-                value={hotWithinDays}
-                onChange={(e) => setHotWithinDays(e.target.value)}
-                className="h-9 text-xs"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="staleDays" className="text-xs font-medium">
-                {t("tracking.staleAfterDays")}
-              </Label>
-              <Input
-                id="staleDays"
-                type="number"
-                min={1}
-                max={3650}
-                value={staleAfterDays}
-                onChange={(e) => setStaleAfterDays(e.target.value)}
-                className="h-9 text-xs"
-              />
-            </div>
-          </div>
-          <Button
-            type="submit"
-            size="sm"
-            disabled={updateTrackingMutation.isPending}
-            className="text-xs font-medium"
+          {/* Section 1: Account */}
+          <section
+            id="account"
+            className="scroll-mt-16 space-y-4 lg:scroll-mt-6"
           >
-            {updateTrackingMutation.isPending
-              ? t("common:actions.wait")
-              : t("tracking.save")}
-          </Button>
-        </form>
+            <h2 className="text-sm font-semibold tracking-tight text-foreground">
+              {t("account.section")}
+            </h2>
 
-        <div className="bg-card p-4 rounded-xl border border-border/60 space-y-3">
-          <div className="space-y-0.5">
-            <div className="text-xs font-medium">{t("tracking.events")}</div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              {t("tracking.eventsDescription")}
-            </p>
-          </div>
+            <div className="grid grid-cols-1 gap-4 rounded-xl border border-border/60 bg-card p-4 text-xs md:grid-cols-2">
+              <div>
+                <span className="text-muted-foreground">
+                  {t("account.username")}
+                </span>{" "}
+                <span className="font-medium text-foreground">
+                  {user?.username || "demo_user"}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">
+                  {t("account.email")}
+                </span>{" "}
+                <span className="font-medium text-foreground">
+                  {user?.email || t("account.noEmail")}
+                </span>
+              </div>
+            </div>
 
-          {EVENT_PREFS.map(({ key, labelKey }) => (
-            <div key={key} className="flex items-center justify-between gap-4">
-              <Label
-                htmlFor={`event-${key}`}
-                className="text-[11px] font-normal text-muted-foreground"
-              >
-                {t(labelKey)}
-              </Label>
-              <Switch
-                id={`event-${key}`}
-                checked={user?.[key] ?? true}
-                disabled={updateEventPrefMutation.isPending}
-                onCheckedChange={(checked) =>
-                  updateEventPrefMutation.mutate({ [key]: checked })
+            {/* Change Password */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (!currentPassword) {
+                  toast.error(t("password.currentRequired"))
+                  return
                 }
-                aria-label={t(labelKey)}
-              />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <DiscoverySettingsSection />
-
-      {/* Section 7: Bookmark list pagination */}
-      <BookmarkListSection user={user} />
-
-      {/* Section 8: Visibility */}
-      <section id="visibility" className={SECTION_CLASS}>
-        <div>
-          <h2 className="text-sm font-semibold tracking-tight text-foreground">
-            {t("visibility.section")}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {t("visibility.description")}
-          </p>
-        </div>
-
-        <div className="bg-card p-4 rounded-xl border border-border/60 flex items-center justify-between gap-4">
-          <div className="space-y-1 min-w-0">
-            <div className="text-xs font-medium">{t("visibility.publicBrowsing")}</div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              {t("visibility.publicBrowsingDescription")}
-            </p>
-          </div>
-          <Switch
-            checked={Boolean(user?.public_browsing_enabled)}
-            disabled={updatePublicBrowsingMutation.isPending}
-            onCheckedChange={(enabled) =>
-              updatePublicBrowsingMutation.mutate(enabled)
-            }
-            aria-label={t("visibility.publicBrowsing")}
-          />
-        </div>
-      </section>
-
-      <GoogleAnalyticsSection />
-
-      {/* Section: Data Export */}
-      <section id="export" className={SECTION_CLASS}>
-        <div>
-          <h2 className="text-sm font-semibold tracking-tight text-foreground">
-            {t("export.section")}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {t("export.description")}
-          </p>
-        </div>
-
-        <div className="bg-card p-4 rounded-xl border border-border/60 space-y-3">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-0.5 min-w-0">
-              <div className="text-xs font-medium">{t("export.title")}</div>
-              <p className="text-[11px] text-muted-foreground">{t("export.detail")}</p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => exportMutation.mutate()}
-              disabled={exportMutation.isPending}
-              className="text-xs gap-1.5 shrink-0"
+                if (!newPassword || newPassword.length < 8) {
+                  toast.error(t("password.newMin"))
+                  return
+                }
+                changePasswordMutation.mutate()
+              }}
+              className="space-y-3 rounded-xl border border-border/60 bg-card p-4"
             >
-              <DownloadSimpleIcon className="size-4" />
-              <span>{t("export.button")}</span>
-            </Button>
-          </div>
+              <div className="flex items-center gap-1.5 text-xs font-medium">
+                <LockKeyIcon className="size-4 text-muted-foreground" />
+                <span>{t("password.title")}</span>
+              </div>
 
-          <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-3">
-            <div className="space-y-0.5 min-w-0">
-              <div className="text-xs font-medium">{t("export.mdTitle")}</div>
-              <p className="text-[11px] text-muted-foreground">
-                {t("export.mdDetail")}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="currPass"
+                    className="text-[11px] font-normal text-muted-foreground"
+                  >
+                    {t("password.currentLabel")}
+                  </Label>
+                  <Input
+                    id="currPass"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder={t("password.currentPlaceholder")}
+                    className="h-8 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="newPass"
+                    className="text-[11px] font-normal text-muted-foreground"
+                  >
+                    {t("password.newLabel")}
+                  </Label>
+                  <Input
+                    id="newPass"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder={t("password.newPlaceholder")}
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <Button
+                  type="submit"
+                  size="sm"
+                  variant="outline"
+                  disabled={!newPassword || changePasswordMutation.isPending}
+                  className="h-8 text-xs"
+                >
+                  {changePasswordMutation.isPending
+                    ? t("common:actions.wait")
+                    : t("password.update")}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => logoutMutation.mutate()}
+                  className="gap-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <SignOutIcon className="size-3.5" />
+                  <span>{t("common:actions.logout")}</span>
+                </Button>
+              </div>
+            </form>
+          </section>
+
+          <section id="api-tokens" className={SECTION_CLASS}>
+            <ApiTokensSection />
+          </section>
+
+          {/* Section 2: DeepSeek AI */}
+          <section id="deepseek" className={SECTION_CLASS}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground">
+                  <span>{t("deepseek.section")}</span>
+                  {user?.deepseek_configured ? (
+                    <Badge
+                      variant="outline"
+                      className="border-emerald-500/30 bg-emerald-500/10 text-[10px] text-emerald-700 dark:text-emerald-400"
+                    >
+                      <CheckCircleIcon className="mr-1 size-3" />
+                      {t("deepseek.configuredBadge", {
+                        last4: user.deepseek_last4 || "Key",
+                      })}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-[10px]">
+                      {t("deepseek.unconfiguredBadge")}
+                    </Badge>
+                  )}
+                </h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {t("deepseek.description")}
+                </p>
+              </div>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                updateDeepSeekMutation.mutate()
+              }}
+              className="space-y-4 rounded-xl border border-border/60 bg-card p-4"
+            >
+              <div className="space-y-1.5">
+                <Label htmlFor="deepseekKey" className="text-xs font-medium">
+                  DeepSeek API Key
+                </Label>
+                <Input
+                  id="deepseekKey"
+                  type="password"
+                  value={deepseekKey}
+                  onChange={(e) => setDeepseekKey(e.target.value)}
+                  placeholder={
+                    user?.deepseek_configured
+                      ? t("deepseek.savedKeyPlaceholder", {
+                          last4: user.deepseek_last4 || "",
+                        })
+                      : t("deepseek.keyPlaceholder")
+                  }
+                  className="h-9 font-mono text-xs md:text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="model" className="text-xs font-medium">
+                  {t("deepseek.modelLabel")}
+                </Label>
+                <Select
+                  items={deepseekModelOptions}
+                  value={deepseekModel}
+                  onValueChange={(val) => {
+                    if (!val) return
+                    setDeepseekModel(val)
+                  }}
+                >
+                  <SelectTrigger
+                    id="model"
+                    className="h-9 w-full text-xs sm:w-64"
+                  >
+                    <SelectValue placeholder={t("deepseek.modelPlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {deepseekModelOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={updateDeepSeekMutation.isPending}
+                  className="text-xs font-medium"
+                >
+                  {updateDeepSeekMutation.isPending
+                    ? t("common:actions.wait")
+                    : t("deepseek.save")}
+                </Button>
+
+                {user?.deepseek_configured && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testDeepSeekMutation.mutate()}
+                      disabled={testDeepSeekMutation.isPending}
+                      className="gap-1.5 text-xs"
+                    >
+                      <PlugsConnectedIcon className="size-3.5" />
+                      <span>{t("deepseek.test")}</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => syncDeepSeekModelsMutation.mutate()}
+                      disabled={syncDeepSeekModelsMutation.isPending}
+                      className="gap-1.5 text-xs"
+                    >
+                      <ArrowsClockwiseIcon
+                        className={
+                          syncDeepSeekModelsMutation.isPending
+                            ? "size-3.5 animate-spin"
+                            : "size-3.5"
+                        }
+                      />
+                      <span>
+                        {syncDeepSeekModelsMutation.isPending
+                          ? t("common:actions.wait")
+                          : t("deepseek.sync")}
+                      </span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (confirm(t("deepseek.clearConfirm"))) {
+                          clearDeepSeekMutation.mutate()
+                        }
+                      }}
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      {t("deepseek.clear")}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </form>
+
+            <EmbeddingSettingsSection />
+          </section>
+
+          {/* Section 3: AnySearch 联网搜索 */}
+          <section id="anysearch" className={SECTION_CLASS}>
+            <div>
+              <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground">
+                <span>{t("anysearch.section")}</span>
+                {user?.anysearch_configured ? (
+                  <Badge
+                    variant="outline"
+                    className="border-emerald-500/30 bg-emerald-500/10 text-[10px] text-emerald-700 dark:text-emerald-400"
+                  >
+                    <CheckCircleIcon className="mr-1 size-3" />
+                    {t("anysearch.configuredBadge", {
+                      last4: user.anysearch_last4 || "Key",
+                    })}
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {t("anysearch.unconfiguredBadge")}
+                  </Badge>
+                )}
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t("anysearch.description")}
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => exportMarkdownMutation.mutate()}
-              disabled={exportMarkdownMutation.isPending}
-              className="text-xs gap-1.5 shrink-0"
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (!anysearchKey.trim()) {
+                  toast.error(t("anysearch.keyRequired"))
+                  return
+                }
+                updateAnySearchMutation.mutate()
+              }}
+              className="space-y-4 rounded-xl border border-border/60 bg-card p-4"
             >
-              <DownloadSimpleIcon className="size-4" />
-              <span>{t("export.mdButton")}</span>
-            </Button>
-          </div>
-        </div>
-      </section>
+              <div className="space-y-1.5">
+                <Label htmlFor="anysearchKey" className="text-xs font-medium">
+                  AnySearch API Key
+                </Label>
+                <Input
+                  id="anysearchKey"
+                  type="password"
+                  value={anysearchKey}
+                  onChange={(e) => setAnysearchKey(e.target.value)}
+                  placeholder={
+                    user?.anysearch_configured
+                      ? t("anysearch.savedKeyPlaceholder", {
+                          last4: user.anysearch_last4 || "",
+                        })
+                      : t("anysearch.keyPlaceholder")
+                  }
+                  className="h-9 font-mono text-xs md:text-sm"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {t("anysearch.hint")}{" "}
+                  <a
+                    href="https://www.anysearch.com/console/api-keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2 hover:text-foreground"
+                  >
+                    {t("anysearch.consoleLink")}
+                  </a>
+                </p>
+              </div>
 
-      {/* Section 10: Danger zone */}
-      <ClearDataSection />
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={updateAnySearchMutation.isPending}
+                  className="text-xs font-medium"
+                >
+                  {updateAnySearchMutation.isPending
+                    ? t("common:actions.wait")
+                    : t("anysearch.save")}
+                </Button>
 
-      {/* Section 11: Appearance / Theme */}
-      <section id="appearance" className={SECTION_CLASS}>
-        <div>
-          <h2 className="text-sm font-semibold tracking-tight text-foreground">
-            {t("appearance.section")}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {t("appearance.description")}
-          </p>
-        </div>
+                {user?.anysearch_configured && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testAnySearchMutation.mutate()}
+                      disabled={testAnySearchMutation.isPending}
+                      className="gap-1.5 text-xs"
+                    >
+                      <PlugsConnectedIcon className="size-3.5" />
+                      <span>{t("anysearch.test")}</span>
+                    </Button>
 
-        <div
-          role="radiogroup"
-          aria-label={t("appearance.section")}
-          className="bg-card p-4 rounded-xl border border-border/60 grid grid-cols-3 gap-3"
-        >
-          <button
-            type="button"
-            role="radio"
-            aria-checked={theme === "system"}
-            onClick={() => setTheme("system")}
-            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-              theme === "system"
-                ? "border-primary bg-primary/5 text-primary"
-                : "border-border text-muted-foreground hover:bg-muted/50"
-            }`}
-          >
-            <DesktopIcon className="size-5" />
-            <span>{t("appearance.system")}</span>
-          </button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (confirm(t("anysearch.clearConfirm"))) {
+                          clearAnySearchMutation.mutate()
+                        }
+                      }}
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      {t("anysearch.clear")}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </form>
+          </section>
 
-          <button
-            type="button"
-            role="radio"
-            aria-checked={theme === "light"}
-            onClick={() => setTheme("light")}
-            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-              theme === "light"
-                ? "border-primary bg-primary/5 text-primary"
-                : "border-border text-muted-foreground hover:bg-muted/50"
-            }`}
-          >
-            <SunIcon className="size-5" />
-            <span>{t("appearance.light")}</span>
-          </button>
+          <CloudflareSettingsSection />
 
-          <button
-            type="button"
-            role="radio"
-            aria-checked={theme === "dark"}
-            onClick={() => setTheme("dark")}
-            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-              theme === "dark"
-                ? "border-primary bg-primary/5 text-primary"
-                : "border-border text-muted-foreground hover:bg-muted/50"
-            }`}
-          >
-            <MoonIcon className="size-5" />
-            <span>{t("appearance.dark")}</span>
-          </button>
-        </div>
+          {/* Section 5: GitHub PAT */}
+          <section id="github" className={SECTION_CLASS}>
+            <div>
+              <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground">
+                <span>{t("github.section")}</span>
+                {user?.github_pat_configured && (
+                  <Badge
+                    variant="outline"
+                    className="border-emerald-500/30 bg-emerald-500/10 text-[10px] text-emerald-700 dark:text-emerald-400"
+                  >
+                    {t("github.configuredBadge", {
+                      last4: user.github_pat_last4 || "",
+                    })}
+                  </Badge>
+                )}
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t("github.description")}
+              </p>
+            </div>
 
-        <div className="bg-card p-4 rounded-xl border border-border/60 space-y-3">
-          <div className="space-y-0.5">
-            <div className="text-xs font-medium">{t("appearance.language")}</div>
-            <p className="text-[11px] text-muted-foreground">
-              {t("appearance.languageDescription")}
-            </p>
-          </div>
-          <LocaleSwitcher variant="cards" />
-        </div>
-      </section>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                updatePatMutation.mutate()
+              }}
+              className="space-y-3 rounded-xl border border-border/60 bg-card p-4"
+            >
+              <div className="space-y-1.5">
+                <Label htmlFor="pat" className="text-xs font-medium">
+                  GitHub PAT
+                </Label>
+                <Input
+                  id="pat"
+                  type="password"
+                  value={githubPat}
+                  onChange={(e) => setGithubPat(e.target.value)}
+                  placeholder={
+                    user?.github_pat_configured
+                      ? t("github.savedPatPlaceholder", {
+                          last4: user.github_pat_last4 || "",
+                        })
+                      : t("github.patPlaceholder")
+                  }
+                  className="h-9 font-mono text-xs md:text-sm"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!githubPat || updatePatMutation.isPending}
+                  className="text-xs font-medium"
+                >
+                  {updatePatMutation.isPending
+                    ? t("common:actions.wait")
+                    : t("github.save")}
+                </Button>
+
+                {user?.github_pat_configured && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (confirm(t("github.clearConfirm"))) {
+                        clearPatMutation.mutate()
+                      }
+                    }}
+                    disabled={clearPatMutation.isPending}
+                    className="text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    {t("github.clear")}
+                  </Button>
+                )}
+              </div>
+            </form>
+          </section>
+
+          {/* Section 5: Import GitHub Stars */}
+          <GithubImportSection user={user} />
+
+          {/* Section 6: Update tracking */}
+          <section id="tracking" className={SECTION_CLASS}>
+            <div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                {t("tracking.section")}
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t("tracking.description")}
+              </p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                updateTrackingMutation.mutate()
+              }}
+              className="space-y-3 rounded-xl border border-border/60 bg-card p-4"
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="hotDays" className="text-xs font-medium">
+                    {t("tracking.hotWithinDays")}
+                  </Label>
+                  <Input
+                    id="hotDays"
+                    type="number"
+                    min={1}
+                    max={3650}
+                    value={hotWithinDays}
+                    onChange={(e) => setHotWithinDays(e.target.value)}
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="staleDays" className="text-xs font-medium">
+                    {t("tracking.staleAfterDays")}
+                  </Label>
+                  <Input
+                    id="staleDays"
+                    type="number"
+                    min={1}
+                    max={3650}
+                    value={staleAfterDays}
+                    onChange={(e) => setStaleAfterDays(e.target.value)}
+                    className="h-9 text-xs"
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={updateTrackingMutation.isPending}
+                className="text-xs font-medium"
+              >
+                {updateTrackingMutation.isPending
+                  ? t("common:actions.wait")
+                  : t("tracking.save")}
+              </Button>
+            </form>
+
+            <div className="space-y-3 rounded-xl border border-border/60 bg-card p-4">
+              <div className="space-y-0.5">
+                <div className="text-xs font-medium">
+                  {t("tracking.events")}
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  {t("tracking.eventsDescription")}
+                </p>
+              </div>
+
+              {EVENT_PREFS.map(({ key, labelKey }) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between gap-4"
+                >
+                  <Label
+                    htmlFor={`event-${key}`}
+                    className="text-[11px] font-normal text-muted-foreground"
+                  >
+                    {t(labelKey)}
+                  </Label>
+                  <Switch
+                    id={`event-${key}`}
+                    checked={user?.[key] ?? true}
+                    disabled={updateEventPrefMutation.isPending}
+                    onCheckedChange={(checked) =>
+                      updateEventPrefMutation.mutate({ [key]: checked })
+                    }
+                    aria-label={t(labelKey)}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <DiscoverySettingsSection />
+
+          {/* Section 7: Bookmark list pagination */}
+          <BookmarkListSection user={user} />
+
+          {/* Section 8: Visibility */}
+          <section id="visibility" className={SECTION_CLASS}>
+            <div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                {t("visibility.section")}
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t("visibility.description")}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card p-4">
+              <div className="min-w-0 space-y-1">
+                <div className="text-xs font-medium">
+                  {t("visibility.publicBrowsing")}
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  {t("visibility.publicBrowsingDescription")}
+                </p>
+              </div>
+              <Switch
+                checked={Boolean(user?.public_browsing_enabled)}
+                disabled={updatePublicBrowsingMutation.isPending}
+                onCheckedChange={(enabled) =>
+                  updatePublicBrowsingMutation.mutate(enabled)
+                }
+                aria-label={t("visibility.publicBrowsing")}
+              />
+            </div>
+          </section>
+
+          <GoogleAnalyticsSection />
+
+          {/* Section: Data Export */}
+          <section id="export" className={SECTION_CLASS}>
+            <div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                {t("export.section")}
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t("export.description")}
+              </p>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-border/60 bg-card p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0 space-y-0.5">
+                  <div className="text-xs font-medium">{t("export.title")}</div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t("export.detail")}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportMutation.mutate()}
+                  disabled={exportMutation.isPending}
+                  className="shrink-0 gap-1.5 text-xs"
+                >
+                  <DownloadSimpleIcon className="size-4" />
+                  <span>{t("export.button")}</span>
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-3">
+                <div className="min-w-0 space-y-0.5">
+                  <div className="text-xs font-medium">
+                    {t("export.mdTitle")}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t("export.mdDetail")}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportMarkdownMutation.mutate()}
+                  disabled={exportMarkdownMutation.isPending}
+                  className="shrink-0 gap-1.5 text-xs"
+                >
+                  <DownloadSimpleIcon className="size-4" />
+                  <span>{t("export.mdButton")}</span>
+                </Button>
+              </div>
+            </div>
+          </section>
+
+          {/* Section 10: Danger zone */}
+          <ClearDataSection />
+
+          {/* Section 11: Appearance / Theme */}
+          <section id="appearance" className={SECTION_CLASS}>
+            <div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                {t("appearance.section")}
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t("appearance.description")}
+              </p>
+            </div>
+
+            <div
+              role="radiogroup"
+              aria-label={t("appearance.section")}
+              className="grid grid-cols-3 gap-3 rounded-xl border border-border/60 bg-card p-4"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={theme === "system"}
+                onClick={() => setTheme("system")}
+                className={`flex flex-col items-center justify-center gap-2 rounded-lg border p-3 text-xs font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  theme === "system"
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                <DesktopIcon className="size-5" />
+                <span>{t("appearance.system")}</span>
+              </button>
+
+              <button
+                type="button"
+                role="radio"
+                aria-checked={theme === "light"}
+                onClick={() => setTheme("light")}
+                className={`flex flex-col items-center justify-center gap-2 rounded-lg border p-3 text-xs font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  theme === "light"
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                <SunIcon className="size-5" />
+                <span>{t("appearance.light")}</span>
+              </button>
+
+              <button
+                type="button"
+                role="radio"
+                aria-checked={theme === "dark"}
+                onClick={() => setTheme("dark")}
+                className={`flex flex-col items-center justify-center gap-2 rounded-lg border p-3 text-xs font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  theme === "dark"
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                <MoonIcon className="size-5" />
+                <span>{t("appearance.dark")}</span>
+              </button>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-border/60 bg-card p-4">
+              <div className="space-y-0.5">
+                <div className="text-xs font-medium">
+                  {t("appearance.language")}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {t("appearance.languageDescription")}
+                </p>
+              </div>
+              <LocaleSwitcher variant="cards" />
+            </div>
+          </section>
         </div>
       </SectionNav>
     </div>

@@ -42,11 +42,11 @@
   "state": {
     "disabled": {
       "title": "Daily discovery is disabled",
-      "description": "It appears in navigation after an administrator enables it and the first edition is published."
+      "description": "Sign in and enable it under Settings → Daily discovery. You can then view its preparation status; the edition appears once the sync completes."
     },
     "initializing": {
       "title": "Preparing the first edition",
-      "description": "The daily sync gathers and organizes content in batches. The edition will appear when complete."
+      "description": "Enabled. Scheduled syncs gather and organize content in batches, then publish the edition here. Refresh reloads the status without starting a sync."
     },
     "updating": {
       "title": "A new edition is in progress",

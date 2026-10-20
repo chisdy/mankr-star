@@ -1,10 +1,11 @@
 import {
   DEFAULT_DEEPSEEK_MODEL,
   findKbChatModel,
+  isAllowedKbChatModel,
   KB_CHAT_QUERY_MAX_CHARS,
   kbChatRequestSchema,
+  kbOrganizeApplySchema,
   type KbChatMessage,
-  type KbChatModelId,
   type KbChatStreamEvent,
 } from "@mankr/shared"
 import { Hono } from "hono"
@@ -25,6 +26,12 @@ import {
   saveKbContext,
   type ChatJsonFn,
 } from "../lib/kb-context"
+import {
+  KB_WHOLE_LIBRARY_SNAPSHOT,
+  loadKbChatScope,
+  type KbChatScope,
+} from "../lib/kb-folders"
+import { applyKbOrganize } from "../lib/kb-organize"
 import { truncate } from "../lib/kb-search"
 import { rateLimit } from "../lib/rate-limit"
 import { getClientIp } from "../lib/utils"
@@ -57,7 +64,7 @@ kbRoutes.post("/kb/chat", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -68,8 +75,9 @@ kbRoutes.post("/kb/chat", async (c) => {
     conversationId,
     context: clientContext,
   } = parsed.data
-  const question = [...messages].reverse().find((m) => m.role === "user")
-    ?.content
+  const question = [...messages]
+    .reverse()
+    .find((m) => m.role === "user")?.content
   if (!question?.trim()) {
     return c.json({ error: "缺少用户提问", code: "BAD_REQUEST" }, 400)
   }
@@ -83,11 +91,18 @@ kbRoutes.post("/kb/chat", async (c) => {
         error: "尚未配置 DeepSeek API Key",
         code: "DEEPSEEK_NOT_CONFIGURED",
       },
-      400,
+      400
     )
   }
 
-  const resolved = resolveChatModel(requestedModel, deepseek.model)
+  const resolved = resolveChatModel(
+    requestedModel,
+    deepseek.model,
+    deepseek.models.map((item) => item.id)
+  )
+  if (!resolved) {
+    return c.json({ error: "不支持的模型", code: "VALIDATION_ERROR" }, 400)
+  }
 
   let anysearchKey: string | null = null
   if (webSearch) {
@@ -98,7 +113,7 @@ kbRoutes.post("/kb/chat", async (c) => {
           error: "尚未配置联网搜索 Key",
           code: "ANYSEARCH_NOT_CONFIGURED",
         },
-        400,
+        400
       )
     }
   }
@@ -106,12 +121,18 @@ kbRoutes.post("/kb/chat", async (c) => {
   const started = Date.now()
   const query = truncate(question.trim(), KB_CHAT_QUERY_MAX_CHARS)
 
-  const prefetch = await prefetchKbContext({
-    db,
-    query,
-    anysearchKey,
-    signal: c.req.raw.signal,
-  })
+  const [prefetch, scope] = await Promise.all([
+    prefetchKbContext({
+      db,
+      query,
+      anysearchKey,
+      signal: c.req.raw.signal,
+    }),
+    loadKbChatScope(db, clientContext?.folderId).catch((err): KbChatScope => {
+      console.error("[kb] folder snapshot failed", err)
+      return { snapshot: KB_WHOLE_LIBRARY_SNAPSHOT }
+    }),
+  ])
 
   const failedWeb = prefetch.warnings.includes("ANYSEARCH_FAILED")
 
@@ -126,7 +147,7 @@ kbRoutes.post("/kb/chat", async (c) => {
     if (webSearch && failedWeb) {
       return c.json(
         { error: "联网搜索暂不可用", code: "ANYSEARCH_FAILED" },
-        502,
+        502
       )
     }
     return sseResponse([
@@ -161,7 +182,7 @@ kbRoutes.post("/kb/chat", async (c) => {
         previousSummary: contextState.summary,
         dropped: plan.toCompress,
         coversThroughId: plan.coversThroughId,
-      }),
+      })
     )
   }
 
@@ -175,7 +196,7 @@ kbRoutes.post("/kb/chat", async (c) => {
       const send = (event: KbChatStreamEvent) => {
         try {
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
+            encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
           )
         } catch {
           // 下游已断开，丢弃剩余事件即可
@@ -203,10 +224,16 @@ kbRoutes.post("/kb/chat", async (c) => {
           anysearchKey,
           signal: c.req.raw.signal,
           startedAt: started,
-          context: clientContext,
+          context: scope.folderName
+            ? {
+                folderId: clientContext?.folderId,
+                folderName: scope.folderName,
+              }
+            : undefined,
+          folderSnapshot: scope.snapshot,
         },
         prefetch,
-        context,
+        context
       )
 
       try {
@@ -263,6 +290,38 @@ kbRoutes.post("/kb/chat", async (c) => {
   return new Response(stream, { headers: SSE_HEADERS })
 })
 
+/** 确认后才写库。操作内容只从已存消息里读，不接受客户端另写的文件夹或收藏 id */
+kbRoutes.post("/kb/organize", async (c) => {
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: "无效的 JSON", code: "BAD_REQUEST" }, 400)
+  }
+  const parsed = kbOrganizeApplySchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: parsed.error.flatten(),
+      },
+      400
+    )
+  }
+
+  try {
+    const result = await applyKbOrganize(c.get("db"), parsed.data)
+    if (!result.ok) {
+      return c.json({ error: result.error, code: result.code }, result.status)
+    }
+    return c.json({ organize: result.organize })
+  } catch (err) {
+    console.error("[kb] organize apply failed", err)
+    return c.json({ error: "写入失败，请重试", code: "ORGANIZE_FAILED" }, 500)
+  }
+})
+
 /**
  * 后台压缩一次并落库。整个过程不抛：它跑在 waitUntil 里，
  * 没有任何调用方能处理异常，失败只意味着水位原地不动、下次超阈值再压。
@@ -315,22 +374,20 @@ async function compressAndSave(input: {
 
 /**
  * 请求级模型覆盖：面板按轮次选模型，缺省时回落到用户设置里的模型。
- * schema 已把取值限定在 KB_CHAT_MODELS 内，这里按 provider 分发，
- * 接入其他厂商时在此追加分支（各家 key 与调用入口不同）。
+ * 内置表里的模型沿用自己的 tools 标记；已同步的官方模型同样可以走工具循环。
+ * 不在内置表、已同步目录、当前保存模型三者之中的 id 直接拒绝。
  */
 function resolveChatModel(
-  requested: KbChatModelId | undefined,
+  requested: string | undefined,
   fallback: string,
-): { model: string; supportsTools: boolean } {
-  const entry = findKbChatModel(requested)
-  if (entry?.provider === "deepseek") {
-    return { model: entry.model, supportsTools: entry.tools }
+  catalogIds: readonly string[]
+): { model: string; supportsTools: boolean } | null {
+  if (requested && !isAllowedKbChatModel(requested, catalogIds, fallback)) {
+    return null
   }
-  // 设置里的模型未必在 KB_CHAT_MODELS 表内，查不到就按不支持工具处理
-  return {
-    model: fallback,
-    supportsTools: findKbChatModel(fallback)?.tools ?? false,
-  }
+  const model = requested ?? fallback
+  const entry = findKbChatModel(model)
+  return { model, supportsTools: entry?.tools ?? true }
 }
 
 const SSE_HEADERS = {

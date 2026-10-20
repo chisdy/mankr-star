@@ -1,10 +1,4 @@
-import {
-  bookmarkTags,
-  bookmarks,
-  folders,
-  tags,
-  type Db,
-} from "@mankr/db"
+import { bookmarkTags, bookmarks, folders, tags, type Db } from "@mankr/db"
 import {
   AI_FOLDER_AUTO_CREATE_MAX_DEPTH,
   CONTENT_EXCERPT_MAX_CHARS,
@@ -29,10 +23,7 @@ import {
 } from "./deepseek"
 import { buildPathLabel, folderPathOf } from "./folder-utils"
 import { readSetting } from "./settings-store"
-import {
-  fetchGithubRepo,
-  fetchReadmeSnippet,
-} from "./github"
+import { fetchGithubRepo, fetchReadmeSnippet } from "./github"
 import { folderSlugBase, nowIso, slugify } from "./utils"
 
 const AI_RUN_TIMEOUT_MS = 25_000
@@ -71,7 +62,7 @@ export const seedPresetCategories = seedPresetFolders
 
 export async function resolveGithubToken(
   db: Db,
-  env: Env,
+  env: Env
 ): Promise<string | null> {
   const github = await readSetting(db, "github")
   if (github.patEncrypted) {
@@ -86,22 +77,28 @@ export async function resolveGithubToken(
 
 export async function getDeepSeekKey(
   db: Db,
-  env: Env,
-): Promise<{ key: string; model: string } | null> {
+  env: Env
+): Promise<{
+  key: string
+  model: string
+  models: { id: string; name: string }[]
+} | null> {
   const ai = await readSetting(db, "ai")
   if (!ai.deepseekApiKeyEncrypted) return null
   const encKey = env.AI_KEY_ENCRYPTION_KEY || env.PAT_ENCRYPTION_KEY
   try {
     const key = await decryptSecret(ai.deepseekApiKeyEncrypted, encKey)
-    return { key, model: ai.deepseekModel || DEFAULT_DEEPSEEK_MODEL }
+    return {
+      key,
+      model: ai.deepseekModel || DEFAULT_DEEPSEEK_MODEL,
+      models: ai.deepseekModels,
+    }
   } catch {
     return null
   }
 }
 
-export async function loadFolderCatalog(
-  db: Db,
-): Promise<FolderCatalogEntry[]> {
+export async function loadFolderCatalog(db: Db): Promise<FolderCatalogEntry[]> {
   const rows = await db.select().from(folders)
   const byId = new Map(rows.map((r) => [r.id, r]))
   return rows.map((r) => ({
@@ -118,7 +115,7 @@ export async function allocateFolderSlug(
   db: Db,
   base: string,
   parentId: string | null,
-  excludeId?: string | null,
+  excludeId?: string | null
 ): Promise<string> {
   const slugBase = folderSlugBase(base)
   const candidates = await db.select().from(folders)
@@ -127,7 +124,7 @@ export async function allocateFolderSlug(
       (c) =>
         (c.parentId ?? null) === parentId &&
         c.slug === slug &&
-        (!excludeId || c.id !== excludeId),
+        (!excludeId || c.id !== excludeId)
     )
   if (!taken(slugBase)) return slugBase
   let n = 2
@@ -142,7 +139,7 @@ export async function suggestFolderSlug(
     name: string
     parentId?: string | null
     excludeId?: string | null
-  },
+  }
 ): Promise<{ slug: string; source: "ai" | "fallback" }> {
   const parentId = opts.parentId ?? null
   const deepseek = await getDeepSeekKey(db, env)
@@ -156,7 +153,7 @@ export async function suggestFolderSlug(
         deepseek.key,
         opts.name,
         deepseek.model,
-        signal,
+        signal
       )
       if (translated.status !== "skipped") {
         await recordAiUsage(db, {
@@ -188,7 +185,7 @@ export async function suggestFolderSlug(
 
 export async function ensureFolderByPath(
   db: Db,
-  names: string[],
+  names: string[]
 ): Promise<string> {
   const segments = truncateFolderPath(names)
   let parentId: string | null = null
@@ -202,7 +199,7 @@ export async function ensureFolderByPath(
     const existing = candidates.find(
       (c) =>
         (c.parentId ?? null) === parentId &&
-        normalizeFolderName(c.name) === normalized,
+        normalizeFolderName(c.name) === normalized
     )
     if (existing) {
       leafId = existing.id
@@ -239,20 +236,18 @@ export async function ensureFolderByPath(
 async function createFolderUnderParent(
   db: Db,
   name: string,
-  parentId: string | null,
+  parentId: string | null
 ): Promise<string> {
   const normalized = normalizeFolderName(name)
   const candidates = await db.select().from(folders)
   const existing = candidates.find(
     (c) =>
       (c.parentId ?? null) === parentId &&
-      normalizeFolderName(c.name) === normalized,
+      normalizeFolderName(c.name) === normalized
   )
   if (existing) return existing.id
 
-  const parent = parentId
-    ? candidates.find((c) => c.id === parentId)
-    : null
+  const parent = parentId ? candidates.find((c) => c.id === parentId) : null
   if (parentId && !parent) {
     throw new Error("new_folder.parent_id 不存在")
   }
@@ -285,7 +280,7 @@ async function createFolderUnderParent(
 
 export async function resolveAiFolderId(
   db: Db,
-  result: AiOutput,
+  result: AiOutput
 ): Promise<string> {
   if (result.folder_id) {
     const row = await db
@@ -300,7 +295,7 @@ export async function resolveAiFolderId(
     return createFolderUnderParent(
       db,
       result.new_folder.name,
-      result.new_folder.parent_id ?? null,
+      result.new_folder.parent_id ?? null
     )
   }
 
@@ -314,12 +309,12 @@ export async function resolveAiFolderId(
 export async function syncBookmarkTags(
   db: Db,
   bookmarkId: string,
-  tagNames: string[],
+  tagNames: string[]
 ): Promise<void> {
   await db.delete(bookmarkTags).where(eq(bookmarkTags.bookmarkId, bookmarkId))
 
   const unique = Array.from(
-    new Set(tagNames.map((t) => t.trim()).filter(Boolean)),
+    new Set(tagNames.map((t) => t.trim()).filter(Boolean))
   )
   for (const name of unique) {
     const slug = slugify(name)
@@ -351,7 +346,7 @@ export async function applyAiResult(
     existingFolderId?: string | null
     /** true=用 AI 标签全量覆盖；默认与现有标签取并集，避免合并/手改后被异步 AI 冲掉 */
     overwriteTags?: boolean
-  },
+  }
 ): Promise<void> {
   const shouldWriteFolder =
     opts?.overwriteFolder === true || !opts?.existingFolderId
@@ -387,7 +382,7 @@ export async function applyAiResult(
       .innerJoin(tags, eq(bookmarkTags.tagId, tags.id))
       .where(eq(bookmarkTags.bookmarkId, bookmarkId))
     const merged = Array.from(
-      new Set([...existing.map((r) => r.name), ...aiTags]),
+      new Set([...existing.map((r) => r.name), ...aiTags])
     )
     await syncBookmarkTags(db, bookmarkId, merged)
   }
@@ -397,7 +392,7 @@ export async function runAiForBookmark(
   db: Db,
   env: Env,
   bookmarkId: string,
-  opts?: { overwriteFolder?: boolean; overwriteCategory?: boolean },
+  opts?: { overwriteFolder?: boolean; overwriteCategory?: boolean }
 ): Promise<void> {
   const bookmark = await db
     .select()
@@ -413,7 +408,8 @@ export async function runAiForBookmark(
     topics = []
   }
 
-  const sourceType = (bookmark.sourceType as "github" | "url" | "twitter") || "github"
+  const sourceType =
+    (bookmark.sourceType as "github" | "url" | "twitter") || "github"
 
   const applyOpts = {
     overwriteFolder:
@@ -450,7 +446,13 @@ export async function runAiForBookmark(
     }
 
     if (!deepseek) {
-      await applyAiResult(db, bookmarkId, buildFallback(), "fallback", applyOpts)
+      await applyAiResult(
+        db,
+        bookmarkId,
+        buildFallback(),
+        "fallback",
+        applyOpts
+      )
       return
     }
 
@@ -508,7 +510,7 @@ export async function runAiForBookmark(
         repo,
         GITHUB_README_MAX_CHARS,
         await resolveGithubToken(db, env),
-        signal,
+        signal
       ))
     const excerpt =
       readme && readme.length > CONTENT_EXCERPT_MAX_CHARS
