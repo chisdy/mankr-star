@@ -2,101 +2,127 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mankr Star</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        --accent: #d97706;
-      }
-      body {
-        width: 280px;
-        margin: 0;
-        padding: 14px;
-        font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
-      }
-      h1 {
-        margin: 0 0 10px;
-        font-size: 13px;
-        font-weight: 600;
-      }
-      label {
-        display: block;
-        margin-bottom: 4px;
-        font-size: 11px;
-        opacity: 0.7;
-      }
-      input {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 6px 8px;
-        border: 1px solid rgba(128, 128, 128, 0.4);
-        border-radius: 6px;
-        background: transparent;
-        color: inherit;
-        font: inherit;
-      }
-      button {
-        width: 100%;
-        margin-top: 10px;
-        padding: 7px 8px;
-        border: 0;
-        border-radius: 6px;
-        background: var(--accent);
-        color: #fff;
-        font: inherit;
-        font-weight: 600;
-        cursor: pointer;
-      }
-      button.secondary {
-        margin-top: 8px;
-        background: transparent;
-        color: inherit;
-        border: 1px solid rgba(128, 128, 128, 0.45);
-      }
-      button:disabled {
-        opacity: 0.5;
-        cursor: default;
-      }
-      p {
-        margin: 10px 0 0;
-        font-size: 11px;
-        opacity: 0.6;
-        word-break: break-all;
-      }
-      .hint {
-        margin: 6px 0 0;
-        font-size: 10px;
-        line-height: 1.4;
-        opacity: 0.65;
-      }
-      #status,
-      #title {
-        opacity: 1;
-        font-size: 12px;
-      }
-      #status {
-        font-weight: 600;
-      }
-    </style>
+    <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <h1>收藏当前页面</h1>
+    <!-- 主卡片视图 -->
+    <div id="view-main" class="view active">
+      <header class="app-header">
+        <div class="brand-wrapper">
+          <div class="brand-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 872 750" fill="currentColor" stroke="currentColor" stroke-width="36" stroke-linejoin="bevel" fill-rule="evenodd" aria-hidden="true">
+              <path d="M517 150H555L666 361H886L919 407L752 552L821 728L754 791L674 610L536 718L398 610L318 791L251 728L320 552L153 407L186 361H406Z M536 298L611 423H786L536 623L286 423H461Z" />
+            </svg>
+          </div>
+          <h1 class="brand-title">Mankr Star</h1>
+        </div>
+        <div class="header-actions">
+          <div class="connection-indicator" title="实例连接状态">
+            <span id="conn-dot" class="connection-dot"></span>
+          </div>
+          <button id="btn-open-settings" class="icon-btn" type="button" aria-label="设置与工具" title="设置与工具">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </header>
 
-    <label for="instance">实例地址</label>
-    <input id="instance" type="url" placeholder="https://star.example.com" />
-    <p class="hint">
-      匹配在这台浏览器里完成，浏览地址不会发到实例。大约每 30 分钟，以及打开这个弹窗时，只会向实例核对一次版本号。
-    </p>
+      <main>
+        <section class="page-card" aria-label="网页信息卡片">
+          <div class="card-top-row">
+            <div class="site-meta">
+              <img id="site-favicon" class="site-favicon" src="" alt="" style="display: none;" />
+              <div id="site-favicon-fallback" class="site-favicon fallback">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                  <path d="M2 12h20"/>
+                </svg>
+              </div>
+              <span id="site-domain" class="site-domain">正在识别…</span>
+            </div>
+            <div id="status-pill" class="status-pill">
+              <span class="status-pill-dot"></span>
+              <span id="status-pill-text">正在检查</span>
+            </div>
+          </div>
 
-    <p id="status"></p>
-    <p id="title"></p>
+          <h2 id="page-title" class="page-title">读取网页中…</h2>
+          <p id="page-url" class="page-url"></p>
+        </section>
 
-    <button id="submit" disabled>在 Mankr Star 中添加</button>
-    <button id="import-bookmarks" class="secondary" type="button" hidden>
-      导入本机书签
-    </button>
+        <button id="btn-action" class="btn-primary" type="button" disabled>
+          <span id="btn-action-icon">
+            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14"/>
+              <path d="M12 5v14"/>
+            </svg>
+          </span>
+          <span id="btn-action-text">在 Mankr Star 中添加</span>
+        </button>
 
-    <p id="current"></p>
+        <div class="footer-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+          </svg>
+          <span id="footer-tip">本地离线匹配 · 保护浏览隐私</span>
+        </div>
+      </main>
+    </div>
+
+    <!-- 设置与工具视图 -->
+    <div id="view-settings" class="view">
+      <header class="settings-nav">
+        <button id="btn-back" class="icon-btn" type="button" aria-label="返回主视图" title="返回">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+        </button>
+        <h2 class="settings-nav-title">设置与工具</h2>
+      </header>
+
+      <main>
+        <section class="settings-section" aria-label="实例配置">
+          <label for="instance" class="settings-label">Mankr Star 实例地址</label>
+          <input
+            id="instance"
+            class="settings-input"
+            type="url"
+            spellcheck="false"
+            autocomplete="off"
+            placeholder="https://star.example.com"
+          />
+          <button id="btn-save-instance" class="btn-secondary" type="button">
+            保存并授权实例
+          </button>
+          <p id="instance-feedback" class="feedback-msg"></p>
+        </section>
+
+        <section id="section-import" class="settings-section" aria-label="书签导入">
+          <span class="settings-label">导入本机书签</span>
+          <p class="settings-hint">
+            一键将当前浏览器的全部书签分批同步到实例，并在网页端完成智能检查与分类。
+          </p>
+          <button id="btn-import-bookmarks" class="btn-secondary" type="button">
+            开始导入本机书签
+          </button>
+          <div id="import-progress-container" class="progress-container">
+            <div id="import-progress-bar" class="progress-bar"></div>
+          </div>
+          <p id="import-status" class="feedback-msg"></p>
+        </section>
+
+        <div class="info-box">
+          <p>
+            说明：收藏匹配在这台设备本地完成，浏览记录不会发往实例。每 30 分钟或打开弹窗时，仅向实例校验一次版本标识。
+          </p>
+        </div>
+      </main>
+    </div>
 
     <script src="popup.js"></script>
   </body>

@@ -365,7 +365,7 @@ export const SESSION_COOKIE_NAME = "mankr_session"
 export const SESSION_TTL_DAYS = 30
 
 export const PASSWORD_MIN_LENGTH = 8
-export const AI_SUMMARY_MAX_CHARS = 80
+export const AI_SUMMARY_MAX_CHARS = 480
 export const AI_TAG_MIN = 3
 export const AI_TAG_MAX = 8
 

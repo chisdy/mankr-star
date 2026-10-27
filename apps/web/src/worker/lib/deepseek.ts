@@ -18,6 +18,7 @@ import {
 } from "./ai-usage"
 import { emptyLlmUsage } from "./llm-provider"
 import { asciiSlugify, folderSlugBase } from "./utils"
+import { truncateKeepingBreaks } from "./url-metadata"
 
 /** 注入 AI prompt 的文件夹目录项 */
 export type FolderCatalogEntry = {
@@ -321,21 +322,108 @@ export function ruleBasedClassify(input: {
   }
 }
 
-export async function classifyWithDeepSeek(opts: {
-  apiKey: string
-  model?: DeepSeekModel | string
-  input: BookmarkAiInput
-  catalog: FolderCatalogEntry[]
-  signal?: AbortSignal
-}): Promise<ClassifyWithDeepSeekResult> {
-  const model = opts.model || DEFAULT_DEEPSEEK_MODEL
-  const catalogJson = formatFolderCatalogForPrompt(opts.catalog)
-  const started = Date.now()
-  const isUrl = opts.input.sourceType === "url"
+/** 送入归类模型的正文上限。库存 README 仍是 8000，这里只限制单次 prompt。 */
+export const PROMPT_EXCERPT_MAX_CHARS = 6000
 
-  const system = isUrl
-    ? `你是个人知识库归档助手。当前收藏是「普通网页」而非 GitHub 仓库。根据标题、描述与正文摘录判断主题，输出严格 JSON（不要 markdown）：
-{"summary":"中文一句话概括该网页核心内容/用途，不超过${AI_SUMMARY_MAX_CHARS}字","folder_id":"已有文件夹的 uuid 或 null","new_folder":null或{"name":"新文件夹名","parent_id":"父文件夹 uuid 或 null"},"tags":["3到8个短标签"],"use_cases":["可选用途场景"],"confidence":0到1的小数}
+const SUMMARY_BREAK_CHARS = new Set(["。", "！", "？", "\n"])
+
+/**
+ * 把超长摘要收到上限内。优先停在中文句读或换行；断点太靠前时硬切，
+ * 避免整段被收成第一句。不用英文句点，以免切断版本号。
+ */
+export function clipSummary(
+  summary: string,
+  max = AI_SUMMARY_MAX_CHARS
+): string {
+  const text = summary.trim()
+  if (text.length <= max) return text
+
+  const minKeep = Math.floor(max * 0.6)
+  let breakEnd = -1
+  const scanTo = Math.min(text.length, max)
+  for (let i = 0; i < scanTo; i++) {
+    if (SUMMARY_BREAK_CHARS.has(text[i]!)) breakEnd = i + 1
+  }
+
+  if (breakEnd >= minKeep) return text.slice(0, breakEnd).trimEnd()
+  return text.slice(0, max - 1) + "…"
+}
+
+/** 只认 shields.io / badgen.net，避免误删地址里带 badge 的截图。 */
+const BADGE_HOST = "(?:[\\w-]+\\.)*(?:shields\\.io|badgen\\.net)"
+
+/**
+ * 先去掉注释和徽章图床上的图片，再按段落截断。
+ * 先截后清会把徽章占掉的正文留在窗口外。
+ * 结果只进 prompt，不写回已存 README。
+ */
+export function prepareExcerptForPrompt(
+  raw: string,
+  max = PROMPT_EXCERPT_MAX_CHARS
+): string {
+  const cleaned = raw
+    .replace(/<!--[\s\S]*?-->/g, "")
+    // 先删整段带链接的徽章，再删裸图片，避免留下空链接壳
+    .replace(
+      new RegExp(
+        `\\[!\\[[^\\]]*\\]\\([^)]*${BADGE_HOST}[^)]*\\)\\]\\([^)]*\\)`,
+        "gi"
+      ),
+      ""
+    )
+    .replace(
+      new RegExp(`!\\[[^\\]]*\\]\\([^)]*${BADGE_HOST}[^)]*\\)`, "gi"),
+      ""
+    )
+    .replace(new RegExp(`<img\\b[^>]*${BADGE_HOST}[^>]*>`, "gi"), "")
+  return truncateKeepingBreaks(cleaned, max)
+}
+
+function summaryInstruction(): string {
+  return `summary 用中文写 4 到 6 句，不超过 ${AI_SUMMARY_MAX_CHARS} 字，并在这个上限内把最后一句写完。具体事实放在前面，按顺序写：这是什么；解决什么或提供什么；面向谁；材料里写明的 2 到 3 个具体点（名称、能力、对象、数字）。只使用标题、描述、链接和正文摘录里有的信息。材料不足时只写能支持的部分，不要编造功能、数字或对比。`
+}
+
+function summaryJsonShape(): string {
+  return `{"summary":"中文 4 到 6 句，具体事实放在前面，不超过${AI_SUMMARY_MAX_CHARS}字且在上限内写完最后一句","folder_id":"已有文件夹的 uuid 或 null","new_folder":null或{"name":"新文件夹名","parent_id":"父文件夹 uuid 或 null"},"tags":["3到8个短标签"],"use_cases":["可选用途场景"],"confidence":0到1的小数}`
+}
+
+export function buildClassifyMessages(
+  input: BookmarkAiInput,
+  catalog: FolderCatalogEntry[]
+): { system: string; user: string } {
+  const catalogJson = formatFolderCatalogForPrompt(catalog)
+  const system = buildClassifySystemPrompt(input.sourceType, catalogJson)
+  const excerpt = input.contentExcerpt?.trim()
+    ? prepareExcerptForPrompt(input.contentExcerpt)
+    : ""
+  const user = [
+    `来源类型：${input.sourceType}`,
+    `标题：${input.title}`,
+    `链接：${input.url}`,
+    input.siteName ? `站点：${input.siteName}` : "",
+    `描述：${input.description ?? "无"}`,
+    input.language ? `语言：${input.language}` : "",
+    input.topics?.length ? `Topics：${input.topics.join(", ")}` : "",
+    excerpt ? `正文摘录：\n${excerpt}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n")
+  return { system, user }
+}
+
+function buildClassifySystemPrompt(
+  sourceType: SourceType,
+  catalogJson: string
+): string {
+  const shape = summaryJsonShape()
+  const summary = summaryInstruction()
+
+  if (sourceType === "url") {
+    return `你是个人知识库归档助手。当前收藏是「普通网页」而非 GitHub 仓库。根据标题、描述与正文摘录判断主题，输出严格 JSON（不要 markdown）：
+${shape}
+
+${summary}
+写页面实际主题。摘录里的导航、登录、Cookie 文案忽略。
 
 原则：
 1. summary 必须反映页面真实主题，禁止「网页收藏」「链接分享」等空话。
@@ -346,11 +434,35 @@ export async function classifyWithDeepSeek(opts: {
 
 现有文件夹目录（JSON）：
 ${catalogJson}`
-    : `你是个人知识收藏归档助手。根据收藏内容与文件夹目录，自行判断归属，输出严格 JSON（不要 markdown）：
-{"summary":"中文一句话用途摘要，不超过${AI_SUMMARY_MAX_CHARS}字","folder_id":"已有文件夹的 uuid 或 null","new_folder":null或{"name":"新文件夹名","parent_id":"父文件夹 uuid 或 null"},"tags":["3到8个短标签"],"use_cases":["可选用途场景"],"confidence":0到1的小数}
+  }
+
+  if (sourceType === "twitter") {
+    return `你是个人知识库归档助手。当前收藏是一条 X 帖子。根据帖子正文判断主题，输出严格 JSON（不要 markdown）：
+${shape}
+
+${summary}
+summary 要写这条帖子说了什么、是谁发的。不要写成「一条社交分享」。
+
+原则（不要死记关键词表，按真实内容推理）：
+1. 按帖子讨论的事物归类，不要按社交平台归类。
+2. 优先复用目录中语义真正贴切的 folder_id；只有都不贴切时才 new_folder（此时 folder_id 必须为 null）。
+3. 宁可 new_folder 起准确名字，也不要硬塞进不相关的已有夹（尤其不要把非大模型内容塞进「AI / LLM」）。
+4. new_folder.parent_id 为 null 表示挂在根；非 null 必须是目录中已有 id；一次只新建一级。
+5. 「AI / LLM」仅用于大模型、Agent、提示词、向量检索、推理框架等。
+6. 实在无法判断再用「其他」对应的 folder_id。
+
+现有文件夹目录（JSON）：
+${catalogJson}`
+  }
+
+  return `你是个人知识收藏归档助手。当前收藏是 GitHub 仓库。根据收藏内容与文件夹目录，自行判断归属，输出严格 JSON（不要 markdown）：
+${shape}
+
+${summary}
+不要只复述仓库的一句话简介。从 README 里写能力与适用场景。
 
 原则（不要死记关键词表，按真实用途推理）：
-1. 按产品形态/用途归类；来源可能是 GitHub 仓库或普通网页，不要按编程语言硬套。
+1. 按产品形态/用途归类，不要按编程语言硬套。
 2. 优先复用目录中语义真正贴切的 folder_id；只有都不贴切时才 new_folder（此时 folder_id 必须为 null）。
 3. 预置目录覆盖不了所有领域——宁可 new_folder 起准确名字（如「3D 与图形」「边缘网关」），也不要硬塞进不相关的已有夹（尤其不要把非大模型内容塞进「AI / LLM」）。
 4. new_folder.parent_id 为 null 表示挂在根；非 null 必须是目录中已有 id；一次只新建一级。
@@ -365,22 +477,19 @@ ${catalogJson}
 - Agent Skill 集合 → 复用或在「AI / LLM」下 new_folder「Agent Skills」
 - 设计系统文档网页 → 若无贴切夹则 new_folder「设计系统」
 - 全新品类 → new_folder 自定义名称`
+}
 
-  const excerpt = opts.input.contentExcerpt?.trim()
-  // 网页给模型稍多正文，但控制体积
-  const excerptForPrompt = excerpt ? excerpt.slice(0, isUrl ? 3500 : 4000) : ""
-  const user = [
-    `来源类型：${opts.input.sourceType}`,
-    `标题：${opts.input.title}`,
-    `链接：${opts.input.url}`,
-    opts.input.siteName ? `站点：${opts.input.siteName}` : "",
-    `描述：${opts.input.description ?? "无"}`,
-    opts.input.language ? `语言：${opts.input.language}` : "",
-    opts.input.topics?.length ? `Topics：${opts.input.topics.join(", ")}` : "",
-    excerptForPrompt ? `正文摘录：\n${excerptForPrompt}` : "",
-  ]
-    .filter(Boolean)
-    .join("\n")
+export async function classifyWithDeepSeek(opts: {
+  apiKey: string
+  model?: DeepSeekModel | string
+  input: BookmarkAiInput
+  catalog: FolderCatalogEntry[]
+  signal?: AbortSignal
+}): Promise<ClassifyWithDeepSeekResult> {
+  const model = opts.model || DEFAULT_DEEPSEEK_MODEL
+  const started = Date.now()
+  const isUrl = opts.input.sourceType === "url"
+  const { system, user } = buildClassifyMessages(opts.input, opts.catalog)
 
   let usage: DeepSeekTokenUsage = emptyLlmUsage()
 
@@ -472,6 +581,17 @@ ${catalogJson}
     ;(parsed as unknown as { folder_path: string[] }).folder_path = path
   }
 
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    "summary" in parsed &&
+    typeof (parsed as { summary?: unknown }).summary === "string"
+  ) {
+    ;(parsed as { summary: string }).summary = clipSummary(
+      (parsed as { summary: string }).summary
+    )
+  }
+
   const result = aiOutputSchema.safeParse(parsed)
   if (!result.success) {
     throw new DeepSeekCallError("DeepSeek JSON 校验失败", {
@@ -480,11 +600,6 @@ ${catalogJson}
       latencyMs,
       errorCode: "SCHEMA_INVALID",
     })
-  }
-
-  if (result.data.summary.length > AI_SUMMARY_MAX_CHARS) {
-    result.data.summary =
-      result.data.summary.slice(0, AI_SUMMARY_MAX_CHARS - 1) + "…"
   }
 
   if (result.data.folder_path) {

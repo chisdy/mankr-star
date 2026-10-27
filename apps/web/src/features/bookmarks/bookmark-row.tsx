@@ -160,7 +160,7 @@ export function BookmarkRow({
         </div>
 
         {/* 第二行：摘要描述 */}
-        <div className="min-w-0 text-xs text-muted-foreground/90 line-clamp-1 sm:line-clamp-2 leading-relaxed break-words">
+        <div className="min-w-0 text-xs text-muted-foreground/90 line-clamp-3 leading-relaxed break-words">
           {isPending ? (
             bookmark.description ? (
               <div className="space-y-0.5">

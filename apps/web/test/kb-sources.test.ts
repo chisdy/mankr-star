@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import type { KbBookmarkHit } from "../src/worker/lib/kb-search"
+import {
+  hitToContextBlock,
+  type KbBookmarkHit,
+} from "../src/worker/lib/kb-search"
+import { KB_CHAT_SNIPPET_MAX_CHARS } from "@mankr/shared"
 import {
   createKbSourceRegistry,
   registerFastPathSources,
@@ -32,6 +36,23 @@ function web(n: number) {
     snippet: "摘要",
   }
 }
+
+describe("hitToContextBlock", () => {
+  it("长摘要不会挤掉笔记，整块不超过上下文上限", () => {
+    const block = hitToContextBlock(
+      {
+        ...hit("b1"),
+        summaryAi: "摘".repeat(480),
+        notes: "笔记还在",
+        description: "短描述",
+        contentExcerpt: "正".repeat(400),
+      },
+      1,
+    )
+    expect(block).toContain("笔记还在")
+    expect(block.length).toBeLessThanOrEqual(KB_CHAT_SNIPPET_MAX_CHARS)
+  })
+})
 
 describe("KbSourceRegistry 引用编号", () => {
   it("同一条收藏重复登记时复用编号且不重复入列", () => {

@@ -55,7 +55,7 @@
     "section": "2. DeepSeek AI 配置",
     "configuredBadge": "已配置 (****{{last4}})",
     "unconfiguredBadge": "未配置 (规则降级)",
-    "description": "用于项目一句话用途摘要、推荐分类与智能打标签。密钥采用 AES-GCM 加密存储，不暴露明文。",
+    "description": "用于收藏的详细摘要、推荐分类与智能打标签。密钥采用 AES-GCM 加密存储，不暴露明文。",
     "keyPlaceholder": "粘贴 DeepSeek API Key",
     "savedKeyPlaceholder": "已保存密钥 (****{{last4}})，若不修改请留空",
     "modelLabel": "模型偏好",

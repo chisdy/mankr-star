@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next"
 import { ArrowClockwiseIcon } from "@phosphor-icons/react"
+import { AI_SUMMARY_MAX_CHARS } from "@mankr/shared"
 
 import { Input } from "@workspace/ui/components/input"
 import { Label } from "@workspace/ui/components/label"
@@ -14,6 +15,7 @@ import {
 import { Switch } from "@workspace/ui/components/switch"
 import { Textarea } from "@workspace/ui/components/textarea"
 import { Button } from "@workspace/ui/components/button"
+
 import { FolderSelect } from "@/features/folders/folder-select"
 import { CopyIconButton } from "./copy-icon-button"
 import { useBookmarkAccountCopy } from "./use-bookmark-account-copy"
@@ -103,7 +105,8 @@ export function BookmarkDetailForm({
           value={values.summaryAi}
           onChange={(e) => patch({ summaryAi: e.target.value })}
           placeholder={t("detail.summaryPlaceholder")}
-          className="min-h-[80px] resize-none text-xs leading-relaxed"
+          maxLength={AI_SUMMARY_MAX_CHARS}
+          className="min-h-40 resize-y text-xs leading-relaxed"
         />
       </div>
 

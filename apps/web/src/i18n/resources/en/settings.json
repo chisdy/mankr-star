@@ -55,7 +55,7 @@
     "section": "2. DeepSeek AI",
     "configuredBadge": "Configured (****{{last4}})",
     "unconfiguredBadge": "Not configured (rule fallback)",
-    "description": "Used for one-line summaries, folder suggestions, and smart tags. Keys are stored with AES-GCM encryption.",
+    "description": "Used for detailed bookmark summaries, folder suggestions, and smart tags. Keys are stored with AES-GCM encryption.",
     "keyPlaceholder": "Paste DeepSeek API Key",
     "savedKeyPlaceholder": "Saved key (****{{last4}}), leave blank to keep",
     "modelLabel": "Model",

@@ -16,6 +16,7 @@ import {
   updateAnalyticsSettingsSchema,
 } from "../src/schemas"
 import {
+  AI_SUMMARY_MAX_CHARS,
   DEFAULT_DEEPSEEK_MODEL,
   KB_CHAT_MODEL_IDS,
   PASSWORD_MIN_LENGTH,
@@ -443,10 +444,17 @@ describe("aiOutputSchema", () => {
     ).toBe(true)
   })
 
-  it("摘要超长或标签为空时失败", () => {
+  it("摘要等于上限时通过，超过上限或标签为空时失败", () => {
     expect(
       aiOutputSchema.safeParse({
-        summary: "字".repeat(200),
+        summary: "字".repeat(AI_SUMMARY_MAX_CHARS),
+        folder_id: null,
+        tags: ["a"],
+      }).success
+    ).toBe(true)
+    expect(
+      aiOutputSchema.safeParse({
+        summary: "字".repeat(AI_SUMMARY_MAX_CHARS + 1),
         folder_id: null,
         tags: ["a"],
       }).success

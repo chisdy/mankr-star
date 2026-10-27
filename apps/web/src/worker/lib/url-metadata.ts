@@ -41,8 +41,37 @@ const SKIP_TEXT_TAGS = new Set([
 /** 优先从这些区域抽正文；有主内容时忽略外围噪声 */
 const PREFERRED_CONTENT_TAGS = new Set(["MAIN", "ARTICLE"])
 
+/** 这些块结束时换行，避免正文被连成一行 */
+const BLOCK_BREAK_TAGS = new Set([
+  "P",
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "H6",
+  "LI",
+  "BR",
+  "BLOCKQUOTE",
+  "PRE",
+])
+
+/** main/article 短于此长度时，补上页面其余正文 */
+const MAIN_EXCERPT_MIN_CHARS = 400
+
 function truncate(text: string, max: number): string {
   const t = text.replace(/\s+/g, " ").trim()
+  if (t.length <= max) return t
+  return t.slice(0, max - 1) + "…"
+}
+
+/** 压平行内空白，保留段落换行。标题和描述仍走会压平换行的 truncate。 */
+export function truncateKeepingBreaks(text: string, max: number): string {
+  const t = text
+    .replace(/[ \t\f\v]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
   if (t.length <= max) return t
   return t.slice(0, max - 1) + "…"
 }
@@ -148,13 +177,18 @@ async function parseHtml(html: string, _baseUrl: string): Promise<ParsedHtml> {
   let skipDepth = 0
   let preferredDepth = 0
 
+  const joinPiece = (current: string, piece: string) => {
+    if (!current) return piece
+    if (current.endsWith(" ") || current.endsWith("\n")) return current + piece
+    return `${current} ${piece}`
+  }
+
   const appendText = (target: "body" | "main", raw: string) => {
-    const piece = raw.replace(/\s+/g, " ").trim()
+    const piece = raw.replace(/[ \t\f\v]+/g, " ").trim()
     if (!piece) return
     if (target === "main") {
       if (mainExcerpt.length >= CONTENT_EXCERPT_MAX_CHARS) return
-      mainExcerpt +=
-        (mainExcerpt && !mainExcerpt.endsWith(" ") ? " " : "") + piece
+      mainExcerpt = joinPiece(mainExcerpt, piece)
       if (mainExcerpt.length > CONTENT_EXCERPT_MAX_CHARS) {
         mainExcerpt = mainExcerpt.slice(0, CONTENT_EXCERPT_MAX_CHARS)
       }
@@ -162,10 +196,19 @@ async function parseHtml(html: string, _baseUrl: string): Promise<ParsedHtml> {
     }
     if (preferredDepth > 0) return // 已有主内容区时，外围文本不再写入 body 兜底
     if (bodyExcerpt.length >= CONTENT_EXCERPT_MAX_CHARS) return
-    bodyExcerpt += (bodyExcerpt && !bodyExcerpt.endsWith(" ") ? " " : "") + piece
+    bodyExcerpt = joinPiece(bodyExcerpt, piece)
     if (bodyExcerpt.length > CONTENT_EXCERPT_MAX_CHARS) {
       bodyExcerpt = bodyExcerpt.slice(0, CONTENT_EXCERPT_MAX_CHARS)
     }
+  }
+
+  const appendBreak = () => {
+    if (skipDepth > 0) return
+    if (preferredDepth > 0) {
+      if (mainExcerpt && !mainExcerpt.endsWith("\n")) mainExcerpt += "\n"
+      return
+    }
+    if (bodyExcerpt && !bodyExcerpt.endsWith("\n")) bodyExcerpt += "\n"
   }
 
   const rewriter = new HTMLRewriter()
@@ -211,6 +254,11 @@ async function parseHtml(html: string, _baseUrl: string): Promise<ParsedHtml> {
             preferredDepth = Math.max(0, preferredDepth - 1)
           })
         }
+        if (BLOCK_BREAK_TAGS.has(tag)) {
+          el.onEndTag(() => {
+            appendBreak()
+          })
+        }
       },
       text(t) {
         if (skipDepth > 0) return
@@ -229,15 +277,18 @@ async function parseHtml(html: string, _baseUrl: string): Promise<ParsedHtml> {
   await transformed.arrayBuffer()
 
   const trimmedTitle = titleText.trim()
-  // 有 main/article 正文时优先用它（即使较短），避免被 title/外围噪声污染
-  const excerptSource = mainExcerpt.trim()
-    ? mainExcerpt
-    : bodyExcerpt
+  const main = mainExcerpt.trim()
+  const body = bodyExcerpt.trim()
+  // 主内容区太短时补上其余正文，避免只有标题或付费墙提示
+  const excerptSource =
+    main && main.length < MAIN_EXCERPT_MIN_CHARS && body
+      ? `${main}\n${body}`
+      : main || body
   return {
     title: trimmedTitle || null,
     meta,
     faviconHref,
-    excerpt: truncate(excerptSource, CONTENT_EXCERPT_MAX_CHARS) || "",
+    excerpt: truncateKeepingBreaks(excerptSource, CONTENT_EXCERPT_MAX_CHARS) || "",
   }
 }
 
@@ -344,7 +395,7 @@ export async function fetchUrlPageMetadata(
         : null
 
     const contentExcerpt = parsed.excerpt
-      ? truncate(parsed.excerpt, CONTENT_EXCERPT_MAX_CHARS)
+      ? truncateKeepingBreaks(parsed.excerpt, CONTENT_EXCERPT_MAX_CHARS)
       : null
 
     return {

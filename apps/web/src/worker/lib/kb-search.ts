@@ -406,6 +406,12 @@ export function hitToSource(hit: KbBookmarkHit): KbChatSource {
   }
 }
 
+/**
+ * 单条上下文里摘要的预算。整块上限是 600 字，摘要若按收藏上限整段塞入，
+ * 描述、笔记和摘录就没有位置。
+ */
+const KB_HIT_SUMMARY_MAX_CHARS = 160
+
 /** 单条收藏在 prompt 中的表示，含私有笔记（仅发往用户自己的 DeepSeek Key） */
 export function hitToContextBlock(hit: KbBookmarkHit, index: number): string {
   const lines = [
@@ -413,7 +419,9 @@ export function hitToContextBlock(hit: KbBookmarkHit, index: number): string {
     `标题：${hit.title}`,
     `链接：${hit.url}`,
   ]
-  if (hit.summaryAi?.trim()) lines.push(`摘要：${hit.summaryAi.trim()}`)
+  if (hit.summaryAi?.trim()) {
+    lines.push(`摘要：${truncate(hit.summaryAi.trim(), KB_HIT_SUMMARY_MAX_CHARS)}`)
+  }
   if (hit.description?.trim()) lines.push(`描述：${hit.description.trim()}`)
   if (hit.notes?.trim()) lines.push(`我的笔记：${hit.notes.trim()}`)
   if (hit.contentExcerpt?.trim()) {

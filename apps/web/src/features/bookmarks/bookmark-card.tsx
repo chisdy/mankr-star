@@ -223,7 +223,7 @@ export function BookmarkCard({
         </div>
 
         {/* 摘要描述区 */}
-        <div className="text-xs text-muted-foreground/90 line-clamp-3 leading-relaxed break-words">
+        <div className="text-xs text-muted-foreground/90 line-clamp-5 leading-relaxed break-words">
           {isPending ? (
             bookmark.description ? (
               <div className="space-y-1">

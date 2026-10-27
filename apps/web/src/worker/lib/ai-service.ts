@@ -4,6 +4,7 @@ import {
   CONTENT_EXCERPT_MAX_CHARS,
   DEFAULT_DEEPSEEK_MODEL,
   GITHUB_README_MAX_CHARS,
+  README_EXCERPT_MAX_CHARS,
   PRESET_FOLDERS,
   type AiOutput,
 } from "@mankr/shared"
@@ -502,20 +503,25 @@ export async function runAiForBookmark(
 
   try {
     const signal = AbortSignal.timeout(AI_RUN_TIMEOUT_MS)
-    // 收藏创建 / 同步时已缓存过 README，命中就不再多打一次 GitHub
-    const readme =
-      bookmark.readmeExcerpt?.slice(0, GITHUB_README_MAX_CHARS) ??
+    // 收藏创建 / 同步时已缓存过 README，命中就不再多打一次 GitHub。
+    // prompt 用完整缓存（徽章清理在 classify 里、截断之前做）；
+    // 写回 contentExcerpt 仍是未清理的前 4000 字，两份文本不要混用。
+    const fullReadme =
+      bookmark.readmeExcerpt ??
       (await fetchReadmeSnippet(
         owner,
         repo,
-        GITHUB_README_MAX_CHARS,
+        README_EXCERPT_MAX_CHARS,
         await resolveGithubToken(db, env),
         signal
       ))
+    const readmeForStore = fullReadme
+      ? fullReadme.slice(0, GITHUB_README_MAX_CHARS)
+      : null
     const excerpt =
-      readme && readme.length > CONTENT_EXCERPT_MAX_CHARS
-        ? readme.slice(0, CONTENT_EXCERPT_MAX_CHARS - 1) + "…"
-        : readme
+      readmeForStore && readmeForStore.length > CONTENT_EXCERPT_MAX_CHARS
+        ? readmeForStore.slice(0, CONTENT_EXCERPT_MAX_CHARS - 1) + "…"
+        : readmeForStore
 
     if (excerpt) {
       await db
@@ -530,7 +536,7 @@ export async function runAiForBookmark(
       description: bookmark.description,
       url: bookmark.canonicalUrl,
       siteName: bookmark.siteName,
-      contentExcerpt: excerpt || bookmark.contentExcerpt,
+      contentExcerpt: fullReadme || bookmark.contentExcerpt,
       language: bookmark.language,
       topics,
     }

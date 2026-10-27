@@ -14,10 +14,16 @@
 2. 点击「加载已解压的扩展程序」，选择本目录 `apps/extension`
 3. 首次使用在弹窗里填写实例地址（如 `https://star.example.com`），点按钮授权该站点。**请只填你自己部署的可信站点。** 请先在同一个 Chrome 里登录这个实例。
 
-改了匹配规则后需要重新打包后台脚本：
+改了匹配规则或弹窗代码后需要重新打包扩展：
 
 ```bash
 pnpm --filter @mankr/extension build
+```
+
+执行类型检查：
+
+```bash
+pnpm --filter @mankr/extension typecheck
 ```
 
 ## 权限
@@ -44,6 +50,9 @@ pnpm --filter @mankr/extension build
 |------|------|
 | `manifest.json` | MV3 清单 |
 | `src/background.ts` | 本地匹配、版本检查、按是否收藏切换图标 |
+| `src/popup/index.ts` | 弹窗交互逻辑（强类型状态机、视图流转、导入同步） |
+| `src/popup/popup.css` | 弹窗样式表（浅色/暗色模式、同心圆角、按压微交互） |
 | `icons/` | 灰色为未收藏，黄色为已收藏 |
-| `background.js` | 上面那个文件的打包结果，扩展实际加载它 |
-| `popup.html` / `popup.js` | 弹窗：授权、展示是否已收藏、跳转添加或详情 |
+| `background.js` | 后台脚本打包产物 |
+| `popup.html` | 弹窗 DOM 结构与语义化视图 |
+| `popup.js` / `popup.css` | 弹窗逻辑与样式打包产物 |
