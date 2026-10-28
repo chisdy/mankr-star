@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useNavigate, useSearchParams } from "react-router"
+import { useLocation, useNavigate, useSearchParams } from "react-router"
 import { toReadableSearch } from "@/lib/search-params"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
@@ -325,6 +325,7 @@ export function FolderTreePanel({
 }) {
   const { t } = useTranslation("folders")
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const selectedId = searchParams.get("folder_id") || ""
   const collapsible = resizable
@@ -492,7 +493,13 @@ export function FolderTreePanel({
                 <DropdownMenuContent align="end" className="w-40">
                   <DropdownMenuItem
                     onClick={() => {
-                      navigate("/folders")
+                      if (location.pathname !== "/folders") {
+                        navigate("/folders", {
+                          state: {
+                            from: `${location.pathname}${location.search}`,
+                          },
+                        })
+                      }
                       onNavigate?.()
                     }}
                   >

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
+  CaretRightIcon,
   DotsSixVerticalIcon,
   FolderIcon,
   FolderOpenIcon,
@@ -40,17 +41,89 @@ const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 /** 行高上下各 40% 为同级插入，中间 20% 才改成该行的子级 */
 const DROP_EDGE_RATIO = 0.4
 
-function flattenTree(folders: Folder[]): Folder[] {
+function flattenTree(
+  folders: Folder[],
+  collapsedIds: ReadonlySet<string>
+): Folder[] {
   const result: Folder[] = []
   function traverse(parentId: string | null) {
     const children = childrenOf(parentId, folders)
     for (const child of children) {
       result.push(child)
-      traverse(child.id)
+      if (!collapsedIds.has(child.id)) traverse(child.id)
     }
   }
   traverse(null)
   return result
+}
+
+function FolderRowHandle({
+  hasChildren,
+  expanded,
+  label,
+  onToggle,
+  onDragStart,
+  onDragEnd,
+}: {
+  hasChildren: boolean
+  expanded: boolean
+  label: string
+  onToggle: () => void
+  onDragStart: (event: React.DragEvent) => void
+  onDragEnd: (event: React.DragEvent) => void
+}) {
+  const suppressToggleRef = React.useRef(false)
+
+  return (
+    <button
+      type="button"
+      draggable
+      aria-expanded={hasChildren ? expanded : undefined}
+      aria-label={label}
+      onClick={() => {
+        if (!hasChildren || suppressToggleRef.current) return
+        onToggle()
+      }}
+      onDragStart={(event) => {
+        suppressToggleRef.current = true
+        onDragStart(event)
+      }}
+      onDragEnd={(event) => {
+        onDragEnd(event)
+        window.setTimeout(() => {
+          suppressToggleRef.current = false
+        }, 0)
+      }}
+      className={cn(
+        "relative grid size-6 place-items-center rounded-md text-muted-foreground/80 transition-colors",
+        "hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+        hasChildren
+          ? "cursor-pointer group-hover/row:cursor-grab active:cursor-grabbing"
+          : "cursor-grab opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 active:cursor-grabbing"
+      )}
+    >
+      {hasChildren ? (
+        <span
+          aria-hidden
+          className={cn(
+            "col-start-1 row-start-1 grid place-items-center transition-[opacity,rotate] duration-150",
+            expanded && "rotate-90",
+            "group-hover/row:opacity-0"
+          )}
+        >
+          <CaretRightIcon className="size-3.5" />
+        </span>
+      ) : null}
+      <DotsSixVerticalIcon
+        aria-hidden
+        weight="bold"
+        className={cn(
+          "col-start-1 row-start-1 size-4 transition-opacity duration-150",
+          hasChildren ? "opacity-0 group-hover/row:opacity-100" : "opacity-100"
+        )}
+      />
+    </button>
+  )
 }
 
 export function FolderManagePage() {
@@ -67,7 +140,20 @@ export function FolderManagePage() {
     queryFn: () => api.getFolders(),
   })
 
-  const flattenedFolders = React.useMemo(() => flattenTree(folders), [folders])
+  const [collapsedIds, setCollapsedIds] = React.useState<Set<string>>(
+    () => new Set()
+  )
+  const folderIdsWithChildren = React.useMemo(() => {
+    const ids = new Set<string>()
+    for (const folder of folders) {
+      if (folder.parent_id) ids.add(folder.parent_id)
+    }
+    return ids
+  }, [folders])
+  const flattenedFolders = React.useMemo(
+    () => flattenTree(folders, collapsedIds),
+    [folders, collapsedIds]
+  )
 
   // 本地颜色修改缓冲（浮层关闭时统一提交）
   const [localColors, setLocalColors] = React.useState<Record<string, string>>(
@@ -409,6 +495,16 @@ export function FolderManagePage() {
       return
     }
 
+    if (plan.parentChanged && plan.parentId) {
+      const parentId = plan.parentId
+      setCollapsedIds((current) => {
+        if (!current.has(parentId)) return current
+        const next = new Set(current)
+        next.delete(parentId)
+        return next
+      })
+    }
+
     toast.success(
       plan.parentChanged
         ? t("manage.toasts.moved")
@@ -420,6 +516,20 @@ export function FolderManagePage() {
         queryKey: queryKeys.bookmarks.all,
       })
     }
+  }
+
+  const toggleCollapsed = (folderId: string) => {
+    const willCollapse = !collapsedIds.has(folderId)
+    if (willCollapse && editingCell && editingCell.folderId !== folderId) {
+      const hidden = new Set(collectSubtreeFolderIds(folderId, folders))
+      if (hidden.has(editingCell.folderId)) cancelEdit()
+    }
+    setCollapsedIds((current) => {
+      const next = new Set(current)
+      if (next.has(folderId)) next.delete(folderId)
+      else next.add(folderId)
+      return next
+    })
   }
 
   const handleDragEnd = () => {
@@ -543,6 +653,8 @@ export function FolderManagePage() {
 
                   const isDraggingSelf = draggedFolderId === folder.id
                   const excludeIds = collectSubtreeFolderIds(folder.id, folders)
+                  const hasChildren = folderIdsWithChildren.has(folder.id)
+                  const expanded = hasChildren && !collapsedIds.has(folder.id)
 
                   return (
                     <div
@@ -551,7 +663,7 @@ export function FolderManagePage() {
                       data-folder-id={folder.id}
                       onDragOver={(e) => handleDragOver(e, folder)}
                       className={cn(
-                        "flex items-center px-3 py-2 transition-colors",
+                        "group/row flex items-center px-3 py-2 transition-colors",
                         "focus-within:bg-muted/20 hover:bg-muted/30",
                         isDraggingSelf && "bg-muted/50 opacity-40",
                         isDropInside && "bg-primary/10",
@@ -559,24 +671,27 @@ export function FolderManagePage() {
                         isDragOverBottom && "border-b-2 border-primary"
                       )}
                     >
-                      {/* 排序拖动手柄 */}
+                      {/* 默认展开箭头，悬停该行时换成拖动手柄 */}
                       <div
                         role="gridcell"
                         className="flex w-10 shrink-0 items-center justify-center"
                       >
-                        <button
-                          type="button"
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, folder)}
+                        <FolderRowHandle
+                          hasChildren={hasChildren}
+                          expanded={expanded}
+                          label={
+                            hasChildren
+                              ? t("manage.rowHandle", {
+                                  folderName: folder.name,
+                                })
+                              : t("manage.dragHandle")
+                          }
+                          onToggle={() => toggleCollapsed(folder.id)}
+                          onDragStart={(event) =>
+                            handleDragStart(event, folder)
+                          }
                           onDragEnd={handleDragEnd}
-                          aria-label={t("manage.reorderTip")}
-                          className="cursor-grab p-1 text-muted-foreground/60 transition-colors hover:text-foreground active:cursor-grabbing"
-                        >
-                          <DotsSixVerticalIcon
-                            className="size-4"
-                            weight="bold"
-                          />
-                        </button>
+                        />
                       </div>
 
                       {/* 文件夹名称 */}

@@ -15,5 +15,7 @@
   "clearSearch": "清除搜索",
   "addButton": "添加",
   "importButton": "导入",
-  "discovery": "每日热点"
+  "discovery": "每日热点",
+  "back": "返回",
+  "backToSource": "返回来源页面"
 }

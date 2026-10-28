@@ -2,6 +2,7 @@ import * as React from "react"
 import { Outlet, useLocation, useNavigate } from "react-router"
 import { useTranslation } from "react-i18next"
 import {
+  ArrowLeftIcon,
   CaretLeftIcon,
   CaretRightIcon,
   PlusIcon,
@@ -31,7 +32,7 @@ import { FolderTreePanel } from "@/features/folders/folder-tree-panel"
 import { LoginDialog } from "@/features/auth/login-dialog"
 import { LoginDialogProvider } from "@/hooks/login-dialog-context"
 import { useRefreshFoldersOnAiComplete } from "@/hooks/use-refresh-folders-on-ai-complete"
-import { useAuth, useRequireAuthAction } from "@/hooks/use-auth"
+import { safeNextPath, useAuth, useRequireAuthAction } from "@/hooks/use-auth"
 import { BOOKMARK_PAGE_PARAM } from "@/features/bookmarks/bookmark-pagination"
 import { APP_SCROLL_ROOT_ID } from "@/lib/scroll-root"
 import { toReadableSearch, useReadableSearchParams } from "@/lib/search-params"
@@ -49,6 +50,25 @@ const FOLDER_TREE_HIDDEN_PATHS = new Set([
   "/discover",
   "/folders",
 ])
+
+/** 管理文件夹页记下的来源地址；只接受站内路径，且不能指回本页 */
+function readFolderManageReturnTo(state: unknown): string | null {
+  if (!state || typeof state !== "object" || !("from" in state)) return null
+  const from = (state as { from?: unknown }).from
+  if (typeof from !== "string") return null
+  const path = safeNextPath(from)
+  if (!path) return null
+  const pathname = path.split("?")[0]?.split("#")[0]
+  if (pathname === "/folders") return null
+  return path
+}
+
+/** 路由历史里还有上一条站内记录时，返回不会跳出应用 */
+function hasInAppHistoryBack(): boolean {
+  const idx = (window.history.state as { idx?: unknown } | null)?.idx
+  if (typeof idx === "number") return idx > 0
+  return window.history.length > 1
+}
 
 export function AppShell() {
   return (
@@ -101,6 +121,16 @@ function AppShellContent() {
 
   const showFolderTree = !FOLDER_TREE_HIDDEN_PATHS.has(location.pathname)
   const isDiscovery = location.pathname === "/discover"
+  const isFolderManage = location.pathname === "/folders"
+
+  const handleFolderManageBack = () => {
+    const from = readFolderManageReturnTo(location.state)
+    if (hasInAppHistoryBack()) {
+      navigate(-1)
+      return
+    }
+    navigate(from ?? "/")
+  }
 
   const searchQuery = searchParams.get("q") || ""
   const [searchInput, setSearchInput] = React.useState(searchQuery)
@@ -159,6 +189,20 @@ function AppShellContent() {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border/50 bg-card/50 px-4 backdrop-blur-sm md:gap-4 md:px-6">
           <div className="flex min-w-0 flex-1 items-center gap-2">
+            {isFolderManage ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleFolderManageBack}
+                aria-label={t("backToSource")}
+                title={t("backToSource")}
+                className="-ml-2 shrink-0 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeftIcon className="size-4" weight="bold" />
+                <span className="hidden sm:inline">{t("back")}</span>
+              </Button>
+            ) : null}
             <Button
               variant="ghost"
               size="icon-sm"

@@ -15,5 +15,7 @@
   "clearSearch": "Clear search",
   "addButton": "Add",
   "importButton": "Import",
-  "discovery": "Discovery"
+  "discovery": "Discovery",
+  "back": "Back",
+  "backToSource": "Back to previous page"
 }

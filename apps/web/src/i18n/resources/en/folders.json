@@ -79,8 +79,10 @@
   },
   "manage": {
     "title": "Manage Folders",
-    "description": "View and manage all folders. Drag the handle to reorder; dropping across levels updates the parent folder. Click a name, slug, or description to edit it, and use the sparkle beside a slug to polish it with AI.",
+    "description": "View and manage all folders. The arrow at the start of a row expands or collapses child folders; hover the row and drag the handle to reorder. Dropping across levels updates the parent folder. Click a name, slug, or description to edit it, and use the sparkle beside a slug to polish it with AI.",
     "reorderTip": "Drop on a row’s top or bottom edge to share its parent; drop in the middle to make it a child",
+    "dragHandle": "Drag to reorder",
+    "rowHandle": "Expand or collapse {{folderName}}. Hover to drag and reorder",
     "generateSlugAria": "Polish the slug for “{{name}}” with AI",
     "empty": "No folders yet. Click sidebar to create one.",
     "columns": {
