@@ -73,7 +73,7 @@ function FolderCount({ count, hidden }: { count?: number; hidden?: boolean }) {
     <span
       className={cn(
         "inline-flex size-6 shrink-0 items-center justify-end font-mono text-[10px] text-muted-foreground tabular-nums transition-opacity",
-        "group-hover/folder:opacity-0 group-focus-within/folder:opacity-0 focus-within:opacity-0",
+        "group-focus-within/folder:opacity-0 group-hover/folder:opacity-0 focus-within:opacity-0",
         hidden && "opacity-0"
       )}
     >
@@ -146,7 +146,7 @@ function FolderTreeNode({
             <button
               type="button"
               onClick={() => onSelect(folder.id)}
-              className="flex min-w-0 flex-1 items-center gap-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+              className="flex min-w-0 flex-1 items-center gap-1.5 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <FolderIconAnimated
                 className="shrink-0"
@@ -441,9 +441,7 @@ export function FolderTreePanel({
       <div
         className={cn(
           "flex h-12 shrink-0 items-center gap-2 transition-all duration-300 ease-in-out",
-          isCollapsed
-            ? "justify-center px-1"
-            : "justify-between pr-2 pl-4"
+          isCollapsed ? "justify-center px-1" : "justify-between pr-2 pl-4"
         )}
       >
         {!isCollapsed ? (
@@ -466,16 +464,44 @@ export function FolderTreePanel({
               </Button>
             </FolderRailTooltip>
           ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              className="size-7 text-muted-foreground hover:text-foreground"
-              aria-label={t("panel.newFolderAria")}
-              onClick={() => openCreate(null)}
-            >
-              <PlusIcon className="size-4" />
-            </Button>
+            <div className="flex items-center gap-0.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="size-7 text-muted-foreground hover:text-foreground"
+                aria-label={t("panel.newFolderAria")}
+                onClick={() => openCreate(null)}
+              >
+                <PlusIcon className="size-4" />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      className="size-7 text-muted-foreground hover:text-foreground"
+                      aria-label={t("panel.moreAria")}
+                    />
+                  }
+                >
+                  <DotsThreeVerticalIcon className="size-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      navigate("/folders")
+                      onNavigate?.()
+                    }}
+                  >
+                    <FolderOpenIcon className="mr-2 size-4" />
+                    {t("panel.manageFolders")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )
         ) : null}
       </div>
@@ -611,13 +637,11 @@ export function FolderTreePanel({
               variant="ghost"
               size="icon-sm"
               className={cn(
-                "text-muted-foreground hover:text-foreground transition-all duration-300",
+                "text-muted-foreground transition-all duration-300 hover:text-foreground",
                 isCollapsed ? "size-10" : "size-8"
               )}
               aria-expanded={!isCollapsed}
-              aria-label={
-                isCollapsed ? t("panel.expand") : t("panel.collapse")
-              }
+              aria-label={isCollapsed ? t("panel.expand") : t("panel.collapse")}
               onClick={() => setCollapsedPersisted(!collapsed)}
             >
               <CaretLeftIcon
@@ -639,9 +663,7 @@ export function FolderTreePanel({
       style={
         resizable
           ? {
-              width: isCollapsed
-                ? FOLDER_PANEL_COLLAPSED_WIDTH
-                : panelWidth,
+              width: isCollapsed ? FOLDER_PANEL_COLLAPSED_WIDTH : panelWidth,
             }
           : undefined
       }
@@ -650,7 +672,7 @@ export function FolderTreePanel({
       className={cn(
         "relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-r border-border/50 bg-card/50",
         !isResizing && "transition-[width] duration-300 ease-in-out",
-        isResizing && "will-change-[width] select-none transition-none",
+        isResizing && "transition-none will-change-[width] select-none",
         !resizable && "w-56",
         className
       )}

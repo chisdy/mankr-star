@@ -1,14 +1,33 @@
-import type { Folder } from "@mankr/db"
-import { FOLDER_MAX_DEPTH } from "@mankr/shared"
+import { folders, type Db, type Folder } from "@mankr/db"
+import { eq, isNull } from "drizzle-orm"
 
-export function folderPathOf(id: string, parentPath: string | null | undefined): string {
+export { wouldExceedMaxDepth } from "@mankr/shared"
+
+export async function nextFolderSortOrder(
+  db: Db,
+  parentId: string | null | undefined
+): Promise<number> {
+  const pid = parentId ?? null
+  const rows = await db
+    .select({ sortOrder: folders.sortOrder })
+    .from(folders)
+    .where(pid === null ? isNull(folders.parentId) : eq(folders.parentId, pid))
+  if (rows.length === 0) return 10
+  const max = Math.max(...rows.map((r) => r.sortOrder))
+  return max + 10
+}
+
+export function folderPathOf(
+  id: string,
+  parentPath: string | null | undefined
+): string {
   if (!parentPath || parentPath === "/") return `/${id}/`
   return `${parentPath}${id}/`
 }
 
 export function buildPathLabel(
   folder: Pick<Folder, "id" | "name" | "path">,
-  byId: Map<string, Pick<Folder, "id" | "name">>,
+  byId: Map<string, Pick<Folder, "id" | "name">>
 ): string {
   const ids = folder.path.split("/").filter(Boolean)
   const names = ids.map((id) => byId.get(id)?.name ?? id)
@@ -18,7 +37,7 @@ export function buildPathLabel(
 /** 收集某文件夹及其全部子孙 id（含自身） */
 export function collectSubtreeIds(
   rootId: string,
-  all: Array<Pick<Folder, "id" | "path">>,
+  all: Array<Pick<Folder, "id" | "path">>
 ): string[] {
   const root = all.find((f) => f.id === rootId)
   if (!root) return [rootId]
@@ -27,7 +46,7 @@ export function collectSubtreeIds(
 
 export function maxDescendantDepth(
   rootId: string,
-  all: Array<Pick<Folder, "id" | "path" | "depth">>,
+  all: Array<Pick<Folder, "id" | "path" | "depth">>
 ): number {
   const root = all.find((f) => f.id === rootId)
   if (!root) return 0
@@ -38,14 +57,11 @@ export function maxDescendantDepth(
   return max
 }
 
-/** 移动后子树相对深度差；校验不超过 FOLDER_MAX_DEPTH */
-export function wouldExceedMaxDepth(
-  nodeDepthRelToRoot: number,
-  newParentDepth: number,
+export function isAncestorPath(
+  ancestorPath: string,
+  candidatePath: string
 ): boolean {
-  return newParentDepth + 1 + nodeDepthRelToRoot > FOLDER_MAX_DEPTH
-}
-
-export function isAncestorPath(ancestorPath: string, candidatePath: string): boolean {
-  return candidatePath.startsWith(ancestorPath) && candidatePath !== ancestorPath
+  return (
+    candidatePath.startsWith(ancestorPath) && candidatePath !== ancestorPath
+  )
 }

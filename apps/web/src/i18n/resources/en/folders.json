@@ -17,6 +17,8 @@
   "panel": {
     "title": "Folders",
     "newFolderAria": "New folder",
+    "moreAria": "More folder actions",
+    "manageFolders": "Manage folders",
     "allBookmarks": "All bookmarks",
     "folderMenuAria": "{{folderName}} menu",
     "edit": "Edit",
@@ -39,7 +41,13 @@
     "parentLabel": "Parent folder",
     "root": "Root",
     "slugLabel": "Slug (English id)",
-    "generateSlug": "Generate from name",
+    "generateSlug": "Polish with AI",
+    "slugGenerating": "Generating from the name…",
+    "slugGeneratedAi": "Generated. You can still edit it before saving.",
+    "slugGeneratedFallback": "AI was unavailable, so this was transcribed from the name. You can still edit it.",
+    "slugUnchanged": "This slug already fits",
+    "slugKept": "AI was unavailable, so the current slug was kept",
+    "slugSuggestFailed": "Could not generate a slug. Try again or type one.",
     "slugHelp": "Lowercase letters, numbers, and hyphens only. Leave blank to auto-generate on save.",
     "colorLabel": "Color",
     "colorAria": "Folder color",
@@ -68,5 +76,46 @@
     "noMoveTarget": "No other folder available. Create one or pick another option.",
     "acknowledge": "Got it",
     "confirmDelete": "Confirm delete"
+  },
+  "manage": {
+    "title": "Manage Folders",
+    "description": "View and manage all folders. Drag the handle to reorder; dropping across levels updates the parent folder. Click a name, slug, or description to edit it, and use the sparkle beside a slug to polish it with AI.",
+    "reorderTip": "Drop on a row’s top or bottom edge to share its parent; drop in the middle to make it a child",
+    "generateSlugAria": "Polish the slug for “{{name}}” with AI",
+    "empty": "No folders yet. Click sidebar to create one.",
+    "columns": {
+      "drag": "Order",
+      "name": "Folder Name",
+      "slug": "Slug",
+      "parent": "Parent Folder",
+      "color": "Color",
+      "description": "Description"
+    },
+    "placeholders": {
+      "name": "Folder name",
+      "slug": "kebab-case-slug",
+      "description": "Click to add description…"
+    },
+    "errors": {
+      "nameRequired": "Folder name cannot be empty",
+      "nameTooLong": "Folder name cannot exceed 64 characters",
+      "slugInvalid": "Slug allows only lowercase letters, numbers, and hyphens (up to 64 chars)",
+      "descTooLong": "Description cannot exceed 500 characters",
+      "reorderFailed": "Failed to reorder folders, please try again",
+      "depthExceeded": "This move would exceed the folder depth limit",
+      "movePartial": "The parent changed, but the new order did not save. Drag it again.",
+      "updateFailed": "Failed to update folder, please try again",
+      "slugSuggestFailed": "Could not generate a slug. Try again."
+    },
+    "toasts": {
+      "reordered": "Folder order updated",
+      "moved": "Parent folder updated",
+      "updated": "Folder updated",
+      "slugGenerated": "Slug updated to {{slug}}",
+      "slugGeneratedFallback": "AI was unavailable. Transcribed from the name as {{slug}}",
+      "slugDrafted": "Filled in {{slug}}. Press Enter to save.",
+      "slugUnchanged": "This slug already fits. Nothing changed.",
+      "slugKept": "AI was unavailable. The slug was left as is."
+    }
   }
 }

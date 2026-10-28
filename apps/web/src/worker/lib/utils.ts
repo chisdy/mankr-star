@@ -18,6 +18,21 @@ export function folderSlugBase(input: string): string {
   return asciiSlugify(input) || "folder"
 }
 
+/**
+ * AI 没有给出 slug 时的结果。
+ * 已有合法 slug 一律保留，避免用名称机械转写覆盖用户自定义值。
+ */
+export function slugWhenAiMissed(
+  name: string,
+  currentSlug?: string | null,
+): { slug: string; keptCurrent: boolean } {
+  const current = currentSlug?.trim() ?? ""
+  if (current && folderSlugBase(current) === current) {
+    return { slug: current, keptCurrent: true }
+  }
+  return { slug: folderSlugBase(name), keptCurrent: false }
+}
+
 export function nowIso(): string {
   return new Date().toISOString()
 }

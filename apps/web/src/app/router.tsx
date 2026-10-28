@@ -1,5 +1,10 @@
 import * as React from "react"
-import { createBrowserRouter, Navigate, Outlet, useLocation } from "react-router"
+import {
+  createBrowserRouter,
+  Navigate,
+  Outlet,
+  useLocation,
+} from "react-router"
 
 import { AppShell } from "@/components/app-shell"
 import { BrandLogo } from "@/components/brand-logo"
@@ -15,13 +20,14 @@ import { RankingsPage } from "@/features/rankings/rankings-page"
 import { InsightsPage } from "@/features/insights/insights-page"
 import { ImportPage } from "@/features/import/import-page"
 import { SettingsPage } from "@/features/settings/settings-page"
+import { FolderManagePage } from "@/features/folders/folder-manage-page"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import { loginUrlWithNext, useAuth } from "@/hooks/use-auth"
 import { useOptionalLoginDialog } from "@/hooks/login-dialog-context"
 
 function AuthLoading() {
   return (
-    <div className="flex min-h-screen items-center justify-center p-6 bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="flex flex-col items-center gap-3">
         <BrandLogo
           className="size-10 rounded-lg bg-primary text-primary-foreground"
@@ -113,7 +119,6 @@ export const router = createBrowserRouter([
             element: <AppShell />,
             children: [
               { path: "/", element: <BookmarksPage /> },
-              { path: "/folders", element: <Navigate to="/" replace /> },
               { path: "/tags", element: <TagsPage /> },
               { path: "/rankings", element: <RankingsPage /> },
               { path: "/feed", element: <FeedPage /> },
@@ -122,6 +127,7 @@ export const router = createBrowserRouter([
               {
                 element: <RequireAuth />,
                 children: [
+                  { path: "/folders", element: <FolderManagePage /> },
                   { path: "/insights", element: <InsightsPage /> },
                   { path: "/settings", element: <SettingsPage /> },
                   { path: "/import", element: <ImportPage /> },

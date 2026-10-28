@@ -1,8 +1,10 @@
 import { bookmarks, folders, type Db, type Folder } from "@mankr/db"
 import {
   FOLDER_MAX_DEPTH,
+  wouldExceedMaxDepth,
   createFolderSchema,
   deleteFolderSchema,
+  reorderFoldersSchema,
   suggestFolderSlugSchema,
   updateFolderSchema,
 } from "@mankr/shared"
@@ -16,6 +18,7 @@ import {
   folderPathOf,
   isAncestorPath,
   maxDescendantDepth,
+  nextFolderSortOrder,
 } from "../lib/folder-utils"
 import { rateLimit } from "../lib/rate-limit"
 import { bumpBookmarkMatchRevision } from "../lib/bookmark-match-revision"
@@ -27,11 +30,7 @@ export const folderRoutes = new Hono<AppEnv>()
 folderRoutes.use("/folders", authByMethod())
 folderRoutes.use("/folders/*", authByMethod())
 
-function serializeFolder(
-  r: Folder,
-  bookmarkCount: number,
-  pathLabel: string,
-) {
+function serializeFolder(r: Folder, bookmarkCount: number, pathLabel: string) {
   return {
     id: r.id,
     name: r.name,
@@ -53,7 +52,7 @@ function serializeFolder(
 async function assertValidParent(
   db: Db,
   parentId: string | null | undefined,
-  selfId?: string,
+  selfId?: string
 ): Promise<
   | { ok: true; parent: Folder | null; depth: number }
   | { ok: false; status: 400 | 404; error: string; code: string }
@@ -75,7 +74,12 @@ async function assertValidParent(
     .where(eq(folders.id, parentId))
     .get()
   if (!parent) {
-    return { ok: false, status: 404, error: "父文件夹不存在", code: "NOT_FOUND" }
+    return {
+      ok: false,
+      status: 404,
+      error: "父文件夹不存在",
+      code: "NOT_FOUND",
+    }
   }
   if (parent.depth >= FOLDER_MAX_DEPTH) {
     return {
@@ -86,7 +90,11 @@ async function assertValidParent(
     }
   }
   if (selfId) {
-    const self = await db.select().from(folders).where(eq(folders.id, selfId)).get()
+    const self = await db
+      .select()
+      .from(folders)
+      .where(eq(folders.id, selfId))
+      .get()
     if (self && isAncestorPath(self.path, parent.path)) {
       return {
         ok: false,
@@ -103,12 +111,12 @@ async function assertSlugUnique(
   db: Db,
   slug: string,
   parentId: string | null,
-  excludeId?: string,
+  excludeId?: string
 ): Promise<boolean> {
   if (parentId == null) {
     const rows = await db.select().from(folders).where(isNull(folders.parentId))
     return !rows.some(
-      (r) => r.slug === slug && (!excludeId || r.id !== excludeId),
+      (r) => r.slug === slug && (!excludeId || r.id !== excludeId)
     )
   }
   const conflict = await db
@@ -118,8 +126,8 @@ async function assertSlugUnique(
       and(
         eq(folders.parentId, parentId),
         eq(folders.slug, slug),
-        excludeId ? ne(folders.id, excludeId) : undefined,
-      ),
+        excludeId ? ne(folders.id, excludeId) : undefined
+      )
     )
     .get()
   return !conflict
@@ -140,7 +148,7 @@ folderRoutes.get("/folders", async (c) => {
   const directCount = new Map(
     countRows
       .filter((r) => r.folderId)
-      .map((r) => [r.folderId as string, Number(r.value)]),
+      .map((r) => [r.folderId as string, Number(r.value)])
   )
 
   const byId = new Map(rows.map((r) => [r.id, r]))
@@ -152,7 +160,7 @@ folderRoutes.get("/folders", async (c) => {
 
   return c.json({
     items: rows.map((r) =>
-      serializeFolder(r, subtreeCount(r.id), buildPathLabel(r, byId)),
+      serializeFolder(r, subtreeCount(r.id), buildPathLabel(r, byId))
     ),
   })
 })
@@ -179,7 +187,7 @@ folderRoutes.post("/folders/suggest-slug", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -188,6 +196,8 @@ folderRoutes.post("/folders/suggest-slug", async (c) => {
     name: parsed.data.name,
     parentId: parsed.data.parentId,
     excludeId: parsed.data.excludeId,
+    currentSlug: parsed.data.currentSlug,
+    description: parsed.data.description,
   })
   return c.json(result)
 })
@@ -209,7 +219,7 @@ folderRoutes.post("/folders", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -217,7 +227,7 @@ folderRoutes.post("/folders", async (c) => {
   if (!parentCheck.ok) {
     return c.json(
       { error: parentCheck.error, code: parentCheck.code },
-      parentCheck.status,
+      parentCheck.status
     )
   }
 
@@ -239,12 +249,14 @@ folderRoutes.post("/folders", async (c) => {
   const id = crypto.randomUUID()
   const now = nowIso()
   const path = folderPathOf(id, parentCheck.parent?.path)
+  const sortOrder =
+    parsed.data.sortOrder ?? (await nextFolderSortOrder(db, parentId))
   await db.insert(folders).values({
     id,
     name,
     slug,
     color: parsed.data.color ?? "#64748B",
-    sortOrder: parsed.data.sortOrder ?? 200,
+    sortOrder,
     description: parsed.data.description ?? null,
     isPreset: false,
     parentId,
@@ -258,6 +270,73 @@ folderRoutes.post("/folders", async (c) => {
   const byId = new Map([[id, row!]])
   if (parentCheck.parent) byId.set(parentCheck.parent.id, parentCheck.parent)
   return c.json(serializeFolder(row!, 0, buildPathLabel(row!, byId)), 201)
+})
+
+folderRoutes.post("/folders/reorder", async (c) => {
+  const db = c.get("db")
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: "无效的 JSON", code: "BAD_REQUEST" }, 400)
+  }
+
+  const parsed = reorderFoldersSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: "参数校验失败",
+        code: "VALIDATION_ERROR",
+        details: parsed.error.flatten(),
+      },
+      400
+    )
+  }
+
+  const { parentId, orderedIds } = parsed.data
+  const children = await db
+    .select({ id: folders.id })
+    .from(folders)
+    .where(
+      parentId === null
+        ? isNull(folders.parentId)
+        : eq(folders.parentId, parentId)
+    )
+
+  if (children.length !== orderedIds.length) {
+    return c.json(
+      { error: "排序列表与现有子文件夹不一致", code: "BAD_REQUEST" },
+      400
+    )
+  }
+
+  const childIdSet = new Set(children.map((child) => child.id))
+  for (const id of orderedIds) {
+    if (!childIdSet.has(id)) {
+      return c.json(
+        { error: "排序列表与现有子文件夹不一致", code: "BAD_REQUEST" },
+        400
+      )
+    }
+  }
+
+  const now = nowIso()
+  if (orderedIds.length === 1) {
+    await db
+      .update(folders)
+      .set({ sortOrder: 10, updatedAt: now })
+      .where(eq(folders.id, orderedIds[0]!))
+  } else {
+    const statements = orderedIds.map((id, index) =>
+      db
+        .update(folders)
+        .set({ sortOrder: (index + 1) * 10, updatedAt: now })
+        .where(eq(folders.id, id))
+    )
+    await db.batch(statements as [(typeof statements)[0], ...typeof statements])
+  }
+
+  return c.json({ ok: true })
 })
 
 folderRoutes.patch("/folders/:id", async (c) => {
@@ -278,17 +357,25 @@ folderRoutes.patch("/folders/:id", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
-  const existing = await db.select().from(folders).where(eq(folders.id, id)).get()
+  const existing = await db
+    .select()
+    .from(folders)
+    .where(eq(folders.id, id))
+    .get()
   if (!existing) {
     return c.json({ error: "文件夹不存在", code: "NOT_FOUND" }, 404)
   }
 
   let nextParent = existing.parentId
-    ? await db.select().from(folders).where(eq(folders.id, existing.parentId)).get()
+    ? await db
+        .select()
+        .from(folders)
+        .where(eq(folders.id, existing.parentId))
+        .get()
     : null
   let nextDepth = existing.depth
   let nextPath = existing.path
@@ -298,7 +385,7 @@ folderRoutes.patch("/folders/:id", async (c) => {
     if (!parentCheck.ok) {
       return c.json(
         { error: parentCheck.error, code: parentCheck.code },
-        parentCheck.status,
+        parentCheck.status
       )
     }
     nextParent = parentCheck.parent
@@ -307,27 +394,25 @@ folderRoutes.patch("/folders/:id", async (c) => {
     const all = await db.select().from(folders)
     const subtreeMax = maxDescendantDepth(id, all)
     const relativeExtra = subtreeMax - existing.depth
-    if (nextDepth + relativeExtra > FOLDER_MAX_DEPTH) {
+    if (wouldExceedMaxDepth(relativeExtra, nextDepth - 1)) {
       return c.json(
         {
           error: `移动后超过最大 ${FOLDER_MAX_DEPTH + 1} 级深度`,
           code: "INVALID_PARENT",
         },
-        400,
+        400
       )
     }
     nextPath = folderPathOf(id, nextParent?.path)
   }
 
   const nextSlug = parsed.data.slug ?? existing.slug
-  const nextParentId = parsed.data.parentId !== undefined
-    ? (nextParent?.id ?? null)
-    : existing.parentId
+  const nextParentId =
+    parsed.data.parentId !== undefined
+      ? (nextParent?.id ?? null)
+      : existing.parentId
 
-  if (
-    nextSlug !== existing.slug ||
-    nextParentId !== existing.parentId
-  ) {
+  if (nextSlug !== existing.slug || nextParentId !== existing.parentId) {
     if (!(await assertSlugUnique(db, nextSlug, nextParentId, id))) {
       return c.json({ error: "同级 slug 已存在", code: "DUPLICATE" }, 409)
     }
@@ -401,7 +486,7 @@ folderRoutes.delete("/folders/:id", async (c) => {
         error: "请先删除或迁移子文件夹",
         code: "HAS_CHILDREN",
       },
-      409,
+      409
     )
   }
 
@@ -420,7 +505,7 @@ folderRoutes.delete("/folders/:id", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -431,7 +516,7 @@ folderRoutes.delete("/folders/:id", async (c) => {
     if (moveToFolderId === id) {
       return c.json(
         { error: "不能迁移到即将删除的文件夹", code: "INVALID_TARGET" },
-        400,
+        400
       )
     }
     const target = await db
@@ -442,7 +527,7 @@ folderRoutes.delete("/folders/:id", async (c) => {
     if (!target) {
       return c.json(
         { error: "目标文件夹不存在", code: "TARGET_NOT_FOUND" },
-        404,
+        404
       )
     }
     await db

@@ -654,38 +654,86 @@ export async function classifyWithDeepSeek(opts: {
   }
 }
 
+export type SlugTranslateInput = {
+  name: string
+  currentSlug?: string | null
+  description?: string | null
+}
+
+function slugTranslateUserContent(input: SlugTranslateInput): string {
+  const lines = [`名称：${input.name.trim()}`]
+  const current = input.currentSlug?.trim()
+  if (current) lines.push(`当前 slug：${current}`)
+  const description = input.description?.trim()
+  if (description) lines.push(`说明：${description.slice(0, 200)}`)
+  return lines.join("\n")
+}
+
+/** 从模型正文或被截断的思考文本里取出 slug_words */
+export function extractSlugWords(text: string): string {
+  const trimmed = text.trim()
+  if (!trimmed) return ""
+  const candidates = [trimmed]
+  const objectMatch = trimmed.match(/\{[^{}]*"slug_words"[^{}]*\}/)
+  if (objectMatch) candidates.unshift(objectMatch[0])
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as {
+        slug_words?: string
+        slug?: string
+      }
+      const raw = parsed.slug_words || parsed.slug || ""
+      if (raw.trim()) return raw
+    } catch {
+      /* 再试下一段 */
+    }
+  }
+  return trimmed.match(/"slug_words"\s*:\s*"([^"]*)"/)?.[1] ?? ""
+}
+
 /** 将中文/任意名称译为英文短语，再 asciiSlugify；失败返回 slug=null 并带 usage */
 export async function translateNameToEnglishSlug(
   apiKey: string,
-  name: string,
+  input: SlugTranslateInput,
   model?: string,
   signal?: AbortSignal
 ): Promise<TranslateSlugResult> {
   const resolvedModel = model || DEFAULT_DEEPSEEK_MODEL
   const started = Date.now()
   try {
-    const res = await fetch(`${DEEPSEEK_API_BASE}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+    const messages = [
+      {
+        role: "system",
+        content:
+          '你把文件夹名称整理成简短英文标识用词，2 到 5 个单词。若给了当前 slug：已经准确、简短就保持原词，不要为了换词而换词；含糊、拼音、过长或与名称不符时再改。说明只作参考，不要把整句写进标识。只输出 JSON：{"slug_words":"english words here"}。不要解释。',
       },
-      body: JSON.stringify({
-        model: resolvedModel,
-        messages: [
-          {
-            role: "system",
-            content:
-              '将文件夹名称译成简短英文标识（2～5 个单词）。只输出 JSON：{"slug_words":"english words here"}。不要解释。',
-          },
-          { role: "user", content: name },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1,
-        max_tokens: 60,
-      }),
-      signal,
-    })
+      { role: "user", content: slugTranslateUserContent(input) },
+    ]
+    const payload = {
+      model: resolvedModel,
+      messages,
+      response_format: { type: "json_object" },
+      temperature: 0.1,
+      // 思考模型会把额度先花在 reasoning 上，过小会在写出 JSON 前被截断
+      max_tokens: 512,
+    }
+    const postSlug = (body: Record<string, unknown>) =>
+      fetch(`${DEEPSEEK_API_BASE}/chat/completions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+        signal,
+      })
+    let res = await postSlug({ ...payload, thinking: { type: "disabled" } })
+    if (res.status === 400) {
+      const errText = await res.clone().text()
+      if (errText.toLowerCase().includes("thinking")) {
+        res = await postSlug(payload)
+      }
+    }
     const latencyMs = Date.now() - started
     if (!res.ok) {
       return {
@@ -702,8 +750,13 @@ export async function translateNameToEnglishSlug(
       usage?: unknown
     }
     const usage = parseDeepSeekUsage(data.usage)
-    const content = data.choices?.[0]?.message?.content
-    if (!content) {
+    const message = data.choices?.[0]?.message as
+      | { content?: string; reasoning_content?: string }
+      | undefined
+    const raw =
+      extractSlugWords(message?.content ?? "") ||
+      extractSlugWords(message?.reasoning_content ?? "")
+    if (!raw) {
       return {
         slug: null,
         usage,
@@ -713,8 +766,6 @@ export async function translateNameToEnglishSlug(
         errorCode: "EMPTY_CONTENT",
       }
     }
-    const parsed = JSON.parse(content) as { slug_words?: string; slug?: string }
-    const raw = parsed.slug_words || parsed.slug || ""
     const slug = asciiSlugify(raw)
     return {
       slug: slug || null,

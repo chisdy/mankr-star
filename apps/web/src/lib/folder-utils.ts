@@ -1,3 +1,5 @@
+import { wouldExceedMaxDepth } from "@mankr/shared"
+
 import { DEFAULT_LOCALE, readStoredLocale } from "../i18n/locales"
 import type { Folder } from "@/lib/types"
 
@@ -36,11 +38,11 @@ export function folderSelectLabel(folder: Folder, all: Folder[]): string {
 
 export function childrenOf(
   parentId: string | null,
-  folders: Folder[],
+  folders: Folder[]
 ): Folder[] {
   return folders
     .filter((f) =>
-      parentId === null ? f.parent_id == null : f.parent_id === parentId,
+      parentId === null ? f.parent_id == null : f.parent_id === parentId
     )
     .sort(folderSort)
 }
@@ -52,7 +54,7 @@ export function topLevelFolders(folders: Folder[]): Folder[] {
 /** 收集某文件夹及其全部子孙 id（含自身） */
 export function collectSubtreeFolderIds(
   rootId: string,
-  all: Pick<Folder, "id" | "path">[],
+  all: Pick<Folder, "id" | "path">[]
 ): string[] {
   const root = all.find((f) => f.id === rootId)
   if (!root) return [rootId]
@@ -65,7 +67,7 @@ export function collectSubtreeFolderIds(
  */
 export function filterFoldersByName(
   folders: Folder[],
-  query: string,
+  query: string
 ): { folders: Folder[]; expandIds: string[] } {
   const q = query.trim().toLowerCase()
   if (!q) return { folders, expandIds: [] }
@@ -86,4 +88,86 @@ export function filterFoldersByName(
     .map((f) => f.id)
 
   return { folders: filtered, expandIds }
+}
+
+export type FolderDropPosition = "before" | "after" | "inside"
+
+export type FolderDropPlan =
+  | {
+      ok: true
+      parentId: string | null
+      orderedIds: string[]
+      parentChanged: boolean
+    }
+  | { ok: false; reason: "invalid" | "depth" | "noop" }
+
+/** 子树比自身深几级；叶子为 0 */
+function subtreeDepthSpan(root: Folder, folders: Folder[]): number {
+  let max = root.depth
+  for (const folder of folders) {
+    if (folder.path.startsWith(root.path) && folder.depth > max) {
+      max = folder.depth
+    }
+  }
+  return max - root.depth
+}
+
+/**
+ * 计算拖放后的父级与同级顺序。
+ * before/after：排到目标行的同一父级；inside：成为目标文件夹的最后一个子级。
+ * 不能拖进自身子树，移动后也不能超过最大深度。
+ */
+export function planFolderDrop(
+  folders: Folder[],
+  draggedId: string,
+  targetId: string,
+  position: FolderDropPosition
+): FolderDropPlan {
+  const dragged = folders.find((folder) => folder.id === draggedId)
+  const target = folders.find((folder) => folder.id === targetId)
+  if (!dragged || !target) return { ok: false, reason: "invalid" }
+  if (target.path.startsWith(dragged.path))
+    return { ok: false, reason: "invalid" }
+
+  const parentId =
+    position === "inside" ? target.id : (target.parent_id ?? null)
+  let newParentDepth = -1
+  if (parentId) {
+    const parent = folders.find((folder) => folder.id === parentId)
+    if (!parent || parent.path.startsWith(dragged.path)) {
+      return { ok: false, reason: "invalid" }
+    }
+    newParentDepth = parent.depth
+  }
+  if (wouldExceedMaxDepth(subtreeDepthSpan(dragged, folders), newParentDepth)) {
+    return { ok: false, reason: "depth" }
+  }
+
+  const siblings = childrenOf(parentId, folders).filter(
+    (folder) => folder.id !== dragged.id
+  )
+  let insertIdx = siblings.length
+  if (position !== "inside") {
+    const targetIdx = siblings.findIndex((folder) => folder.id === target.id)
+    if (targetIdx < 0) return { ok: false, reason: "invalid" }
+    insertIdx = position === "after" ? targetIdx + 1 : targetIdx
+  }
+
+  const next = [...siblings]
+  next.splice(insertIdx, 0, dragged)
+  const orderedIds = next.map((folder) => folder.id)
+  const sameParent = (dragged.parent_id ?? null) === parentId
+  if (sameParent) {
+    const originalIds = childrenOf(parentId, folders).map((folder) => folder.id)
+    if (orderedIds.every((id, index) => id === originalIds[index])) {
+      return { ok: false, reason: "noop" }
+    }
+  }
+
+  return {
+    ok: true,
+    parentId,
+    orderedIds,
+    parentChanged: !sameParent,
+  }
 }

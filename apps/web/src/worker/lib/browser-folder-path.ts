@@ -3,7 +3,7 @@ import { FOLDER_MAX_DEPTH } from "@mankr/shared"
 import { eq } from "drizzle-orm"
 import { allocateFolderSlug } from "./ai-service"
 import { normalizeFolderName } from "./deepseek"
-import { folderPathOf } from "./folder-utils"
+import { folderPathOf, nextFolderSortOrder } from "./folder-utils"
 import { nowIso } from "./utils"
 
 /** 书签栏根算起，最多 5 级（depth 0–4）。多出来的并进最深一级的名称。 */
@@ -77,12 +77,13 @@ export async function ensureBrowserFolderPath(
     const slug = await allocateFolderSlug(db, name, parentId)
     const path = folderPathOf(id, parentPath)
     const now = nowIso()
+    const nextSortOrder = await nextFolderSortOrder(db, parentId)
     await db.insert(folders).values({
       id,
       name,
       slug,
       color: "#64748B",
-      sortOrder: 200,
+      sortOrder: nextSortOrder,
       isPreset: false,
       parentId,
       depth: i,

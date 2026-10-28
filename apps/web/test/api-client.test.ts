@@ -3,7 +3,11 @@
  * 把 globalThis.fetch 指向真实 Hono app，直接跑 apps/web/src/lib/api.ts，
  * 用于抓住字段名/信封/状态码层面的前后端漂移。
  */
-import { createExecutionContext, env, waitOnExecutionContext } from "cloudflare:test"
+import {
+  createExecutionContext,
+  env,
+  waitOnExecutionContext,
+} from "cloudflare:test"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   KB_CHAT_MESSAGE_MAX_CHARS,
@@ -14,6 +18,7 @@ import {
   type KbStoredMessage,
 } from "@mankr/shared"
 import { ApiError, api } from "../src/lib/api"
+import { childrenOf } from "../src/lib/folder-utils"
 import { buildKbChatPayload, streamKbChat } from "../src/lib/kb-chat"
 import { app } from "../src/worker/app"
 import { OWNER, githubRepoPayload } from "./helpers"
@@ -29,79 +34,87 @@ function installBrowserFetch() {
   clientIp += 1
   const ip = `10.20.0.${clientIp % 250}`
 
-  vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url =
-      typeof input === "string"
-        ? input
-        : input instanceof URL
-          ? input.toString()
-          : input.url
+  vi.stubGlobal(
+    "fetch",
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url
 
-    if (url.startsWith("/api/")) {
-      const headers = new Headers(init?.headers)
-      if (cookies.size > 0) {
-        headers.set(
-          "Cookie",
-          Array.from(cookies.entries())
-            .map(([k, v]) => `${k}=${v}`)
-            .join("; "),
+      if (url.startsWith("/api/")) {
+        const headers = new Headers(init?.headers)
+        if (cookies.size > 0) {
+          headers.set(
+            "Cookie",
+            Array.from(cookies.entries())
+              .map(([k, v]) => `${k}=${v}`)
+              .join("; ")
+          )
+        }
+        headers.set("cf-connecting-ip", ip)
+
+        const ctx = createExecutionContext()
+        const response = await app.request(url, { ...init, headers }, env, ctx)
+        await waitOnExecutionContext(ctx)
+
+        const setCookies =
+          typeof response.headers.getSetCookie === "function"
+            ? response.headers.getSetCookie()
+            : [response.headers.get("set-cookie")].filter(Boolean as never)
+        for (const cookie of setCookies) {
+          if (!cookie) continue
+          const [pair, ...attrs] = cookie.split(";")
+          const eq = pair!.indexOf("=")
+          if (eq < 0) continue
+          const name = pair!.slice(0, eq).trim()
+          const value = pair!.slice(eq + 1).trim()
+          const expired = attrs.some(
+            (a) => a.trim().toLowerCase() === "max-age=0"
+          )
+          if (expired || !value) cookies.delete(name)
+          else cookies.set(name, value)
+        }
+        return response
+      }
+
+      if (url.startsWith(`${GITHUB_REPOS}facebook/react/readme`)) {
+        return new Response("# React")
+      }
+      if (url.startsWith(`${GITHUB_REPOS}facebook/react`)) {
+        return new Response(
+          JSON.stringify(githubRepoPayload("facebook/react")),
+          {
+            headers: { "content-type": "application/json" },
+          }
         )
       }
-      headers.set("cf-connecting-ip", ip)
-
-      const ctx = createExecutionContext()
-      const response = await app.request(url, { ...init, headers }, env, ctx)
-      await waitOnExecutionContext(ctx)
-
-      const setCookies =
-        typeof response.headers.getSetCookie === "function"
-          ? response.headers.getSetCookie()
-          : [response.headers.get("set-cookie")].filter(Boolean as never)
-      for (const cookie of setCookies) {
-        if (!cookie) continue
-        const [pair, ...attrs] = cookie.split(";")
-        const eq = pair!.indexOf("=")
-        if (eq < 0) continue
-        const name = pair!.slice(0, eq).trim()
-        const value = pair!.slice(eq + 1).trim()
-        const expired = attrs.some((a) => a.trim().toLowerCase() === "max-age=0")
-        if (expired || !value) cookies.delete(name)
-        else cookies.set(name, value)
+      if (url.startsWith(ANYSEARCH)) {
+        return new Response(
+          JSON.stringify({
+            code: 0,
+            data: {
+              results: [
+                { title: "React", url: "https://react.dev", snippet: "docs" },
+              ],
+            },
+          }),
+          { headers: { "content-type": "application/json" } }
+        )
       }
-      return response
+      if (url.startsWith(DEEPSEEK)) {
+        const body =
+          `data: ${JSON.stringify({ choices: [{ delta: { content: "答案" } }] })}\n\n` +
+          "data: [DONE]\n\n"
+        return new Response(body, {
+          headers: { "content-type": "text/event-stream" },
+        })
+      }
+      throw new Error(`未 mock 的出站请求: ${url}`)
     }
-
-    if (url.startsWith(`${GITHUB_REPOS}facebook/react/readme`)) {
-      return new Response("# React")
-    }
-    if (url.startsWith(`${GITHUB_REPOS}facebook/react`)) {
-      return new Response(JSON.stringify(githubRepoPayload("facebook/react")), {
-        headers: { "content-type": "application/json" },
-      })
-    }
-    if (url.startsWith(ANYSEARCH)) {
-      return new Response(
-        JSON.stringify({
-          code: 0,
-          data: {
-            results: [
-              { title: "React", url: "https://react.dev", snippet: "docs" },
-            ],
-          },
-        }),
-        { headers: { "content-type": "application/json" } },
-      )
-    }
-    if (url.startsWith(DEEPSEEK)) {
-      const body =
-        `data: ${JSON.stringify({ choices: [{ delta: { content: "答案" } }] })}\n\n` +
-        "data: [DONE]\n\n"
-      return new Response(body, {
-        headers: { "content-type": "text/event-stream" },
-      })
-    }
-    throw new Error(`未 mock 的出站请求: ${url}`)
-  })
+  )
 }
 
 beforeEach(() => {
@@ -222,6 +235,106 @@ describe("api client 业务映射", () => {
     expect(after.find((f) => f.id === created.id)).toBeUndefined()
   })
 
+  it("reorderFolders 批量写入同级序号并在 childrenOf 中生效", async () => {
+    const parent = await api.createFolder({
+      name: "排序测试组",
+      slug: "reorder-test-group",
+    })
+    const childA = await api.createFolder({
+      name: "子项A",
+      slug: "sub-a",
+      parent_id: parent.id,
+    })
+    const childB = await api.createFolder({
+      name: "子项B",
+      slug: "sub-b",
+      parent_id: parent.id,
+    })
+
+    expect(childB.sort_order).toBe(childA.sort_order! + 10)
+
+    await api.reorderFolders({
+      parentId: parent.id,
+      orderedIds: [childB.id, childA.id],
+    })
+
+    const allAfter = await api.getFolders()
+    const children = childrenOf(parent.id, allAfter)
+    expect(children.map((c) => c.id)).toEqual([childB.id, childA.id])
+    expect(children[0]!.sort_order).toBe(10)
+    expect(children[1]!.sort_order).toBe(20)
+
+    // 测试根级重排
+    const roots = childrenOf(null, allAfter)
+    const reversedRoots = [...roots.map((r) => r.id)].reverse()
+    await api.reorderFolders({
+      parentId: null,
+      orderedIds: reversedRoots,
+    })
+
+    const allAfterRoot = await api.getFolders()
+    const newRoots = childrenOf(null, allAfterRoot)
+    expect(newRoots.map((r) => r.id)).toEqual(reversedRoots)
+    expect(newRoots[0]!.sort_order).toBe(10)
+    expect(newRoots[1]!.sort_order).toBe(20)
+
+    await api.deleteFolder(childA.id)
+    await api.deleteFolder(childB.id)
+    await api.deleteFolder(parent.id)
+  })
+
+  it("先改父级再 reorder，文件夹连同子树移到新父级的指定位置", async () => {
+    const parentA = await api.createFolder({
+      name: "父级A",
+      slug: "parent-a-move",
+    })
+    const parentB = await api.createFolder({
+      name: "父级B",
+      slug: "parent-b-move",
+    })
+    const moving = await api.createFolder({
+      name: "待移动",
+      slug: "child-move",
+      parent_id: parentA.id,
+    })
+    const grand = await api.createFolder({
+      name: "孙级",
+      slug: "grand-move",
+      parent_id: moving.id,
+    })
+    const sibling = await api.createFolder({
+      name: "原有子级",
+      slug: "sibling-move",
+      parent_id: parentB.id,
+    })
+
+    await api.updateFolder(moving.id, { parent_id: parentB.id })
+    await api.reorderFolders({
+      parentId: parentB.id,
+      orderedIds: [moving.id, sibling.id],
+    })
+
+    const all = await api.getFolders()
+    const moved = all.find((folder) => folder.id === moving.id)
+    const movedGrand = all.find((folder) => folder.id === grand.id)
+    expect(moved?.parent_id).toBe(parentB.id)
+    expect(moved?.depth).toBe(1)
+    expect(childrenOf(parentB.id, all).map((folder) => folder.id)).toEqual([
+      moving.id,
+      sibling.id,
+    ])
+    expect(childrenOf(parentA.id, all)).toEqual([])
+    expect(movedGrand?.parent_id).toBe(moving.id)
+    expect(movedGrand?.path.startsWith(moved!.path)).toBe(true)
+    expect(movedGrand?.depth).toBe(2)
+
+    await api.deleteFolder(grand.id)
+    await api.deleteFolder(moving.id)
+    await api.deleteFolder(sibling.id)
+    await api.deleteFolder(parentA.id)
+    await api.deleteFolder(parentB.id)
+  })
+
   it("createBookmark 把 folder_id 映射为 folderId", async () => {
     const folders = await api.getFolders()
     const target = folders[0]!
@@ -239,8 +352,12 @@ describe("api client 业务映射", () => {
 
   it("重复收藏保留 409 details.id，发现页可直接标记已收藏", async () => {
     const bookmark = await api.createBookmark({ url: "facebook/react" })
-    await expect(api.createBookmark({ url: "facebook/react" })).rejects.toMatchObject({
-      status: 409, code: "DUPLICATE", details: { id: bookmark.id },
+    await expect(
+      api.createBookmark({ url: "facebook/react" })
+    ).rejects.toMatchObject({
+      status: 409,
+      code: "DUPLICATE",
+      details: { id: bookmark.id },
     })
   })
 
@@ -331,7 +448,9 @@ describe("api client 业务映射", () => {
     const created = await api.createBookmark({ url: "facebook/react" })
     const refreshed = await api.regenerateAi(created.id)
     expect(refreshed.id).toBe(created.id)
-    expect(["pending", "fallback", "done", "failed"]).toContain(refreshed.ai_status)
+    expect(["pending", "fallback", "done", "failed"]).toContain(
+      refreshed.ai_status
+    )
   })
 
   it("deleteBookmark 后 getBookmark 抛出真实 404", async () => {
@@ -537,7 +656,7 @@ describe("streamKbChat 契约", () => {
         onDelta: (d) => {
           text += d
         },
-      },
+      }
     )
 
     expect(sources.some((s) => s.type === "bookmark")).toBe(true)
@@ -547,7 +666,7 @@ describe("streamKbChat 契约", () => {
   it("联网未配置时抛 ANYSEARCH_NOT_CONFIGURED", async () => {
     const error = await streamKbChat(
       { messages: [{ role: "user", content: "react" }], webSearch: true },
-      {},
+      {}
     )
       .then(() => null)
       .catch((e: unknown) => e)
@@ -571,7 +690,7 @@ describe("streamKbChat 契约", () => {
         onDelta: () => {
           delta = true
         },
-      },
+      }
     )
     expect(empty).toBe(true)
     expect(delta).toBe(false)
@@ -581,7 +700,7 @@ describe("streamKbChat 契约", () => {
     const activity: KbChatActivityItem[] = []
     await streamKbChat(
       { messages: [{ role: "user", content: "react" }], webSearch: false },
-      { onActivity: (item) => activity.push(item) },
+      { onActivity: (item) => activity.push(item) }
     )
 
     const bookmarks = activity.find((i) => i.id === "prefetch-bookmarks")
@@ -596,14 +715,17 @@ describe("streamKbChat 契约", () => {
   it("请求级模型透传到后端", async () => {
     const models: string[] = []
     const inner = globalThis.fetch
-    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = typeof input === "string" ? input : String(input)
-      if (url.startsWith(DEEPSEEK) && typeof init?.body === "string") {
-        const body = JSON.parse(init.body) as { model?: string }
-        if (body.model) models.push(body.model)
+    vi.stubGlobal(
+      "fetch",
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === "string" ? input : String(input)
+        if (url.startsWith(DEEPSEEK) && typeof init?.body === "string") {
+          const body = JSON.parse(init.body) as { model?: string }
+          if (body.model) models.push(body.model)
+        }
+        return inner(input, init)
       }
-      return inner(input, init)
-    })
+    )
 
     await streamKbChat(
       {
@@ -611,7 +733,7 @@ describe("streamKbChat 契约", () => {
         webSearch: false,
         model: "deepseek-v4-pro",
       },
-      {},
+      {}
     )
 
     expect(models).toContain("deepseek-v4-pro")
@@ -632,7 +754,7 @@ describe("streamKbChat 契约", () => {
         onDelta: (d) => {
           text += d
         },
-      },
+      }
     )
 
     expect(text).toBe("答案")
@@ -703,7 +825,10 @@ describe("buildKbChatPayload", () => {
     const history = [
       { role: "user" as const, content: "  第一问  " },
       { role: "assistant" as const, content: "   " },
-      { role: "user" as const, content: "x".repeat(KB_CHAT_MESSAGE_MAX_CHARS + 200) },
+      {
+        role: "user" as const,
+        content: "x".repeat(KB_CHAT_MESSAGE_MAX_CHARS + 200),
+      },
     ]
 
     const payload = buildKbChatPayload(history)
@@ -712,21 +837,21 @@ describe("buildKbChatPayload", () => {
     expect(payload[0]).toEqual({ role: "user", content: "第一问" })
     expect(payload[1]?.content).toHaveLength(KB_CHAT_MESSAGE_MAX_CHARS)
     expect(kbChatRequestSchema.safeParse({ messages: payload }).success).toBe(
-      true,
+      true
     )
   })
 
   it("超出请求上限时只保留最近的消息", () => {
     const history = Array.from(
       { length: KB_CHAT_REQUEST_MAX_MESSAGES + 5 },
-      (_, i) => ({ role: "user" as const, content: `第 ${i} 问` }),
+      (_, i) => ({ role: "user" as const, content: `第 ${i} 问` })
     )
 
     const payload = buildKbChatPayload(history)
 
     expect(payload).toHaveLength(KB_CHAT_REQUEST_MAX_MESSAGES)
     expect(payload.at(-1)?.content).toBe(
-      `第 ${KB_CHAT_REQUEST_MAX_MESSAGES + 4} 问`,
+      `第 ${KB_CHAT_REQUEST_MAX_MESSAGES + 4} 问`
     )
   })
 })

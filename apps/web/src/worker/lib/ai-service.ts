@@ -14,7 +14,6 @@ import { decryptSecret } from "./crypto"
 import { DeepSeekCallError, recordAiUsage } from "./ai-usage"
 import {
   classifyWithDeepSeek,
-  fallbackAsciiSlugFromName,
   normalizeFolderName,
   ruleBasedClassify,
   translateNameToEnglishSlug,
@@ -22,10 +21,14 @@ import {
   type BookmarkAiInput,
   type FolderCatalogEntry,
 } from "./deepseek"
-import { buildPathLabel, folderPathOf } from "./folder-utils"
+import {
+  buildPathLabel,
+  folderPathOf,
+  nextFolderSortOrder,
+} from "./folder-utils"
 import { readSetting } from "./settings-store"
 import { fetchGithubRepo, fetchReadmeSnippet } from "./github"
-import { folderSlugBase, nowIso, slugify } from "./utils"
+import { folderSlugBase, nowIso, slugify, slugWhenAiMissed } from "./utils"
 
 const AI_RUN_TIMEOUT_MS = 25_000
 const SLUG_TRANSLATE_TIMEOUT_MS = 8_000
@@ -140,6 +143,8 @@ export async function suggestFolderSlug(
     name: string
     parentId?: string | null
     excludeId?: string | null
+    currentSlug?: string | null
+    description?: string | null
   }
 ): Promise<{ slug: string; source: "ai" | "fallback" }> {
   const parentId = opts.parentId ?? null
@@ -152,7 +157,11 @@ export async function suggestFolderSlug(
       const signal = AbortSignal.timeout(SLUG_TRANSLATE_TIMEOUT_MS)
       const translated = await translateNameToEnglishSlug(
         deepseek.key,
-        opts.name,
+        {
+          name: opts.name,
+          currentSlug: opts.currentSlug,
+          description: opts.description,
+        },
         deepseek.model,
         signal
       )
@@ -176,7 +185,11 @@ export async function suggestFolderSlug(
   }
 
   if (!base) {
-    base = fallbackAsciiSlugFromName(opts.name)
+    const missed = slugWhenAiMissed(opts.name, opts.currentSlug)
+    if (missed.keptCurrent) {
+      return { slug: missed.slug, source: "fallback" }
+    }
+    base = missed.slug
     source = "fallback"
   }
 
@@ -213,12 +226,13 @@ export async function ensureFolderByPath(
     const slug = await allocateFolderSlug(db, name, parentId)
     const path = folderPathOf(id, parentPath)
     const depth = i
+    const nextSortOrder = await nextFolderSortOrder(db, parentId)
     await db.insert(folders).values({
       id,
       name,
       slug,
       color: "#64748B",
-      sortOrder: 200,
+      sortOrder: nextSortOrder,
       isPreset: false,
       parentId,
       depth,
@@ -263,12 +277,13 @@ async function createFolderUnderParent(
   const id = crypto.randomUUID()
   const slug = await allocateFolderSlug(db, name, parentId)
   const path = folderPathOf(id, parent?.path ?? null)
+  const nextSortOrder = await nextFolderSortOrder(db, parentId)
   await db.insert(folders).values({
     id,
     name: name.trim(),
     slug,
     color: "#64748B",
-    sortOrder: 200,
+    sortOrder: nextSortOrder,
     isPreset: false,
     parentId,
     depth,

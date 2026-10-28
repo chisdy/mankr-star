@@ -876,7 +876,7 @@ export async function applyKbOrganize(
     }
   }
 
-  const statements = buildApplyStatements(db, world, simulated, {
+  const statements = await buildApplyStatements(db, world, simulated, {
     conversationId: input.conversationId,
     messageId: input.messageId,
     organize: JSON.stringify(next),
@@ -937,7 +937,7 @@ function storedOpToDraft(op: KbOrganizeOp): OrganizeDraft {
   }
 }
 
-function buildApplyStatements(
+async function buildApplyStatements(
   db: Db,
   before: OrganizeWorld,
   after: SimulateResult,
@@ -957,7 +957,24 @@ function buildApplyStatements(
       (folder) => !beforeFolders.has(folder.id) && !folder.id.startsWith("new:")
     )
     .sort((a, b) => a.depth - b.depth || a.name.localeCompare(b.name))
+
+  const existingRows = await db
+    .select({ parentId: folders.parentId, sortOrder: folders.sortOrder })
+    .from(folders)
+  const maxSortByParent = new Map<string, number>()
+  for (const r of existingRows) {
+    const key = r.parentId ?? ""
+    const cur = maxSortByParent.get(key)
+    if (cur === undefined || r.sortOrder > cur) {
+      maxSortByParent.set(key, r.sortOrder)
+    }
+  }
+
   for (const folder of created) {
+    const key = folder.parentId ?? ""
+    const curMax = maxSortByParent.get(key)
+    const nextSort = curMax === undefined ? 10 : curMax + 10
+    maxSortByParent.set(key, nextSort)
     statements.push(
       db
         .insert(folders)
@@ -966,7 +983,7 @@ function buildApplyStatements(
           name: folder.name,
           slug: folder.slug,
           color: "#64748B",
-          sortOrder: 200,
+          sortOrder: nextSort,
           description: null,
           isPreset: false,
           parentId: folder.parentId,

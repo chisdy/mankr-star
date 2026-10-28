@@ -1453,6 +1453,14 @@ export const api = {
         const id = "fld-" + Date.now()
         const path = parent ? `${parent.path}${id}/` : `/${id}/`
         const depth = parent ? parent.depth + 1 : 0
+        const siblings = store.folders.filter(
+          (f) => (f.parent_id ?? null) === (data.parent_id ?? null)
+        )
+        const maxSort =
+          siblings.length > 0
+            ? Math.max(...siblings.map((f) => f.sort_order ?? 0))
+            : 0
+        const nextSort = siblings.length > 0 ? maxSort + 10 : 10
         const newFolder: Folder = {
           id,
           name: data.name,
@@ -1466,7 +1474,7 @@ export const api = {
           path_label: parent
             ? `${parent.path_label ?? parent.name} / ${data.name}`
             : data.name,
-          sort_order: 200,
+          sort_order: nextSort,
           count: 0,
         }
         store.folders.push(newFolder)
@@ -1481,6 +1489,8 @@ export const api = {
     name: string
     parent_id?: string | null
     exclude_id?: string | null
+    current_slug?: string | null
+    description?: string | null
   }): Promise<{ slug: string; source: "ai" | "fallback" }> {
     try {
       return await request<{ slug: string; source: "ai" | "fallback" }>(
@@ -1494,6 +1504,12 @@ export const api = {
               : {}),
             ...(data.exclude_id !== undefined
               ? { excludeId: data.exclude_id }
+              : {}),
+            ...(data.current_slug !== undefined
+              ? { currentSlug: data.current_slug }
+              : {}),
+            ...(data.description !== undefined
+              ? { description: data.description }
               : {}),
           }),
         }
@@ -1521,7 +1537,7 @@ export const api = {
       name: string
       slug: string
       color: string
-      description: string
+      description: string | null
       sort_order: number
       parent_id: string | null
     }>
@@ -1550,6 +1566,31 @@ export const api = {
         store.folders[idx] = updated
         saveMockStore()
         return updated
+      }
+      throw err
+    }
+  },
+
+  async reorderFolders(data: {
+    parentId: string | null
+    orderedIds: string[]
+  }): Promise<void> {
+    try {
+      await request("/api/folders/reorder", {
+        method: "POST",
+        body: JSON.stringify(data),
+      })
+    } catch (err) {
+      if (shouldFallbackToMock(err)) {
+        const store = mockStore()
+        data.orderedIds.forEach((id, index) => {
+          const folder = store.folders.find((f) => f.id === id)
+          if (folder) {
+            folder.sort_order = (index + 1) * 10
+          }
+        })
+        saveMockStore()
+        return
       }
       throw err
     }

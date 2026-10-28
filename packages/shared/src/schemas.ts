@@ -196,6 +196,17 @@ export type CreateFolderInput = z.infer<typeof createFolderSchema>
 export const updateFolderSchema = createFolderSchema.partial()
 export type UpdateFolderInput = z.infer<typeof updateFolderSchema>
 
+export const reorderFoldersSchema = z.object({
+  parentId: z.string().uuid().nullable(),
+  orderedIds: z
+    .array(z.string().uuid())
+    .min(1)
+    .refine((ids) => new Set(ids).size === ids.length, {
+      message: "orderedIds 不能包含重复项",
+    }),
+})
+export type ReorderFoldersInput = z.infer<typeof reorderFoldersSchema>
+
 export const updateTagSchema = z.object({
   name: z.string().trim().min(1).max(64),
 })
@@ -314,6 +325,9 @@ export const suggestFolderSlugSchema = z.object({
   name: z.string().min(1).max(64),
   parentId: z.string().uuid().optional().nullable(),
   excludeId: z.string().uuid().optional().nullable(),
+  /** 已有 slug，供模型润色时对照，避免无意义改写 */
+  currentSlug: z.string().max(64).optional().nullable(),
+  description: z.string().max(500).optional().nullable(),
 })
 export type SuggestFolderSlugInput = z.infer<typeof suggestFolderSlugSchema>
 

@@ -92,6 +92,18 @@ export const PRESET_CATEGORIES = PRESET_FOLDERS
 
 /** 产品最大文件夹深度（根 depth=0，最深 4 → 共 5 级） */
 export const FOLDER_MAX_DEPTH = 4
+
+/**
+ * 移动后是否超过最大深度。
+ * `nodeDepthRelToRoot` 是被移动节点子树比自身深几级（叶子为 0）。
+ * 根级的 `newParentDepth` 传 -1。
+ */
+export function wouldExceedMaxDepth(
+  nodeDepthRelToRoot: number,
+  newParentDepth: number
+): boolean {
+  return newParentDepth + 1 + nodeDepthRelToRoot > FOLDER_MAX_DEPTH
+}
 /** AI 自动创建文件夹深度上限（depth 0..2 → 最多 3 级） */
 export const AI_FOLDER_AUTO_CREATE_MAX_DEPTH = 2
 

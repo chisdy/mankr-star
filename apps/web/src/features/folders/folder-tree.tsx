@@ -27,7 +27,7 @@ import type { Folder as FolderType } from "@/lib/types"
 
 export function ancestorIdsForFolder(
   folderId: string | null,
-  folders: FolderType[],
+  folders: FolderType[]
 ): string[] {
   if (!folderId) return []
   const folder = folders.find((f) => f.id === folderId)
@@ -75,13 +75,13 @@ function FolderTreeSelectNode({
           <Folder
             className={cn(
               "flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1.5 text-sm",
-              isSelected && "bg-accent font-medium text-accent-foreground",
+              isSelected && "bg-accent font-medium text-accent-foreground"
             )}
           >
             <button
               type="button"
               onClick={() => onSelect(folder.id)}
-              className="flex min-w-0 flex-1 items-center gap-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+              className="flex min-w-0 flex-1 items-center gap-1.5 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <FolderIconAnimated
                 className="shrink-0"
@@ -182,12 +182,12 @@ export function FolderTree({
 
   const rootFolders = React.useMemo(
     () => childrenOf(null, visibleFolders),
-    [visibleFolders],
+    [visibleFolders]
   )
 
   const defaultOpen = React.useMemo(
     () => ancestorIdsForFolder(selectedId || null, visibleFolders),
-    [selectedId, visibleFolders],
+    [selectedId, visibleFolders]
   )
 
   const [openIds, setOpenIds] = React.useState<string[]>(defaultOpen)
@@ -222,7 +222,7 @@ export function FolderTree({
             "mx-1 mt-1 flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
             !selectedId
               ? "bg-accent font-medium text-accent-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           <FolderOpenIcon className="size-4 shrink-0" />
@@ -230,7 +230,10 @@ export function FolderTree({
         </button>
       )}
 
-      <ScrollArea className="min-h-0 flex-1">
+      <ScrollArea
+        className="min-h-0 flex-1"
+        viewportClassName="overscroll-contain"
+      >
         {rootFolders.length === 0 ? (
           <p className="px-3 py-4 text-center text-xs text-muted-foreground">
             {resolvedEmptyLabel}

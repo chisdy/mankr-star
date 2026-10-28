@@ -47,6 +47,7 @@ const FOLDER_TREE_HIDDEN_PATHS = new Set([
   "/settings",
   "/import",
   "/discover",
+  "/folders",
 ])
 
 export function AppShell() {

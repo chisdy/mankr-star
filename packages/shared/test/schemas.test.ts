@@ -3,6 +3,7 @@ import {
   aiOutputSchema,
   createBookmarkSchema,
   createFolderSchema,
+  reorderFoldersSchema,
   anysearchSettingsSchema,
   cloudflareSettingsSchema,
   deepseekSettingsSchema,
@@ -498,6 +499,45 @@ describe("createFolderSchema parentId", () => {
     expect(
       createFolderSchema.safeParse({ name: "一级", parentId: null }).success
     ).toBe(true)
+  })
+})
+
+describe("reorderFoldersSchema", () => {
+  it("接受 parentId 为 null 或 uuid，且 orderedIds 为非空 uuid 数组", () => {
+    const id1 = crypto.randomUUID()
+    const id2 = crypto.randomUUID()
+    const parentId = crypto.randomUUID()
+
+    expect(
+      reorderFoldersSchema.safeParse({
+        parentId: null,
+        orderedIds: [id1, id2],
+      }).success
+    ).toBe(true)
+
+    expect(
+      reorderFoldersSchema.safeParse({
+        parentId,
+        orderedIds: [id1, id2],
+      }).success
+    ).toBe(true)
+  })
+
+  it("拒绝空 orderedIds 或重复 ID", () => {
+    const id1 = crypto.randomUUID()
+    expect(
+      reorderFoldersSchema.safeParse({
+        parentId: null,
+        orderedIds: [],
+      }).success
+    ).toBe(false)
+
+    expect(
+      reorderFoldersSchema.safeParse({
+        parentId: null,
+        orderedIds: [id1, id1],
+      }).success
+    ).toBe(false)
   })
 })
 
