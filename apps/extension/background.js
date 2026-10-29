@@ -1,5 +1,24 @@
 "use strict";
 (() => {
+  // ../../packages/shared/src/source-detect-rules.ts
+  var IMPLEMENTED_SOURCE_TYPES = [
+    "github",
+    "twitter",
+    "wechat",
+    "url"
+  ];
+  var WECHAT_ARTICLE_HOST = /(?:^|\.)mp\.weixin\.qq\.com$/i;
+  var SOURCE_DETECT_RULES = [
+    { type: "github", match: /(?:^|\.)github\.com$/i, label: "GitHub" },
+    {
+      type: "twitter",
+      match: /(?:^|\.)(?:x|twitter)\.com$/i,
+      label: "X"
+    },
+    { type: "wechat", match: WECHAT_ARTICLE_HOST, label: "\u5FAE\u4FE1\u516C\u4F17\u53F7" },
+    { type: "url", match: /^https?:\/\//i, label: "\u901A\u7528\u7F51\u9875" }
+  ];
+
   // ../../packages/shared/src/tracking-params.ts
   var TRACKING_QUERY_PARAMS = [
     "fbclid",
@@ -14,6 +33,7 @@
   ];
 
   // ../../packages/shared/src/canonicalize-url.ts
+  var WECHAT_IDENTITY_KEYS = ["__biz", "mid", "idx", "sn"];
   function isTrackingParam(key) {
     const lower = key.toLowerCase();
     if (lower.startsWith("utm_")) return true;
@@ -22,6 +42,36 @@
   function stripHash(url) {
     const i = url.indexOf("#");
     return i >= 0 ? url.slice(0, i) : url;
+  }
+  function decodeQueryPart(raw) {
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }
+  function wechatArticleSearch(hostname, pathname, queryRaw) {
+    if (!WECHAT_ARTICLE_HOST.test(hostname)) return null;
+    if (/^\/s\/[^/]+$/.test(pathname)) return "";
+    if (pathname !== "/s") return null;
+    const found = /* @__PURE__ */ new Map();
+    if (queryRaw) {
+      for (const part of queryRaw.split("&")) {
+        if (!part) continue;
+        const eq = part.indexOf("=");
+        const key = decodeQueryPart(
+          eq >= 0 ? part.slice(0, eq) : part
+        ).toLowerCase();
+        const value = decodeQueryPart(eq >= 0 ? part.slice(eq + 1) : "");
+        if (!value || found.has(key)) continue;
+        if (!WECHAT_IDENTITY_KEYS.includes(key)) continue;
+        found.set(key, encodeURIComponent(value));
+      }
+    }
+    const parts = WECHAT_IDENTITY_KEYS.filter((key) => found.has(key)).map(
+      (key) => `${key}=${found.get(key)}`
+    );
+    return parts.length > 0 ? `?${parts.join("&")}` : "";
   }
   function canonicalizeUrl(input) {
     const raw = input.trim();
@@ -54,6 +104,15 @@
       pathname = pathname.slice(0, -1);
     }
     const queryRaw = m[4] ?? "";
+    const wechatSearch = wechatArticleSearch(hostname, pathname, queryRaw);
+    if (wechatSearch !== null) {
+      return {
+        ok: true,
+        canonicalUrl: `${protocol}://${hostname}${pathname}${wechatSearch}`,
+        hostname,
+        pathname
+      };
+    }
     const kept = [];
     if (queryRaw) {
       for (const part of queryRaw.split("&")) {
@@ -78,18 +137,6 @@
       pathname
     };
   }
-
-  // ../../packages/shared/src/source-detect-rules.ts
-  var IMPLEMENTED_SOURCE_TYPES = ["github", "twitter", "url"];
-  var SOURCE_DETECT_RULES = [
-    { type: "github", match: /(?:^|\.)github\.com$/i, label: "GitHub" },
-    {
-      type: "twitter",
-      match: /(?:^|\.)(?:x|twitter)\.com$/i,
-      label: "X"
-    },
-    { type: "url", match: /^https?:\/\//i, label: "\u901A\u7528\u7F51\u9875" }
-  ];
 
   // ../../packages/shared/src/detect-source.ts
   var OWNER_REPO_SHORT = /^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(?:\.git)?\/?$/;
@@ -280,6 +327,41 @@
     };
   }
 
+  // src/match-index.ts
+  var byGithub = /* @__PURE__ */ new Map();
+  var byTweet = /* @__PURE__ */ new Map();
+  var byUrl = /* @__PURE__ */ new Map();
+  function indexItems(items) {
+    byGithub = /* @__PURE__ */ new Map();
+    byTweet = /* @__PURE__ */ new Map();
+    byUrl = /* @__PURE__ */ new Map();
+    for (const item of items) {
+      if (item.source_type === "github") byGithub.set(item.canonical_url, item);
+      else if (item.source_type === "twitter") byTweet.set(item.external_id, item);
+      else if (item.source_type === "url" || item.source_type === "wechat") {
+        const key = canonicalizeUrl(item.canonical_url);
+        if (key.ok) byUrl.set(key.canonicalUrl, item);
+      }
+    }
+  }
+  function matchUrl(raw) {
+    const detected = detectSourceType(raw);
+    if (!detected.ok) return null;
+    if (detected.sourceType === "github") {
+      const parsed = parseGithubRepoInput(raw);
+      return parsed ? byGithub.get(parsed.canonicalUrl) ?? null : null;
+    }
+    if (detected.sourceType === "twitter") {
+      const parsed = parseTwitterStatusInput(raw);
+      return parsed.ok ? byTweet.get(parsed.data.tweetId) ?? null : null;
+    }
+    if (detected.sourceType === "url" || detected.sourceType === "wechat") {
+      const canonical = canonicalizeUrl(raw);
+      return canonical.ok ? byUrl.get(canonical.canonicalUrl) ?? null : null;
+    }
+    return null;
+  }
+
   // src/background.ts
   var INSTANCE_KEY = "instanceUrl";
   var INDEX_KEY = "bookmarkMatchIndex";
@@ -297,36 +379,6 @@
     128: "icons/icon-saved-128.png"
   };
   var stored = null;
-  var byGithub = /* @__PURE__ */ new Map();
-  var byTweet = /* @__PURE__ */ new Map();
-  var byUrl = /* @__PURE__ */ new Map();
-  function indexItems(items) {
-    byGithub = /* @__PURE__ */ new Map();
-    byTweet = /* @__PURE__ */ new Map();
-    byUrl = /* @__PURE__ */ new Map();
-    for (const item of items) {
-      if (item.source_type === "github") byGithub.set(item.canonical_url, item);
-      else if (item.source_type === "twitter") byTweet.set(item.external_id, item);
-      else if (item.source_type === "url") byUrl.set(item.canonical_url, item);
-    }
-  }
-  function matchUrl(raw) {
-    const detected = detectSourceType(raw);
-    if (!detected.ok) return null;
-    if (detected.sourceType === "github") {
-      const parsed = parseGithubRepoInput(raw);
-      return parsed ? byGithub.get(parsed.canonicalUrl) ?? null : null;
-    }
-    if (detected.sourceType === "twitter") {
-      const parsed = parseTwitterStatusInput(raw);
-      return parsed.ok ? byTweet.get(parsed.data.tweetId) ?? null : null;
-    }
-    if (detected.sourceType === "url") {
-      const canonical = canonicalizeUrl(raw);
-      return canonical.ok ? byUrl.get(canonical.canonicalUrl) ?? null : null;
-    }
-    return null;
-  }
   async function readOrigin() {
     const data = await chrome.storage.sync.get(INSTANCE_KEY);
     const value = data[INSTANCE_KEY];
@@ -488,7 +540,9 @@
   async function readOriginOrThrow() {
     const origin = await readOrigin();
     if (!origin) throw new Error("\u8BF7\u5148\u586B\u5199\u5B9E\u4F8B\u5730\u5740");
-    const permitted = await chrome.permissions.contains({ origins: [`${origin}/*`] });
+    const permitted = await chrome.permissions.contains({
+      origins: [`${origin}/*`]
+    });
     if (!permitted) throw new Error("\u8FD8\u6CA1\u6709\u6388\u6743\u8FD9\u4E2A\u5B9E\u4F8B");
     return origin;
   }
@@ -509,7 +563,9 @@
       }
     }
     if (!response.ok) {
-      throw new Error(parsed.error || text.slice(0, 180) || `HTTP ${response.status}`);
+      throw new Error(
+        parsed.error || text.slice(0, 180) || `HTTP ${response.status}`
+      );
     }
     return parsed;
   }
@@ -525,14 +581,22 @@
     }
     if (message.type === "importBookmarksBatch") {
       if (!message.jobId) throw new Error("\u7F3A\u5C11\u5BFC\u5165\u4EFB\u52A1");
-      await postImport(origin, `/api/bookmarks/import/browser/jobs/${message.jobId}/batches`, {
-        batchIndex: message.batchIndex ?? 0,
-        items: Array.isArray(message.items) ? message.items : []
-      });
+      await postImport(
+        origin,
+        `/api/bookmarks/import/browser/jobs/${message.jobId}/batches`,
+        {
+          batchIndex: message.batchIndex ?? 0,
+          items: Array.isArray(message.items) ? message.items : []
+        }
+      );
       return { ok: true, jobId: message.jobId };
     }
     if (!message.jobId) throw new Error("\u7F3A\u5C11\u5BFC\u5165\u4EFB\u52A1");
-    await postImport(origin, `/api/bookmarks/import/browser/jobs/${message.jobId}/scan`, {});
+    await postImport(
+      origin,
+      `/api/bookmarks/import/browser/jobs/${message.jobId}/scan`,
+      {}
+    );
     await chrome.tabs.create({ url: `${origin}/import` });
     return { ok: true, jobId: message.jobId };
   }

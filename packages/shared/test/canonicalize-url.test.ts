@@ -14,7 +14,7 @@ describe("canonicalizeUrl", () => {
 
   it("剥离 utm 与常见追踪参数，去掉 hash", () => {
     const res = canonicalizeUrl(
-      "https://example.com/a?utm_source=x&id=1&fbclid=y#section",
+      "https://example.com/a?utm_source=x&id=1&fbclid=y#section"
     )
     expect(res.ok).toBe(true)
     if (res.ok) {
@@ -31,6 +31,26 @@ describe("canonicalizeUrl", () => {
   it("空输入无效", () => {
     const res = canonicalizeUrl("  ")
     expect(res.ok).toBe(false)
+  })
+
+  it("公众号短链丢掉分享参数", () => {
+    const res = canonicalizeUrl(
+      "https://mp.weixin.qq.com/s/abc?utm_source=chat&scene=1#rd"
+    )
+    expect(res.ok).toBe(true)
+    if (res.ok) expect(res.canonicalUrl).toBe("https://mp.weixin.qq.com/s/abc")
+  })
+
+  it("公众号长链只保留文章身份，并固定参数顺序", () => {
+    const res = canonicalizeUrl(
+      "https://mp.weixin.qq.com/s?sn=abc&scene=21&chksm=ffff&mid=224&idx=2&__biz=MzA%3D"
+    )
+    expect(res.ok).toBe(true)
+    if (res.ok) {
+      expect(res.canonicalUrl).toBe(
+        "https://mp.weixin.qq.com/s?__biz=MzA%3D&mid=224&idx=2&sn=abc"
+      )
+    }
   })
 })
 

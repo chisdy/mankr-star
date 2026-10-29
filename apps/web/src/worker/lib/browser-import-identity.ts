@@ -7,7 +7,7 @@ import {
 import { parseGithubRepoInput } from "./github-url"
 
 export type BrowserImportIdentity = {
-  sourceType: "url" | "github" | "twitter"
+  sourceType: "url" | "github" | "twitter" | "wechat"
   canonicalUrl: string
   externalId: string
   owner: string | null
@@ -45,6 +45,17 @@ export function resolveBrowserImportIdentity(
         externalId: tweet.data.tweetId,
         owner: tweet.data.handle,
       }
+    }
+  }
+
+  if (detected.ok && detected.sourceType === "wechat") {
+    const canon = canonicalizeUrl(raw)
+    if (!canon.ok) return null
+    return {
+      sourceType: "wechat",
+      canonicalUrl: canon.canonicalUrl,
+      externalId: urlExternalId(canon.hostname, canon.pathname),
+      owner: null,
     }
   }
 

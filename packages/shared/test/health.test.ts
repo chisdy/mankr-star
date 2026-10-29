@@ -33,6 +33,22 @@ describe("detectSourceType", () => {
     }
   })
 
+  it("mp.weixin.qq.com 识别为已实现的公众号", () => {
+    const shortLink = detectSourceType("https://mp.weixin.qq.com/s/abc")
+    expect(shortLink.ok).toBe(true)
+    if (shortLink.ok) {
+      expect(shortLink.sourceType).toBe("wechat")
+      expect(shortLink.implemented).toBe(true)
+      expect(shortLink.label).toBe("微信公众号")
+    }
+
+    const longLink = detectSourceType(
+      "https://mp.weixin.qq.com/s?__biz=MzA&mid=1&idx=1&sn=abc"
+    )
+    expect(longLink.ok).toBe(true)
+    if (longLink.ok) expect(longLink.sourceType).toBe("wechat")
+  })
+
   it("通用 https 识别为已实现的 url", () => {
     const res = detectSourceType("https://gitlab.com/foo/bar")
     expect(res.ok).toBe(true)
@@ -57,12 +73,12 @@ describe("detectSourceType", () => {
 
 describe("computeHealthStatus", () => {
   it("not_found / forbidden → unavailable", () => {
-    expect(
-      computeHealthStatus({ syncStatus: "not_found", nowMs: NOW }),
-    ).toBe("unavailable")
-    expect(
-      computeHealthStatus({ syncStatus: "forbidden", nowMs: NOW }),
-    ).toBe("unavailable")
+    expect(computeHealthStatus({ syncStatus: "not_found", nowMs: NOW })).toBe(
+      "unavailable"
+    )
+    expect(computeHealthStatus({ syncStatus: "forbidden", nowMs: NOW })).toBe(
+      "unavailable"
+    )
   })
 
   it("disabled → unavailable", () => {
@@ -71,7 +87,7 @@ describe("computeHealthStatus", () => {
         syncStatus: "ok",
         githubDisabled: true,
         nowMs: NOW,
-      }),
+      })
     ).toBe("unavailable")
   })
 
@@ -82,7 +98,7 @@ describe("computeHealthStatus", () => {
         repoSize: 0,
         pushedAt: "2026-08-01T00:00:00Z",
         nowMs: NOW,
-      }),
+      })
     ).toBe("empty")
   })
 
@@ -94,7 +110,7 @@ describe("computeHealthStatus", () => {
         githubArchived: true,
         pushedAt: "2026-08-01T00:00:00Z",
         nowMs: NOW,
-      }),
+      })
     ).toBe("archived")
   })
 
@@ -107,7 +123,7 @@ describe("computeHealthStatus", () => {
         hotWithinDays: 30,
         staleAfterDays: 180,
         nowMs: NOW,
-      }),
+      })
     ).toBe("hot")
   })
 
@@ -120,7 +136,7 @@ describe("computeHealthStatus", () => {
         hotWithinDays: 30,
         staleAfterDays: 180,
         nowMs: NOW,
-      }),
+      })
     ).toBe("active")
   })
 
@@ -133,14 +149,14 @@ describe("computeHealthStatus", () => {
         hotWithinDays: 30,
         staleAfterDays: 180,
         nowMs: NOW,
-      }),
+      })
     ).toBe("stale")
   })
 
   it("error 且无事实 → unknown", () => {
-    expect(
-      computeHealthStatus({ syncStatus: "error", nowMs: NOW }),
-    ).toBe("unknown")
+    expect(computeHealthStatus({ syncStatus: "error", nowMs: NOW })).toBe(
+      "unknown"
+    )
   })
 })
 
@@ -149,12 +165,12 @@ describe("recomputeActivityHealth", () => {
     expect(
       recomputeActivityHealth("unavailable", "2026-08-01T00:00:00Z", {
         nowMs: NOW,
-      }),
+      })
     ).toBe("unavailable")
     expect(
       recomputeActivityHealth("archived", "2026-08-01T00:00:00Z", {
         nowMs: NOW,
-      }),
+      })
     ).toBe("archived")
   })
 
@@ -164,7 +180,7 @@ describe("recomputeActivityHealth", () => {
         hotWithinDays: 7,
         staleAfterDays: 60,
         nowMs: NOW,
-      }),
+      })
     ).toBe("stale")
   })
 })

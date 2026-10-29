@@ -1,13 +1,10 @@
 /**
  * 后台脚本源文件。运行时加载的是 esbuild 打出来的 background.js。
- * 匹配规则从共享包和 parseGithubRepoInput 打进来，不要在这里手抄一份。
+ * 匹配规则在 match-index.ts，从共享包打进来，不要在这里手抄一份。
  */
 /// <reference types="chrome" />
 
-import { canonicalizeUrl } from "../../../packages/shared/src/canonicalize-url.ts"
-import { detectSourceType } from "../../../packages/shared/src/detect-source.ts"
-import { parseTwitterStatusInput } from "../../../packages/shared/src/twitter-url.ts"
-import { parseGithubRepoInput } from "../../web/src/worker/lib/github-url.ts"
+import { indexItems, matchUrl, type MatchItem } from "./match-index.ts"
 
 const INSTANCE_KEY = "instanceUrl"
 const INDEX_KEY = "bookmarkMatchIndex"
@@ -25,14 +22,6 @@ const ICON_SAVED = {
   32: "icons/icon-saved-32.png",
   48: "icons/icon-saved-48.png",
   128: "icons/icon-saved-128.png",
-}
-
-type MatchItem = {
-  id: string
-  source_type: string
-  canonical_url: string
-  external_id: string
-  archived: boolean
 }
 
 type StoredIndex = {
@@ -53,38 +42,6 @@ type MatchState = {
 }
 
 let stored: StoredIndex | null = null
-let byGithub = new Map<string, MatchItem>()
-let byTweet = new Map<string, MatchItem>()
-let byUrl = new Map<string, MatchItem>()
-
-function indexItems(items: MatchItem[]) {
-  byGithub = new Map()
-  byTweet = new Map()
-  byUrl = new Map()
-  for (const item of items) {
-    if (item.source_type === "github") byGithub.set(item.canonical_url, item)
-    else if (item.source_type === "twitter") byTweet.set(item.external_id, item)
-    else if (item.source_type === "url") byUrl.set(item.canonical_url, item)
-  }
-}
-
-function matchUrl(raw: string): MatchItem | null {
-  const detected = detectSourceType(raw)
-  if (!detected.ok) return null
-  if (detected.sourceType === "github") {
-    const parsed = parseGithubRepoInput(raw)
-    return parsed ? (byGithub.get(parsed.canonicalUrl) ?? null) : null
-  }
-  if (detected.sourceType === "twitter") {
-    const parsed = parseTwitterStatusInput(raw)
-    return parsed.ok ? (byTweet.get(parsed.data.tweetId) ?? null) : null
-  }
-  if (detected.sourceType === "url") {
-    const canonical = canonicalizeUrl(raw)
-    return canonical.ok ? (byUrl.get(canonical.canonicalUrl) ?? null) : null
-  }
-  return null
-}
 
 async function readOrigin(): Promise<string | null> {
   const data = await chrome.storage.sync.get(INSTANCE_KEY)
@@ -287,12 +244,18 @@ type ImportItem = { title: string; url: string; folderPath: string[] }
 async function readOriginOrThrow(): Promise<string> {
   const origin = await readOrigin()
   if (!origin) throw new Error("请先填写实例地址")
-  const permitted = await chrome.permissions.contains({ origins: [`${origin}/*`] })
+  const permitted = await chrome.permissions.contains({
+    origins: [`${origin}/*`],
+  })
   if (!permitted) throw new Error("还没有授权这个实例")
   return origin
 }
 
-async function postImport(origin: string, path: string, body: unknown): Promise<unknown> {
+async function postImport(
+  origin: string,
+  path: string,
+  body: unknown
+): Promise<unknown> {
   const response = await fetch(`${origin}${path}`, {
     method: "POST",
     credentials: "include",
@@ -309,7 +272,9 @@ async function postImport(origin: string, path: string, body: unknown): Promise<
     }
   }
   if (!response.ok) {
-    throw new Error(parsed.error || text.slice(0, 180) || `HTTP ${response.status}`)
+    throw new Error(
+      parsed.error || text.slice(0, 180) || `HTTP ${response.status}`
+    )
   }
   return parsed
 }
@@ -331,14 +296,22 @@ async function handleBookmarkImport(message: {
   }
   if (message.type === "importBookmarksBatch") {
     if (!message.jobId) throw new Error("缺少导入任务")
-    await postImport(origin, `/api/bookmarks/import/browser/jobs/${message.jobId}/batches`, {
-      batchIndex: message.batchIndex ?? 0,
-      items: Array.isArray(message.items) ? message.items : [],
-    })
+    await postImport(
+      origin,
+      `/api/bookmarks/import/browser/jobs/${message.jobId}/batches`,
+      {
+        batchIndex: message.batchIndex ?? 0,
+        items: Array.isArray(message.items) ? message.items : [],
+      }
+    )
     return { ok: true, jobId: message.jobId }
   }
   if (!message.jobId) throw new Error("缺少导入任务")
-  await postImport(origin, `/api/bookmarks/import/browser/jobs/${message.jobId}/scan`, {})
+  await postImport(
+    origin,
+    `/api/bookmarks/import/browser/jobs/${message.jobId}/scan`,
+    {}
+  )
   await chrome.tabs.create({ url: `${origin}/import` })
   return { ok: true, jobId: message.jobId }
 }

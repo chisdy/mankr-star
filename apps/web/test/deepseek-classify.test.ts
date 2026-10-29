@@ -21,7 +21,11 @@ describe("normalizeFolderName", () => {
 
 describe("truncateFolderPath", () => {
   it("最多保留 3 段路径（AI 自动创建深度上限）", () => {
-    expect(truncateFolderPath(["A", "B", "C", "D", "E"])).toEqual(["A", "B", "C"])
+    expect(truncateFolderPath(["A", "B", "C", "D", "E"])).toEqual([
+      "A",
+      "B",
+      "C",
+    ])
     expect(truncateFolderPath(["  根  ", "", "子"])).toEqual(["根", "子"])
   })
 })
@@ -153,7 +157,9 @@ describe("prepareExcerptForPrompt", () => {
 
 describe("truncateKeepingBreaks", () => {
   it("保留换行，行内多余空格会压平", () => {
-    expect(truncateKeepingBreaks("第一段\n\n第二段", 100)).toBe("第一段\n\n第二段")
+    expect(truncateKeepingBreaks("第一段\n\n第二段", 100)).toBe(
+      "第一段\n\n第二段"
+    )
     expect(truncateKeepingBreaks("第一段   第二段", 100)).toBe("第一段 第二段")
   })
 })
@@ -168,10 +174,7 @@ describe("buildClassifyMessages", () => {
 
   it("三类来源都要求具体事实在前，并在上限内写完", () => {
     for (const sourceType of ["github", "url", "twitter"] as const) {
-      const { system } = buildClassifyMessages(
-        { ...base, sourceType },
-        [],
-      )
+      const { system } = buildClassifyMessages({ ...base, sourceType }, [])
       expect(system).toContain("具体事实放在前面")
       expect(system).toContain("上限内把最后一句写完")
       expect(system).toContain(String(AI_SUMMARY_MAX_CHARS))
@@ -189,9 +192,30 @@ describe("buildClassifyMessages", () => {
 
     const twitter = buildClassifyMessages(
       { ...base, sourceType: "twitter" },
-      [],
+      []
     )
     expect(twitter.system).toContain("这条帖子说了什么")
     expect(twitter.system).toContain("一条社交分享")
+
+    const wechat = buildClassifyMessages({ ...base, sourceType: "wechat" }, [])
+    expect(wechat.system).toContain("微信公众号文章")
+    expect(wechat.system).toContain("写页面实际主题")
+    expect(wechat.system).not.toContain("从 README 里写能力")
+  })
+
+  it("公众号规则降级走网页归类，不写成 GitHub 项目", () => {
+    const out = ruleBasedClassify({
+      sourceType: "wechat",
+      title: "城市绿化观察",
+      description: "关于行道树的笔记",
+      language: null,
+      topics: [],
+      siteName: "曼库笔记",
+      contentExcerpt: "正文讨论了行道树的养护。",
+    })
+    expect(out.folder_path).toEqual(["其他"])
+    expect(out.summary).toContain("行道树")
+    expect(out.summary).not.toContain("GitHub")
+    expect(out.tags).not.toContain("github")
   })
 })

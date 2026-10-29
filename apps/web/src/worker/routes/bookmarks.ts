@@ -20,6 +20,7 @@ import {
   parseTwitterStatusInput,
   updateBookmarkSchema,
   urlExternalId,
+  WECHAT_ARTICLE_HOST,
   type SourceType,
 } from "@mankr/shared"
 import {
@@ -49,6 +50,7 @@ import { GithubApiError, fetchReadmeExcerpt } from "../lib/github"
 import { parseGithubRepoInput } from "../lib/github-url"
 import { fetchUrlPageMetadata } from "../lib/url-metadata"
 import { fetchTwitterMetadata } from "../lib/twitter"
+import { fetchWechatArticle, type WechatArticle } from "../lib/wechat"
 import { UrlFetchError } from "../lib/url-ssrf"
 import { decryptSecret, encryptSecret } from "../lib/crypto"
 import { queryBookmarkIdsByFts } from "../lib/bookmark-fts"
@@ -65,6 +67,70 @@ import { clientFingerprint, getClientIp, nowIso } from "../lib/utils"
 import { authByMethod } from "../middleware/auth"
 
 export const bookmarkRoutes = new Hono<AppEnv>()
+
+/** 公开接口不返回公众号正文。历史数据可能仍是 url 来源，所以同时看主机。 */
+function hidePublicWechatExcerpt(
+  isPublicRead: boolean | undefined,
+  sourceType: string,
+  canonicalUrl: string
+): boolean {
+  if (!isPublicRead) return false
+  if (sourceType === "wechat") return true
+  try {
+    return WECHAT_ARTICLE_HOST.test(new URL(canonicalUrl).hostname)
+  } catch {
+    return false
+  }
+}
+
+type BookmarkIdentity = {
+  id: string
+  deletedAt: string | null
+  sourceType: string
+  canonicalUrl: string
+}
+
+function sameCanonical(stored: string, expected: string): boolean {
+  if (stored === expected) return true
+  const parsed = canonicalizeUrl(stored)
+  return parsed.ok && parsed.canonicalUrl === expected
+}
+
+/**
+ * 同一篇文章的历史地址可能还带着 scene、chksm。
+ * 按规范化后的地址比对，避免再插一条。
+ */
+function findWechatIdentities(db: Db): Promise<BookmarkIdentity[]> {
+  return db
+    .select({
+      id: bookmarks.id,
+      deletedAt: bookmarks.deletedAt,
+      sourceType: bookmarks.sourceType,
+      canonicalUrl: bookmarks.canonicalUrl,
+    })
+    .from(bookmarks)
+    .where(
+      and(
+        inArray(bookmarks.sourceType, ["wechat", "url"]),
+        like(bookmarks.canonicalUrl, "%://mp.weixin.qq.com/%")
+      )
+    )
+}
+
+function wechatStoreLocation(article: WechatArticle): {
+  canonicalUrl: string
+  externalId: string
+} {
+  const canonical = canonicalizeUrl(article.finalUrl)
+  const canonicalUrl = canonical.ok ? canonical.canonicalUrl : article.finalUrl
+  const host = canonical.ok
+    ? canonical.hostname
+    : new URL(article.finalUrl).hostname
+  const path = canonical.ok
+    ? canonical.pathname
+    : new URL(article.finalUrl).pathname
+  return { canonicalUrl, externalId: urlExternalId(host, path) }
+}
 
 /**
  * 公开浏览访客可用的互动写操作：打开计数、点赞与取消点赞。
@@ -86,7 +152,7 @@ bookmarkRoutes.use("/bookmarks/*", bookmarkAuth)
 
 async function loadTagsForBookmarks(
   db: ReturnType<typeof import("@mankr/db").createDb>,
-  bookmarkIds: string[],
+  bookmarkIds: string[]
 ) {
   if (bookmarkIds.length === 0) return new Map<string, string[]>()
   const rows = await db
@@ -117,7 +183,7 @@ function serializeBookmark(
     includeAccount?: boolean
     /** README 缓存可达 8KB，只在单条详情里带上，避免撑爆列表响应 */
     includeReadme?: boolean
-  },
+  }
 ) {
   let topics: string[] = []
   let useCases: string[] = []
@@ -181,7 +247,13 @@ function serializeBookmark(
     site_name: b.siteName,
     image_url: b.imageUrl,
     favicon_url: b.faviconUrl,
-    content_excerpt: b.contentExcerpt,
+    content_excerpt: hidePublicWechatExcerpt(
+      options?.isPublicRead,
+      b.sourceType,
+      b.canonicalUrl
+    )
+      ? null
+      : b.contentExcerpt,
     ...(options?.includeReadme ? { readme_excerpt: b.readmeExcerpt } : {}),
     platform_meta: platformMeta,
     ai_status: b.aiStatus,
@@ -234,7 +306,7 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
         code: "VALIDATION_ERROR",
         details: query.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -297,8 +369,8 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
     conditions.push(
       or(
         eq(bookmarks.siteName, site),
-        and(isNull(bookmarks.siteName), eq(bookmarks.owner, site)),
-      )!,
+        and(isNull(bookmarks.siteName), eq(bookmarks.owner, site))
+      )!
     )
   }
 
@@ -323,10 +395,7 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
       q,
       includeNotes: !isPublicRead,
     })
-    if (
-      searchMode === "hybrid" &&
-      !isPublicRead
-    ) {
+    if (searchMode === "hybrid" && !isPublicRead) {
       try {
         const { queryBookmarkIdsHybrid } = await import("../lib/embeddings")
         ftsIds = await queryBookmarkIdsHybrid(db, c.env, {
@@ -406,7 +475,7 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
 
   const tagMap = await loadTagsForBookmarks(
     db,
-    rows.map((r) => r.id),
+    rows.map((r) => r.id)
   )
 
   const allFolders = await db.select().from(folders)
@@ -424,7 +493,7 @@ bookmarkRoutes.get("/bookmarks", async (c) => {
         tagMap.get(r.id) ?? [],
         folder,
         allFolders,
-        serializeOpts,
+        serializeOpts
       )
     }),
     page,
@@ -443,7 +512,7 @@ bookmarkRoutes.get("/bookmarks/owners", async (c) => {
         code: "VALIDATION_ERROR",
         details: query.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -510,7 +579,7 @@ bookmarkRoutes.get("/bookmarks/sites", async (c) => {
         code: "VALIDATION_ERROR",
         details: query.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -526,7 +595,7 @@ bookmarkRoutes.get("/bookmarks/sites", async (c) => {
   ]
   if (q) {
     conditions.push(
-      sql`COALESCE(${bookmarks.siteName}, ${bookmarks.owner}) LIKE ${`%${q}%`}`,
+      sql`COALESCE(${bookmarks.siteName}, ${bookmarks.owner}) LIKE ${`%${q}%`}`
     )
   }
 
@@ -576,7 +645,7 @@ function topBookmarksBy(
   column:
     | typeof bookmarks.viewCount
     | typeof bookmarks.openCount
-    | typeof bookmarks.likeCount,
+    | typeof bookmarks.likeCount
 ) {
   return db
     .select({
@@ -676,7 +745,7 @@ bookmarkRoutes.get("/bookmarks/:id", async (c) => {
   const tagMap = await loadTagsForBookmarks(db, [id])
   const allFolders = await db.select().from(folders)
   const folder = row.folderId
-    ? allFolders.find((f) => f.id === row.folderId) ?? null
+    ? (allFolders.find((f) => f.id === row.folderId) ?? null)
     : null
 
   return c.json(
@@ -684,7 +753,7 @@ bookmarkRoutes.get("/bookmarks/:id", async (c) => {
       isPublicRead,
       includeAccount: !isPublicRead,
       includeReadme: true,
-    }),
+    })
   )
 })
 
@@ -705,7 +774,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -719,17 +788,173 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
           ? { detected_type: detected.detectedType }
           : undefined,
       },
-      400,
+      400
+    )
+  }
+
+  if (detected.sourceType === "wechat") {
+    const canonical = canonicalizeUrl(parsed.data.url)
+    if (!canonical.ok) {
+      return c.json({ error: canonical.error, code: canonical.code }, 400)
+    }
+
+    let article: WechatArticle
+    try {
+      article = await fetchWechatArticle(canonical.canonicalUrl)
+    } catch (e) {
+      if (e instanceof UrlFetchError) {
+        return c.json({ error: e.message, code: e.code }, 400)
+      }
+      return c.json({ error: "抓取公众号文章失败", code: "FETCH_FAILED" }, 502)
+    }
+
+    let stored: { canonicalUrl: string; externalId: string }
+    try {
+      stored = wechatStoreLocation(article)
+    } catch {
+      stored = {
+        canonicalUrl: canonical.canonicalUrl,
+        externalId: urlExternalId(canonical.hostname, canonical.pathname),
+      }
+    }
+
+    const identities = await findWechatIdentities(db)
+    const pickIdentity = (sourceType: string, url: string) => {
+      const hits = identities.filter(
+        (row) =>
+          row.sourceType === sourceType && sameCanonical(row.canonicalUrl, url)
+      )
+      return (
+        hits.find((row) => !row.deletedAt) ?? hits.find((row) => row.deletedAt)
+      )
+    }
+    const atStoreWechat = pickIdentity("wechat", stored.canonicalUrl)
+    const atStoreUrl =
+      stored.canonicalUrl === canonical.canonicalUrl
+        ? undefined
+        : pickIdentity("url", stored.canonicalUrl)
+    const atInputWechat =
+      stored.canonicalUrl === canonical.canonicalUrl
+        ? atStoreWechat
+        : pickIdentity("wechat", canonical.canonicalUrl)
+    const atInputUrl = pickIdentity("url", canonical.canonicalUrl)
+
+    const liveWechat = [atStoreWechat, atInputWechat].find(
+      (row) => row && !row.deletedAt
+    )
+    if (liveWechat) {
+      return c.json(
+        {
+          error: "该文章已收藏",
+          code: "DUPLICATE",
+          details: { id: liveWechat.id },
+        },
+        409
+      )
+    }
+
+    const liveUrl =
+      [atStoreUrl, atInputUrl].find((row) => row && !row.deletedAt) ?? null
+    const deleted = [atStoreWechat, atStoreUrl, atInputWechat, atInputUrl].find(
+      (row) => row && row.deletedAt
+    )
+    // 目标地址上已有软删除的 wechat 行时必须复用它，否则改写 canonical 会撞上唯一索引
+    const target =
+      (atStoreWechat?.deletedAt ? atStoreWechat : null) ??
+      liveUrl ??
+      deleted ??
+      null
+
+    const id = target?.id ?? crypto.randomUUID()
+    const now = nowIso()
+    const values = {
+      sourceType: "wechat" as const,
+      canonicalUrl: stored.canonicalUrl,
+      externalId: stored.externalId,
+      owner: null as string | null,
+      title: article.title,
+      description: article.description,
+      language: null as string | null,
+      stars: 0,
+      forks: 0,
+      license: null as string | null,
+      homepage: null as string | null,
+      defaultBranch: null as string | null,
+      topicsJson: "[]",
+      siteName: article.accountName,
+      imageUrl: article.imageUrl,
+      faviconUrl: article.faviconUrl,
+      contentExcerpt: article.contentExcerpt,
+      platformMetaJson: JSON.stringify(article.platformMeta),
+      aiStatus: "pending" as const,
+      trackUpdates: false,
+      lastSyncedAt: now,
+      pushedAt: null as string | null,
+      githubUpdatedAt: null as string | null,
+      syncStatus: article.syncOk ? ("ok" as const) : ("error" as const),
+      lastSyncError: article.syncError,
+      healthStatus: "unknown" as const,
+      githubArchived: false,
+      repoSize: null as number | null,
+      updatedAt: now,
+    }
+
+    if (target) {
+      await db
+        .update(bookmarks)
+        .set({
+          ...values,
+          ...(parsed.data.folderId !== undefined
+            ? { folderId: parsed.data.folderId }
+            : {}),
+          ...(parsed.data.notes !== undefined
+            ? { notes: parsed.data.notes }
+            : {}),
+          summaryAi: null,
+          useCasesJson: null,
+          aiConfidence: null,
+          latestReleaseTag: null,
+          archivedAt: null,
+          deletedAt: null,
+          ...(target.deletedAt ? { createdAt: now } : {}),
+        })
+        .where(eq(bookmarks.id, id))
+      if (target.deletedAt) {
+        await db.delete(bookmarkTags).where(eq(bookmarkTags.bookmarkId, id))
+      }
+    } else {
+      await db.insert(bookmarks).values({
+        ...values,
+        id,
+        folderId: parsed.data.folderId ?? null,
+        notes: parsed.data.notes ?? null,
+        createdAt: now,
+      })
+    }
+
+    c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
+    scheduleBookmarkEmbedding(
+      c.executionCtx.waitUntil.bind(c.executionCtx),
+      db,
+      c.env,
+      id
+    )
+    await bumpBookmarkMatchRevision(db)
+    const row = await db
+      .select()
+      .from(bookmarks)
+      .where(eq(bookmarks.id, id))
+      .get()
+    return c.json(
+      serializeBookmark(row!, [], null, undefined, { includeAccount: true }),
+      201
     )
   }
 
   if (detected.sourceType === "url") {
     const canonical = canonicalizeUrl(parsed.data.url)
     if (!canonical.ok) {
-      return c.json(
-        { error: canonical.error, code: canonical.code },
-        400,
-      )
+      return c.json({ error: canonical.error, code: canonical.code }, 400)
     }
 
     const existing = await db
@@ -738,8 +963,8 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
       .where(
         and(
           eq(bookmarks.sourceType, "url"),
-          eq(bookmarks.canonicalUrl, canonical.canonicalUrl),
-        ),
+          eq(bookmarks.canonicalUrl, canonical.canonicalUrl)
+        )
       )
       .get()
 
@@ -750,7 +975,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
           code: "DUPLICATE",
           details: { id: existing.id },
         },
-        409,
+        409
       )
     }
 
@@ -783,8 +1008,8 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
         .where(
           and(
             eq(bookmarks.sourceType, "url"),
-            eq(bookmarks.canonicalUrl, storeUrl),
-          ),
+            eq(bookmarks.canonicalUrl, storeUrl)
+          )
         )
         .get()
       if (existingFinal && !existingFinal.deletedAt) {
@@ -794,7 +1019,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
             code: "DUPLICATE",
             details: { id: existingFinal.id },
           },
-          409,
+          409
         )
       }
     }
@@ -854,19 +1079,28 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
     }
 
     c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
-    scheduleBookmarkEmbedding(c.executionCtx.waitUntil.bind(c.executionCtx), db, c.env, id)
+    scheduleBookmarkEmbedding(
+      c.executionCtx.waitUntil.bind(c.executionCtx),
+      db,
+      c.env,
+      id
+    )
     await bumpBookmarkMatchRevision(db)
-    const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
-    return c.json(serializeBookmark(row!, [], null, undefined, { includeAccount: true }), 201)
+    const row = await db
+      .select()
+      .from(bookmarks)
+      .where(eq(bookmarks.id, id))
+      .get()
+    return c.json(
+      serializeBookmark(row!, [], null, undefined, { includeAccount: true }),
+      201
+    )
   }
 
   if (detected.sourceType === "twitter") {
     const parsedTw = parseTwitterStatusInput(parsed.data.url)
     if (!parsedTw.ok) {
-      return c.json(
-        { error: parsedTw.error, code: parsedTw.code },
-        400,
-      )
+      return c.json({ error: parsedTw.error, code: parsedTw.code }, 400)
     }
 
     const { tweetId, handle } = parsedTw.data
@@ -877,8 +1111,8 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
       .where(
         and(
           eq(bookmarks.sourceType, "twitter"),
-          eq(bookmarks.externalId, tweetId),
-        ),
+          eq(bookmarks.externalId, tweetId)
+        )
       )
       .get()
 
@@ -889,7 +1123,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
           code: "DUPLICATE",
           details: { id: existingById.id },
         },
-        409,
+        409
       )
     }
 
@@ -901,8 +1135,8 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
       .where(
         and(
           eq(bookmarks.sourceType, "twitter"),
-          eq(bookmarks.canonicalUrl, meta.canonicalUrl),
-        ),
+          eq(bookmarks.canonicalUrl, meta.canonicalUrl)
+        )
       )
       .get()
 
@@ -917,7 +1151,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
           code: "DUPLICATE",
           details: { id: existingByUrl.id },
         },
-        409,
+        409
       )
     }
 
@@ -977,10 +1211,22 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
     }
 
     c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
-    scheduleBookmarkEmbedding(c.executionCtx.waitUntil.bind(c.executionCtx), db, c.env, id)
+    scheduleBookmarkEmbedding(
+      c.executionCtx.waitUntil.bind(c.executionCtx),
+      db,
+      c.env,
+      id
+    )
     await bumpBookmarkMatchRevision(db)
-    const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
-    return c.json(serializeBookmark(row!, [], null, undefined, { includeAccount: true }), 201)
+    const row = await db
+      .select()
+      .from(bookmarks)
+      .where(eq(bookmarks.id, id))
+      .get()
+    return c.json(
+      serializeBookmark(row!, [], null, undefined, { includeAccount: true }),
+      201
+    )
   }
 
   if (detected.sourceType !== "github") {
@@ -990,7 +1236,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
         code: "UNSUPPORTED_SOURCE",
         details: { detected_type: detected.sourceType },
       },
-      400,
+      400
     )
   }
 
@@ -998,7 +1244,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
   if (!parsedRepo) {
     return c.json(
       { error: "无效的 GitHub URL 或 owner/repo", code: "INVALID_URL" },
-      400,
+      400
     )
   }
 
@@ -1008,8 +1254,8 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
     .where(
       and(
         eq(bookmarks.sourceType, "github"),
-        eq(bookmarks.canonicalUrl, parsedRepo.canonicalUrl),
-      ),
+        eq(bookmarks.canonicalUrl, parsedRepo.canonicalUrl)
+      )
     )
     .get()
 
@@ -1020,7 +1266,7 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
         code: "DUPLICATE",
         details: { id: existing.id },
       },
-      409,
+      409
     )
   }
 
@@ -1032,10 +1278,13 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
     if (e instanceof GithubApiError) {
       return c.json(
         { error: e.message, code: "GITHUB_ERROR" },
-        e.status === 404 ? 404 : e.status === 403 ? 403 : 502,
+        e.status === 404 ? 404 : e.status === 403 ? 403 : 502
       )
     }
-    return c.json({ error: "拉取 GitHub 元数据失败", code: "GITHUB_ERROR" }, 502)
+    return c.json(
+      { error: "拉取 GitHub 元数据失败", code: "GITHUB_ERROR" },
+      502
+    )
   }
 
   const readmeExcerpt =
@@ -1107,11 +1356,23 @@ bookmarkRoutes.post("/bookmarks", async (c) => {
   }
 
   c.executionCtx.waitUntil(runAiForBookmark(db, c.env, id))
-  scheduleBookmarkEmbedding(c.executionCtx.waitUntil.bind(c.executionCtx), db, c.env, id)
+  scheduleBookmarkEmbedding(
+    c.executionCtx.waitUntil.bind(c.executionCtx),
+    db,
+    c.env,
+    id
+  )
 
   await bumpBookmarkMatchRevision(db)
-  const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
-  return c.json(serializeBookmark(row!, [], null, undefined, { includeAccount: true }), 201)
+  const row = await db
+    .select()
+    .from(bookmarks)
+    .where(eq(bookmarks.id, id))
+    .get()
+  return c.json(
+    serializeBookmark(row!, [], null, undefined, { includeAccount: true }),
+    201
+  )
 })
 
 bookmarkRoutes.post("/bookmarks/batch", async (c) => {
@@ -1135,7 +1396,7 @@ bookmarkRoutes.post("/bookmarks/batch", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -1143,7 +1404,7 @@ bookmarkRoutes.post("/bookmarks/batch", async (c) => {
     db,
     c.env,
     parsed.data,
-    c.executionCtx.waitUntil.bind(c.executionCtx),
+    c.executionCtx.waitUntil.bind(c.executionCtx)
   )
   return c.json(result.body, result.status)
 })
@@ -1166,7 +1427,7 @@ bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
-      400,
+      400
     )
   }
 
@@ -1221,7 +1482,7 @@ bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
       } else {
         patch.accountPasswordEncrypted = await encryptSecret(
           data.accountPassword,
-          c.env.VAULT_ENCRYPTION_KEY,
+          c.env.VAULT_ENCRYPTION_KEY
         )
         patch.accountPasswordUpdatedAt = now
       }
@@ -1237,7 +1498,8 @@ bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
       patch.accountPasswordEncrypted !== undefined
         ? patch.accountPasswordEncrypted
         : existing.accountPasswordEncrypted
-    const hasCredentials = Boolean(nextUsername) || Boolean(nextPasswordEncrypted)
+    const hasCredentials =
+      Boolean(nextUsername) || Boolean(nextPasswordEncrypted)
 
     if (hasCredentials) {
       patch.accountRegistered = true
@@ -1273,22 +1535,26 @@ bookmarkRoutes.patch("/bookmarks/:id", async (c) => {
       c.executionCtx.waitUntil.bind(c.executionCtx),
       db,
       c.env,
-      id,
+      id
     )
   }
 
-  const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
+  const row = await db
+    .select()
+    .from(bookmarks)
+    .where(eq(bookmarks.id, id))
+    .get()
   const tagMap = await loadTagsForBookmarks(db, [id])
   const allFolders = await db.select().from(folders)
   const folder = row?.folderId
-    ? allFolders.find((f) => f.id === row.folderId) ?? null
+    ? (allFolders.find((f) => f.id === row.folderId) ?? null)
     : null
 
   return c.json(
     serializeBookmark(row!, tagMap.get(id) ?? [], folder, allFolders, {
       includeAccount: true,
       includeReadme: true,
-    }),
+    })
   )
 })
 
@@ -1343,7 +1609,7 @@ bookmarkRoutes.post("/bookmarks/:id/account-password/copy", async (c) => {
   if (!caps.accountCredentials) {
     return c.json(
       { error: "该来源不支持站点账号", code: "UNSUPPORTED_SOURCE" },
-      400,
+      400
     )
   }
 
@@ -1355,7 +1621,7 @@ bookmarkRoutes.post("/bookmarks/:id/account-password/copy", async (c) => {
   try {
     password = await decryptSecret(
       row.accountPasswordEncrypted,
-      c.env.VAULT_ENCRYPTION_KEY,
+      c.env.VAULT_ENCRYPTION_KEY
     )
   } catch {
     return c.json({ error: "解密失败", code: "DECRYPT_FAILED" }, 500)
@@ -1390,18 +1656,22 @@ bookmarkRoutes.post("/bookmarks/:id/open", async (c) => {
     })
     .where(eq(bookmarks.id, id))
 
-  const row = await db.select().from(bookmarks).where(eq(bookmarks.id, id)).get()
+  const row = await db
+    .select()
+    .from(bookmarks)
+    .where(eq(bookmarks.id, id))
+    .get()
   const tagMap = await loadTagsForBookmarks(db, [id])
   const allFolders = await db.select().from(folders)
   const folder = row?.folderId
-    ? allFolders.find((f) => f.id === row.folderId) ?? null
+    ? (allFolders.find((f) => f.id === row.folderId) ?? null)
     : null
 
   return c.json(
     serializeBookmark(row!, tagMap.get(id) ?? [], folder, allFolders, {
       isPublicRead,
       includeAccount: !isPublicRead,
-    }),
+    })
   )
 })
 
@@ -1413,7 +1683,7 @@ async function prepareLike(c: Context<AppEnv, "/bookmarks/:id/like">) {
     return {
       error: c.json(
         { error: "请求过于频繁，请稍后再试", code: "RATE_LIMITED" },
-        429,
+        429
       ),
     } as const
   }
@@ -1485,8 +1755,8 @@ bookmarkRoutes.delete("/bookmarks/:id/like", async (c) => {
       .where(
         and(
           eq(bookmarkLikes.bookmarkId, id),
-          eq(bookmarkLikes.fingerprint, fingerprint),
-        ),
+          eq(bookmarkLikes.fingerprint, fingerprint)
+        )
       ),
     syncLikeCount(db, id),
   ])
@@ -1513,7 +1783,7 @@ bookmarkRoutes.post("/bookmarks/:id/ai/regenerate", async (c) => {
     runAiForBookmark(db, c.env, id, {
       overwriteFolder: true,
       overwriteCategory: true,
-    }),
+    })
   )
   return c.json({ ok: true, ai_status: "pending" })
 })
@@ -1540,15 +1810,19 @@ bookmarkRoutes.post("/bookmarks/:id/sync", async (c) => {
       if (!owner || !repo) {
         return c.json(
           { error: "无效的 GitHub 仓库标识", code: "INVALID_URL" },
-          400,
+          400
         )
       }
       const token = await resolveGithubToken(db, c.env)
       const meta = await fetchGithubRepo(owner, repo, token)
-      const readmeExcerpt =
-        (await fetchReadmeExcerpt(owner, repo, token)) ?? ""
-      const { hotWithinDays, staleAfterDays } = await readSetting(db, "tracking")
-      const syncStatus = meta.disabled ? ("forbidden" as const) : ("ok" as const)
+      const readmeExcerpt = (await fetchReadmeExcerpt(owner, repo, token)) ?? ""
+      const { hotWithinDays, staleAfterDays } = await readSetting(
+        db,
+        "tracking"
+      )
+      const syncStatus = meta.disabled
+        ? ("forbidden" as const)
+        : ("ok" as const)
       const healthStatus = computeHealthStatus({
         syncStatus,
         githubArchived: meta.archived,
@@ -1581,6 +1855,53 @@ bookmarkRoutes.post("/bookmarks/:id/sync", async (c) => {
           syncStatus,
           lastSyncError: null,
           healthStatus,
+          lastSyncedAt: now,
+          summaryAi: null,
+          useCasesJson: null,
+          aiConfidence: null,
+          aiStatus: "pending",
+          updatedAt: now,
+        })
+        .where(eq(bookmarks.id, id))
+    } else if (sourceType === "wechat") {
+      let article: WechatArticle
+      try {
+        article = await fetchWechatArticle(existing.canonicalUrl)
+      } catch (e) {
+        if (e instanceof UrlFetchError) {
+          return c.json({ error: e.message, code: e.code }, 400)
+        }
+        return c.json(
+          { error: "抓取公众号文章失败", code: "FETCH_FAILED" },
+          502
+        )
+      }
+
+      if (!article.syncOk) {
+        await db
+          .update(bookmarks)
+          .set({
+            syncStatus: "error",
+            lastSyncError: article.syncError,
+            lastSyncedAt: now,
+            updatedAt: now,
+          })
+          .where(eq(bookmarks.id, id))
+        return c.json({ ok: true, ai_status: existing.aiStatus })
+      }
+
+      await db
+        .update(bookmarks)
+        .set({
+          title: article.title,
+          description: article.description,
+          siteName: article.accountName ?? existing.siteName,
+          imageUrl: article.imageUrl,
+          faviconUrl: article.faviconUrl,
+          contentExcerpt: article.contentExcerpt,
+          platformMetaJson: JSON.stringify(article.platformMeta),
+          syncStatus: "ok",
+          lastSyncError: null,
           lastSyncedAt: now,
           summaryAi: null,
           useCasesJson: null,
@@ -1622,14 +1943,11 @@ bookmarkRoutes.post("/bookmarks/:id/sync", async (c) => {
     } else if (sourceType === "twitter") {
       const parsedTw = parseTwitterStatusInput(existing.canonicalUrl)
       if (!parsedTw.ok) {
-        return c.json(
-          { error: parsedTw.error, code: parsedTw.code },
-          400,
-        )
+        return c.json({ error: parsedTw.error, code: parsedTw.code }, 400)
       }
       const meta = await fetchTwitterMetadata(
         parsedTw.data.tweetId,
-        parsedTw.data.handle,
+        parsedTw.data.handle
       )
       await db
         .update(bookmarks)
@@ -1660,14 +1978,14 @@ bookmarkRoutes.post("/bookmarks/:id/sync", async (c) => {
     } else {
       return c.json(
         { error: "不支持的来源类型", code: "UNSUPPORTED_SOURCE" },
-        400,
+        400
       )
     }
   } catch (e) {
     if (e instanceof GithubApiError) {
       return c.json(
         { error: e.message, code: "GITHUB_ERROR" },
-        e.status === 404 ? 404 : e.status === 403 ? 403 : 502,
+        e.status === 404 ? 404 : e.status === 403 ? 403 : 502
       )
     }
     throw e
@@ -1677,7 +1995,7 @@ bookmarkRoutes.post("/bookmarks/:id/sync", async (c) => {
     runAiForBookmark(db, c.env, id, {
       overwriteFolder: true,
       overwriteCategory: true,
-    }),
+    })
   )
   return c.json({ ok: true, ai_status: "pending" })
 })

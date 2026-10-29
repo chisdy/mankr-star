@@ -241,7 +241,7 @@ export function ruleBasedClassify(input: {
 }): AiOutput {
   const sourceType = input.sourceType ?? "github"
 
-  if (sourceType === "url") {
+  if (sourceType === "url" || sourceType === "wechat") {
     const blob = [
       input.title,
       input.description,
@@ -271,8 +271,10 @@ export function ruleBasedClassify(input: {
     const summaryBase =
       input.description?.trim() ||
       (input.title.trim()
-        ? `${input.title.trim()}（${brand || "网页"}）`
-        : "网页收藏")
+        ? `${input.title.trim()}（${brand || (sourceType === "wechat" ? "公众号" : "网页")}）`
+        : sourceType === "wechat"
+          ? "公众号文章"
+          : "网页收藏")
     const summary =
       summaryBase.length > AI_SUMMARY_MAX_CHARS
         ? summaryBase.slice(0, AI_SUMMARY_MAX_CHARS - 1) + "…"
@@ -418,8 +420,9 @@ function buildClassifySystemPrompt(
   const shape = summaryJsonShape()
   const summary = summaryInstruction()
 
-  if (sourceType === "url") {
-    return `你是个人知识库归档助手。当前收藏是「普通网页」而非 GitHub 仓库。根据标题、描述与正文摘录判断主题，输出严格 JSON（不要 markdown）：
+  if (sourceType === "url" || sourceType === "wechat") {
+    const kind = sourceType === "wechat" ? "微信公众号文章" : "普通网页"
+    return `你是个人知识库归档助手。当前收藏是「${kind}」而非 GitHub 仓库。根据标题、描述与正文摘录判断主题，输出严格 JSON（不要 markdown）：
 ${shape}
 
 ${summary}
@@ -488,7 +491,8 @@ export async function classifyWithDeepSeek(opts: {
 }): Promise<ClassifyWithDeepSeekResult> {
   const model = opts.model || DEFAULT_DEEPSEEK_MODEL
   const started = Date.now()
-  const isUrl = opts.input.sourceType === "url"
+  const isUrl =
+    opts.input.sourceType === "url" || opts.input.sourceType === "wechat"
   const { system, user } = buildClassifyMessages(opts.input, opts.catalog)
 
   let usage: DeepSeekTokenUsage = emptyLlmUsage()

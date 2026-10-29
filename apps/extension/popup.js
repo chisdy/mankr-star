@@ -1,28 +1,56 @@
 "use strict";
 (() => {
+  // src/source-label.ts
+  function sourceLabel(sourceType) {
+    if (sourceType === "github") return "GitHub";
+    if (sourceType === "twitter") return "X";
+    if (sourceType === "wechat") return "\u5FAE\u4FE1\u516C\u4F17\u53F7";
+    return "\u7F51\u9875";
+  }
+  function savedStatusText(match) {
+    const label = sourceLabel(match.source_type);
+    return match.archived ? `\u5DF2\u6536\u85CF \xB7 ${label} \xB7 \u5DF2\u5F52\u6863` : `\u5DF2\u6536\u85CF \xB7 ${label}`;
+  }
+
   // src/popup/index.ts
   var STORAGE_KEY = "instanceUrl";
   var viewMain = document.getElementById("view-main");
   var viewSettings = document.getElementById("view-settings");
-  var btnOpenSettings = document.getElementById("btn-open-settings");
+  var btnOpenSettings = document.getElementById(
+    "btn-open-settings"
+  );
   var btnBack = document.getElementById("btn-back");
   var connDot = document.getElementById("conn-dot");
   var siteFavicon = document.getElementById("site-favicon");
-  var siteFaviconFallback = document.getElementById("site-favicon-fallback");
+  var siteFaviconFallback = document.getElementById(
+    "site-favicon-fallback"
+  );
   var siteDomain = document.getElementById("site-domain");
   var statusPill = document.getElementById("status-pill");
-  var statusPillText = document.getElementById("status-pill-text");
+  var statusPillText = document.getElementById(
+    "status-pill-text"
+  );
   var pageTitle = document.getElementById("page-title");
   var pageUrl = document.getElementById("page-url");
   var btnAction = document.getElementById("btn-action");
   var btnActionIcon = document.getElementById("btn-action-icon");
   var btnActionText = document.getElementById("btn-action-text");
   var instanceInput = document.getElementById("instance");
-  var btnSaveInstance = document.getElementById("btn-save-instance");
-  var instanceFeedback = document.getElementById("instance-feedback");
-  var btnImportBookmarks = document.getElementById("btn-import-bookmarks");
-  var importProgressContainer = document.getElementById("import-progress-container");
-  var importProgressBar = document.getElementById("import-progress-bar");
+  var btnSaveInstance = document.getElementById(
+    "btn-save-instance"
+  );
+  var instanceFeedback = document.getElementById(
+    "instance-feedback"
+  );
+  var btnImportBookmarks = document.getElementById(
+    "btn-import-bookmarks"
+  );
+  var importProgressContainer = document.getElementById(
+    "import-progress-container"
+  );
+  var importProgressBar = document.getElementById(
+    "import-progress-bar"
+  );
   var importStatus = document.getElementById("import-status");
   var ICON_PLUS = `
 <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -48,16 +76,13 @@
     const value = raw.trim();
     if (!value) return null;
     try {
-      const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+      const url = new URL(
+        /^https?:\/\//i.test(value) ? value : `https://${value}`
+      );
       return url.origin;
     } catch {
       return null;
     }
-  }
-  function sourceLabel(sourceType) {
-    if (sourceType === "github") return "GitHub";
-    if (sourceType === "twitter") return "X";
-    return "\u7F51\u9875";
   }
   function switchView(target) {
     if (target === "settings") {
@@ -79,7 +104,9 @@
       return false;
     }
     try {
-      isPermitted = await chrome.permissions.contains({ origins: [`${origin}/*`] });
+      isPermitted = await chrome.permissions.contains({
+        origins: [`${origin}/*`]
+      });
     } catch {
       isPermitted = false;
     }
@@ -122,7 +149,9 @@
     pageUrl.textContent = currentUrl || "\u65E0\u53EF\u7528\u94FE\u63A5";
     pageUrl.title = currentUrl;
     const origin = normalizeInstance(instanceInput.value);
-    const isConfiguredAndReady = Boolean(origin && isPermitted && viewState.origin === origin);
+    const isConfiguredAndReady = Boolean(
+      origin && isPermitted && viewState.origin === origin
+    );
     if (!isHttp) {
       statusPill.className = "status-pill alert";
       statusPillText.textContent = "\u7CFB\u7EDF\u9875\u9762";
@@ -142,7 +171,7 @@
     const match = viewState.match;
     if (match) {
       statusPill.className = "status-pill saved";
-      statusPillText.textContent = match.archived ? `\u5DF2\u6536\u85CF \xB7 ${sourceLabel(match.source_type)} \xB7 \u5DF2\u5F52\u6863` : `\u5DF2\u6536\u85CF \xB7 ${sourceLabel(match.source_type)}`;
+      statusPillText.textContent = savedStatusText(match);
       btnAction.disabled = false;
       btnActionIcon.innerHTML = ICON_EXTERNAL;
       btnActionText.textContent = "\u5728 Mankr Star \u4E2D\u6253\u5F00";
@@ -284,7 +313,9 @@
     instanceFeedback.textContent = "\u6B63\u5728\u53D1\u8D77\u6D4F\u89C8\u5668\u6743\u9650\u6388\u6743\u2026";
     instanceFeedback.className = "feedback-msg";
     try {
-      const granted = await chrome.permissions.request({ origins: [`${origin}/*`] });
+      const granted = await chrome.permissions.request({
+        origins: [`${origin}/*`]
+      });
       if (!granted) {
         instanceFeedback.textContent = "\u672A\u6388\u4E88\u8BE5\u7AD9\u70B9\u7684\u8BBF\u95EE\u6743\u9650\uFF0C\u65E0\u6CD5\u540C\u6B65\u6536\u85CF\u72B6\u6001\u3002";
         instanceFeedback.className = "feedback-msg error";
@@ -313,14 +344,18 @@
       importStatus.className = "feedback-msg error";
       return;
     }
-    const grantedHost = await chrome.permissions.request({ origins: [`${origin}/*`] });
+    const grantedHost = await chrome.permissions.request({
+      origins: [`${origin}/*`]
+    });
     if (!grantedHost) {
       importStatus.textContent = "\u8BF7\u5141\u8BB8\u8BBF\u95EE\u5B9E\u4F8B\u7AD9\u70B9\u4EE5\u8FDB\u884C\u6570\u636E\u4E0A\u4F20\u3002";
       importStatus.className = "feedback-msg error";
       return;
     }
     await chrome.storage.sync.set({ [STORAGE_KEY]: origin });
-    const grantedBookmarks = await chrome.permissions.request({ permissions: ["bookmarks"] });
+    const grantedBookmarks = await chrome.permissions.request({
+      permissions: ["bookmarks"]
+    });
     if (!grantedBookmarks) {
       importStatus.textContent = "\u672A\u6388\u4E88\u8BFB\u53D6\u4E66\u7B7E\u6743\u9650\uFF0C\u5BFC\u5165\u5DF2\u53D6\u6D88\u3002";
       importStatus.className = "feedback-msg error";

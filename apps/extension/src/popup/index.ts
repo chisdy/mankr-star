@@ -3,6 +3,7 @@
  * 强类型状态机、精美卡片渲染、视图平滑切换与后台通信
  */
 import "./popup.css"
+import { savedStatusText } from "../source-label.ts"
 
 const STORAGE_KEY = "instanceUrl"
 
@@ -29,15 +30,21 @@ interface FlatBookmark {
 const viewMain = document.getElementById("view-main") as HTMLElement
 const viewSettings = document.getElementById("view-settings") as HTMLElement
 
-const btnOpenSettings = document.getElementById("btn-open-settings") as HTMLButtonElement
+const btnOpenSettings = document.getElementById(
+  "btn-open-settings"
+) as HTMLButtonElement
 const btnBack = document.getElementById("btn-back") as HTMLButtonElement
 const connDot = document.getElementById("conn-dot") as HTMLElement
 
 const siteFavicon = document.getElementById("site-favicon") as HTMLImageElement
-const siteFaviconFallback = document.getElementById("site-favicon-fallback") as HTMLElement
+const siteFaviconFallback = document.getElementById(
+  "site-favicon-fallback"
+) as HTMLElement
 const siteDomain = document.getElementById("site-domain") as HTMLElement
 const statusPill = document.getElementById("status-pill") as HTMLElement
-const statusPillText = document.getElementById("status-pill-text") as HTMLElement
+const statusPillText = document.getElementById(
+  "status-pill-text"
+) as HTMLElement
 
 const pageTitle = document.getElementById("page-title") as HTMLElement
 const pageUrl = document.getElementById("page-url") as HTMLElement
@@ -46,12 +53,22 @@ const btnActionIcon = document.getElementById("btn-action-icon") as HTMLElement
 const btnActionText = document.getElementById("btn-action-text") as HTMLElement
 
 const instanceInput = document.getElementById("instance") as HTMLInputElement
-const btnSaveInstance = document.getElementById("btn-save-instance") as HTMLButtonElement
-const instanceFeedback = document.getElementById("instance-feedback") as HTMLElement
+const btnSaveInstance = document.getElementById(
+  "btn-save-instance"
+) as HTMLButtonElement
+const instanceFeedback = document.getElementById(
+  "instance-feedback"
+) as HTMLElement
 
-const btnImportBookmarks = document.getElementById("btn-import-bookmarks") as HTMLButtonElement
-const importProgressContainer = document.getElementById("import-progress-container") as HTMLElement
-const importProgressBar = document.getElementById("import-progress-bar") as HTMLElement
+const btnImportBookmarks = document.getElementById(
+  "btn-import-bookmarks"
+) as HTMLButtonElement
+const importProgressContainer = document.getElementById(
+  "import-progress-container"
+) as HTMLElement
+const importProgressBar = document.getElementById(
+  "import-progress-bar"
+) as HTMLElement
 const importStatus = document.getElementById("import-status") as HTMLElement
 
 // 图标模版
@@ -85,18 +102,13 @@ function normalizeInstance(raw: string): string | null {
   const value = raw.trim()
   if (!value) return null
   try {
-    const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`)
+    const url = new URL(
+      /^https?:\/\//i.test(value) ? value : `https://${value}`
+    )
     return url.origin
   } catch {
     return null
   }
-}
-
-/** 来源类型标签 */
-function sourceLabel(sourceType: string): string {
-  if (sourceType === "github") return "GitHub"
-  if (sourceType === "twitter") return "X"
-  return "网页"
 }
 
 /** 切换界面面板 */
@@ -122,7 +134,9 @@ async function syncPermission(): Promise<boolean> {
     return false
   }
   try {
-    isPermitted = await chrome.permissions.contains({ origins: [`${origin}/*`] })
+    isPermitted = await chrome.permissions.contains({
+      origins: [`${origin}/*`],
+    })
   } catch {
     isPermitted = false
   }
@@ -139,7 +153,11 @@ function renderMain() {
   const isHttp = currentUrl && /^https?:/i.test(currentUrl)
 
   // 处理 Favicon 与域名展示
-  if (currentTab?.favIconUrl && isHttp && !currentTab.favIconUrl.startsWith("chrome://")) {
+  if (
+    currentTab?.favIconUrl &&
+    isHttp &&
+    !currentTab.favIconUrl.startsWith("chrome://")
+  ) {
     siteFavicon.src = currentTab.favIconUrl
     siteFavicon.onload = () => {
       siteFavicon.style.display = "block"
@@ -173,7 +191,9 @@ function renderMain() {
   pageUrl.title = currentUrl
 
   const origin = normalizeInstance(instanceInput.value)
-  const isConfiguredAndReady = Boolean(origin && isPermitted && viewState.origin === origin)
+  const isConfiguredAndReady = Boolean(
+    origin && isPermitted && viewState.origin === origin
+  )
 
   // 情况 1: 系统受限页面 (chrome://, edge://, about:, file:)
   if (!isHttp) {
@@ -199,9 +219,7 @@ function renderMain() {
   const match = viewState.match
   if (match) {
     statusPill.className = "status-pill saved"
-    statusPillText.textContent = match.archived
-      ? `已收藏 · ${sourceLabel(match.source_type)} · 已归档`
-      : `已收藏 · ${sourceLabel(match.source_type)}`
+    statusPillText.textContent = savedStatusText(match)
     btnAction.disabled = false
     btnActionIcon.innerHTML = ICON_EXTERNAL
     btnActionText.textContent = "在 Mankr Star 中打开"
@@ -306,7 +324,8 @@ async function init() {
   // 若尚未配置任何实例，主动引导进入设置视图
   if (!savedOrigin || !isPermitted) {
     switchView("settings")
-    instanceFeedback.textContent = "请填写并授权您的 Mankr Star 部署地址以开启识别。"
+    instanceFeedback.textContent =
+      "请填写并授权您的 Mankr Star 部署地址以开启识别。"
     instanceFeedback.className = "feedback-msg"
   } else {
     switchView("main")
@@ -369,7 +388,8 @@ btnAction.addEventListener("click", async () => {
 
   if (!origin || !currentUrl) return
 
-  const match = viewState.match && viewState.origin === origin ? viewState.match : null
+  const match =
+    viewState.match && viewState.origin === origin ? viewState.match : null
   const targetUrl = match
     ? `${origin}/?bookmark=${encodeURIComponent(match.id)}`
     : `${origin}/?add=${encodeURIComponent(currentUrl)}`
@@ -382,7 +402,8 @@ btnAction.addEventListener("click", async () => {
 btnSaveInstance.addEventListener("click", async () => {
   const origin = normalizeInstance(instanceInput.value)
   if (!origin) {
-    instanceFeedback.textContent = "请输入合法的 URL 格式（如 https://star.example.com）。"
+    instanceFeedback.textContent =
+      "请输入合法的 URL 格式（如 https://star.example.com）。"
     instanceFeedback.className = "feedback-msg error"
     return
   }
@@ -393,9 +414,12 @@ btnSaveInstance.addEventListener("click", async () => {
   instanceFeedback.className = "feedback-msg"
 
   try {
-    const granted = await chrome.permissions.request({ origins: [`${origin}/*`] })
+    const granted = await chrome.permissions.request({
+      origins: [`${origin}/*`],
+    })
     if (!granted) {
-      instanceFeedback.textContent = "未授予该站点的访问权限，无法同步收藏状态。"
+      instanceFeedback.textContent =
+        "未授予该站点的访问权限，无法同步收藏状态。"
       instanceFeedback.className = "feedback-msg error"
       btnSaveInstance.disabled = false
       return
@@ -415,7 +439,8 @@ btnSaveInstance.addEventListener("click", async () => {
       switchView("main")
     }, 450)
   } catch (err) {
-    instanceFeedback.textContent = err instanceof Error ? err.message : "授权过程出现异常。"
+    instanceFeedback.textContent =
+      err instanceof Error ? err.message : "授权过程出现异常。"
     instanceFeedback.className = "feedback-msg error"
     btnSaveInstance.disabled = false
   }
@@ -430,7 +455,9 @@ btnImportBookmarks.addEventListener("click", async () => {
     return
   }
 
-  const grantedHost = await chrome.permissions.request({ origins: [`${origin}/*`] })
+  const grantedHost = await chrome.permissions.request({
+    origins: [`${origin}/*`],
+  })
   if (!grantedHost) {
     importStatus.textContent = "请允许访问实例站点以进行数据上传。"
     importStatus.className = "feedback-msg error"
@@ -438,7 +465,9 @@ btnImportBookmarks.addEventListener("click", async () => {
   }
   await chrome.storage.sync.set({ [STORAGE_KEY]: origin })
 
-  const grantedBookmarks = await chrome.permissions.request({ permissions: ["bookmarks"] })
+  const grantedBookmarks = await chrome.permissions.request({
+    permissions: ["bookmarks"],
+  })
   if (!grantedBookmarks) {
     importStatus.textContent = "未授予读取书签权限，导入已取消。"
     importStatus.className = "feedback-msg error"
@@ -446,7 +475,8 @@ btnImportBookmarks.addEventListener("click", async () => {
   }
 
   if (!chrome.bookmarks?.getTree) {
-    importStatus.textContent = "此浏览器环境不支持直接读取书签，请在网页端通过 HTML 文件导入。"
+    importStatus.textContent =
+      "此浏览器环境不支持直接读取书签，请在网页端通过 HTML 文件导入。"
     importStatus.className = "feedback-msg error"
     return
   }
@@ -478,7 +508,8 @@ btnImportBookmarks.addEventListener("click", async () => {
     })) as { ok?: boolean; jobId?: string; error?: string } | undefined
 
     if (!started?.ok || !started.jobId) {
-      importStatus.textContent = started?.error || "创建导入任务失败，请检查是否已在实例登录。"
+      importStatus.textContent =
+        started?.error || "创建导入任务失败，请检查是否已在实例登录。"
       importStatus.className = "feedback-msg error"
       importProgressContainer.classList.remove("active")
       btnImportBookmarks.disabled = false
@@ -522,7 +553,8 @@ btnImportBookmarks.addEventListener("click", async () => {
     })) as { ok?: boolean; error?: string } | undefined
 
     if (!finishRes?.ok) {
-      importStatus.textContent = finishRes?.error || "扫描触发失败，请稍后在网页端检查。"
+      importStatus.textContent =
+        finishRes?.error || "扫描触发失败，请稍后在网页端检查。"
       importStatus.className = "feedback-msg error"
       importProgressContainer.classList.remove("active")
       btnImportBookmarks.disabled = false
@@ -537,7 +569,8 @@ btnImportBookmarks.addEventListener("click", async () => {
       window.close()
     }, 600)
   } catch (error) {
-    importStatus.textContent = error instanceof Error ? error.message : "书签导入失败。"
+    importStatus.textContent =
+      error instanceof Error ? error.message : "书签导入失败。"
     importStatus.className = "feedback-msg error"
     importProgressContainer.classList.remove("active")
     btnImportBookmarks.disabled = false

@@ -67,15 +67,17 @@ export function BookmarkCard({
   // 标题中已包含作者名（如推文标题带 @handle，或 GitHub 仓库本身就是 owner/repo）时，元信息行不再重复展示
   const isOwnerInTitle = Boolean(
     rawOwner &&
-      (displayTitle.toLowerCase().includes(rawOwner.toLowerCase()) ||
-        displayTitle.toLowerCase().includes(`@${rawOwner.toLowerCase()}`)),
+    (displayTitle.toLowerCase().includes(rawOwner.toLowerCase()) ||
+      displayTitle.toLowerCase().includes(`@${rawOwner.toLowerCase()}`))
   )
   const showOwner =
     !isGithub && Boolean(siteLabel) && (!rawOwner || !isOwnerInTitle)
   const ownerDisplay = isTwitter && rawOwner ? `@${rawOwner}` : siteLabel
 
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest("button, a, input, [role='button']")) {
+    if (
+      (e.target as HTMLElement).closest("button, a, input, [role='button']")
+    ) {
       return
     }
     onClick?.()
@@ -91,7 +93,7 @@ export function BookmarkCard({
         "hover:-translate-y-1 hover:border-border hover:bg-accent/30 hover:shadow-md",
         "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
         isGithub && bookmark.health_status === "unavailable" && "opacity-75",
-        selected && "border-primary/60 bg-primary/5",
+        selected && "border-primary/60 bg-primary/5"
       )}
     >
       {selectable ? (
@@ -117,7 +119,7 @@ export function BookmarkCard({
         ) : null}
 
         {/* 头部：标题与关键微标 */}
-        <div className="space-y-1.5 min-w-0">
+        <div className="min-w-0 space-y-1.5">
           <div className="flex min-w-0 items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               {bookmark.favicon_url ? (
@@ -134,7 +136,7 @@ export function BookmarkCard({
                   type="button"
                   onClick={onClick}
                   title={displayTitle}
-                  className="block w-full truncate text-left text-sm font-semibold tracking-tight text-foreground transition-colors duration-200 hover:underline group-hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xs"
+                  className="block w-full truncate rounded-xs text-left text-sm font-semibold tracking-tight text-foreground transition-colors duration-200 group-hover:text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 >
                   {displayTitle}
                 </button>
@@ -145,7 +147,7 @@ export function BookmarkCard({
               {bookmark.archived_at && (
                 <Badge
                   variant="secondary"
-                  className="text-xs h-5 px-1.5 font-normal"
+                  className="h-5 px-1.5 text-xs font-normal"
                 >
                   {t("card.archived")}
                 </Badge>
@@ -153,16 +155,27 @@ export function BookmarkCard({
               {isGithub ? (
                 <HealthStatusBadge status={bookmark.health_status} />
               ) : null}
+              {bookmark.source_type === "wechat" ? (
+                <Badge
+                  variant="secondary"
+                  className="h-5 px-1.5 text-xs font-normal"
+                >
+                  {t("list.sourceWechat")}
+                </Badge>
+              ) : null}
               <PricingFeaturedBadges bookmark={bookmark} />
             </div>
           </div>
 
           {/* 元信息行：去重并流式对齐 */}
-          <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             {bookmark.folder_name && (
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <FolderIcon className="size-3.5" />
-                <span className="truncate max-w-[120px]" title={bookmark.folder_name}>
+                <span
+                  className="max-w-[120px] truncate"
+                  title={bookmark.folder_name}
+                >
                   {bookmark.folder_name}
                 </span>
               </span>
@@ -173,7 +186,10 @@ export function BookmarkCard({
                 {bookmark.folder_name ? (
                   <span className="text-muted-foreground/30">·</span>
                 ) : null}
-                <span className="truncate max-w-[120px] text-xs text-muted-foreground" title={ownerDisplay}>
+                <span
+                  className="max-w-[120px] truncate text-xs text-muted-foreground"
+                  title={ownerDisplay}
+                >
                   {ownerDisplay}
                 </span>
               </>
@@ -223,7 +239,7 @@ export function BookmarkCard({
         </div>
 
         {/* 摘要描述区 */}
-        <div className="text-xs text-muted-foreground/90 line-clamp-5 leading-relaxed break-words">
+        <div className="line-clamp-5 text-xs leading-relaxed break-words text-muted-foreground/90">
           {isPending ? (
             bookmark.description ? (
               <div className="space-y-1">
@@ -246,12 +262,12 @@ export function BookmarkCard({
 
         {/* 标签区：融入卡片内容主体 */}
         {tags.length > 0 && (
-          <div className="flex items-center gap-1 flex-wrap min-w-0 pt-0.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-1 pt-0.5">
             {visibleTags.map((tag) => (
               <Badge
                 key={tag}
                 variant="secondary"
-                className="h-5 px-1.5 text-xs font-normal bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground border-transparent"
+                className="h-5 border-transparent bg-muted/50 px-1.5 text-xs font-normal text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 #{tag}
               </Badge>
@@ -266,8 +282,8 @@ export function BookmarkCard({
       </div>
 
       {/* 底部条：贯穿左右外边框的独立操作底栏 */}
-      <div className="flex items-center justify-between text-xs text-muted-foreground -mx-4 -mb-4 mt-3 px-4 py-2 border-t border-border/50 rounded-b-xl min-w-0">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className="-mx-4 mt-3 -mb-4 flex min-w-0 items-center justify-between rounded-b-xl border-t border-border/50 px-4 py-2 text-xs text-muted-foreground">
+        <div className="flex min-w-0 items-center gap-2.5">
           {formattedDate && (
             <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
               <ClockIcon className="size-3.5" />
@@ -301,14 +317,14 @@ export function BookmarkCard({
 
 export function BookmarkCardSkeleton() {
   return (
-    <div className="flex flex-col justify-between h-48 rounded-xl border border-border/40 bg-card/60 p-4 space-y-3">
+    <div className="flex h-48 flex-col justify-between space-y-3 rounded-xl border border-border/40 bg-card/60 p-4">
       <div className="space-y-2">
         <Skeleton className="h-5 w-3/4" />
         <Skeleton className="h-3.5 w-1/3" />
-        <Skeleton className="h-3.5 w-full mt-2" />
+        <Skeleton className="mt-2 h-3.5 w-full" />
         <Skeleton className="h-3.5 w-4/5" />
       </div>
-      <div className="-mx-4 -mb-4 mt-3 flex items-center justify-between border-t border-border/30 px-4 py-2.5 rounded-b-xl">
+      <div className="-mx-4 mt-3 -mb-4 flex items-center justify-between rounded-b-xl border-t border-border/30 px-4 py-2.5">
         <Skeleton className="h-3 w-16" />
         <div className="flex gap-1">
           <Skeleton className="h-4 w-10" />

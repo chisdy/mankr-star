@@ -30,9 +30,7 @@ import { BookmarkRowSkeleton } from "./bookmark-row"
 import { BookmarkCardSkeleton } from "./bookmark-card"
 import { AddBookmarkDialog } from "./add-bookmark-dialog"
 import { BookmarkBatchBar } from "./bookmark-batch-bar"
-import {
-  countPanelFilters,
-} from "./filter-panel-body"
+import { countPanelFilters } from "./filter-panel-body"
 import { parsePricingFilterParam } from "./pricing-filter"
 import {
   BOOKMARK_PAGE_PARAM,
@@ -56,7 +54,7 @@ export function BookmarksPage() {
 
   const [addDialogOpen, setAddDialogOpen] = React.useState(false)
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(
-    () => new Set(),
+    () => new Set()
   )
 
   const handleSelectedChange = React.useCallback(
@@ -68,7 +66,7 @@ export function BookmarksPage() {
         return next
       })
     },
-    [],
+    []
   )
 
   const [viewMode, setViewMode] = React.useState<"list" | "grid">(() => {
@@ -95,16 +93,14 @@ export function BookmarksPage() {
   const healthStatus = searchParams.get("health_status") || ""
   const sortParam = searchParams.get("sort")
   const sortRaw: "recent" | "updated" | "stars" | "name" =
-    sortParam === "stars" ||
-    sortParam === "name" ||
-    sortParam === "updated"
+    sortParam === "stars" || sortParam === "name" || sortParam === "updated"
       ? sortParam
       : "recent"
   // updated 仅 github；stars 允许 github / twitter / 全部
   const sort: "recent" | "updated" | "stars" | "name" =
     sortRaw === "updated" && sourceType !== "github"
       ? "recent"
-      : sortRaw === "stars" && sourceType === "url"
+      : sortRaw === "stars" && (sourceType === "url" || sourceType === "wechat")
         ? "recent"
         : sortRaw
   const q = searchParams.get("q") || ""
@@ -128,6 +124,7 @@ export function BookmarksPage() {
   const isGithubSource = sourceType === "github"
   const isUrlSource = sourceType === "url"
   const isTwitterSource = sourceType === "twitter"
+  const isWechatSource = sourceType === "wechat"
   // 隐藏控件对应的 URL 残留参数不参与查询；全部来源下 owner/site 互斥（并存时保留 owner）
   const effectiveLanguage = isGithubSource ? language || undefined : undefined
   const effectiveHealth = isGithubSource
@@ -142,10 +139,11 @@ export function BookmarksPage() {
         | undefined)
     : undefined
   const effectiveOwner =
-    !isUrlSource && owner ? owner : undefined
+    !isUrlSource && !isWechatSource && owner ? owner : undefined
   const effectiveSite =
     !isGithubSource &&
     !isTwitterSource &&
+    !isWechatSource &&
     site &&
     !(sourceType === "" && owner)
       ? site
@@ -184,7 +182,7 @@ export function BookmarksPage() {
       sort,
       q,
       archived,
-    ],
+    ]
   )
 
   const {
@@ -224,7 +222,7 @@ export function BookmarksPage() {
       setSearchParams(next)
       getAppScrollRoot()?.scrollTo({ top: 0 })
     },
-    [searchParams, setSearchParams],
+    [searchParams, setSearchParams]
   )
 
   // 页码越界（改了 pageSize、删了收藏）时替换为最后有效页，不留历史记录
@@ -261,12 +259,7 @@ export function BookmarksPage() {
   const loadMoreError = isError && items.length > 0
 
   const panelFilterCount = countPanelFilters(searchParams)
-  const hasActiveFilters = !!(
-    folderId ||
-    q ||
-    panelFilterCount > 0 ||
-    aiStatus
-  )
+  const hasActiveFilters = !!(folderId || q || panelFilterCount > 0 || aiStatus)
 
   const clearListFilters = () => {
     setSearchParams(new URLSearchParams())
@@ -280,7 +273,7 @@ export function BookmarksPage() {
   }
 
   return (
-    <div className="mx-auto min-w-0 w-full max-w-6xl space-y-4 pb-12">
+    <div className="mx-auto w-full max-w-6xl min-w-0 space-y-4 pb-12">
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
           {!isLoading && !showListError ? (
@@ -303,7 +296,9 @@ export function BookmarksPage() {
             >
               <span className="truncate">
                 {t("list.aiStatusFilterLabel", {
-                  status: t(`list.aiStatus${aiStatus[0]!.toUpperCase()}${aiStatus.slice(1)}`),
+                  status: t(
+                    `list.aiStatus${aiStatus[0]!.toUpperCase()}${aiStatus.slice(1)}`
+                  ),
                 })}
               </span>
               <button

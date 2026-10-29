@@ -66,7 +66,9 @@ export const changePasswordSchema = z.object({
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
 
 export const createBookmarkSchema = z.object({
-  url: z.string().min(1, "请输入 GitHub 仓库、X 帖子或网页链接"),
+  url: z
+    .string()
+    .min(1, "请输入 GitHub 仓库、X 帖子、微信公众号文章或网页链接"),
   notes: z.string().max(10000).optional(),
   folderId: z.string().uuid().optional().nullable(),
   trackUpdates: z.boolean().optional().default(true),

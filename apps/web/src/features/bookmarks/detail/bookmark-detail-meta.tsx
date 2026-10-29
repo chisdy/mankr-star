@@ -30,6 +30,11 @@ export function BookmarkDetailMeta({ bookmark }: { bookmark: Bookmark }) {
           referrerPolicy="no-referrer"
         />
       ) : null}
+      {bookmark.source_type === "wechat" ? (
+        <Badge variant="secondary" className="h-5 px-1.5 text-xs font-normal">
+          {t("list.sourceWechat")}
+        </Badge>
+      ) : null}
       {(bookmark.site_name || bookmark.owner) && !isGithub ? (
         <span className="truncate text-xs">
           {bookmark.site_name || bookmark.owner}

@@ -71,15 +71,17 @@ export function BookmarkRow({
   const siteLabel = bookmark.site_name || rawOwner
   const isOwnerInTitle = Boolean(
     rawOwner &&
-      (displayTitle.toLowerCase().includes(rawOwner.toLowerCase()) ||
-        displayTitle.toLowerCase().includes(`@${rawOwner.toLowerCase()}`)),
+    (displayTitle.toLowerCase().includes(rawOwner.toLowerCase()) ||
+      displayTitle.toLowerCase().includes(`@${rawOwner.toLowerCase()}`))
   )
   const showOwner =
     !isGithub && Boolean(siteLabel) && (!rawOwner || !isOwnerInTitle)
   const ownerDisplay = isTwitter && rawOwner ? `@${rawOwner}` : siteLabel
 
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest("button, a, input, [role='button']")) {
+    if (
+      (e.target as HTMLElement).closest("button, a, input, [role='button']")
+    ) {
       return
     }
     onClick?.()
@@ -94,7 +96,7 @@ export function BookmarkRow({
         "hover:-translate-y-0.5 hover:border-border hover:bg-accent/30 hover:shadow-md",
         "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
         isGithub && bookmark.health_status === "unavailable" && "opacity-75",
-        selected && "border-primary/60 bg-primary/5",
+        selected && "border-primary/60 bg-primary/5"
       )}
     >
       {selectable ? (
@@ -136,7 +138,7 @@ export function BookmarkRow({
                 type="button"
                 onClick={onClick}
                 title={displayTitle}
-                className="block w-full truncate text-left text-sm font-semibold tracking-tight text-foreground transition-colors duration-200 hover:underline group-hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xs sm:text-base"
+                className="block w-full truncate rounded-xs text-left text-sm font-semibold tracking-tight text-foreground transition-colors duration-200 group-hover:text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:text-base"
               >
                 {displayTitle}
               </button>
@@ -147,7 +149,7 @@ export function BookmarkRow({
             {bookmark.archived_at && (
               <Badge
                 variant="secondary"
-                className="shrink-0 text-xs h-5 px-1.5 font-normal"
+                className="h-5 shrink-0 px-1.5 text-xs font-normal"
               >
                 {t("card.archived")}
               </Badge>
@@ -155,12 +157,20 @@ export function BookmarkRow({
             {isGithub ? (
               <HealthStatusBadge status={bookmark.health_status} />
             ) : null}
+            {bookmark.source_type === "wechat" ? (
+              <Badge
+                variant="secondary"
+                className="h-5 shrink-0 px-1.5 text-xs font-normal"
+              >
+                {t("list.sourceWechat")}
+              </Badge>
+            ) : null}
             <PricingFeaturedBadges bookmark={bookmark} />
           </div>
         </div>
 
         {/* 第二行：摘要描述 */}
-        <div className="min-w-0 text-xs text-muted-foreground/90 line-clamp-3 leading-relaxed break-words">
+        <div className="line-clamp-3 min-w-0 text-xs leading-relaxed break-words text-muted-foreground/90">
           {isPending ? (
             bookmark.description ? (
               <div className="space-y-0.5">
@@ -180,12 +190,15 @@ export function BookmarkRow({
         </div>
 
         {/* 第三行：元数据流（左侧）与 操作区（右侧） */}
-        <div className="flex items-center justify-between gap-2 pt-0.5 min-w-0 text-xs text-muted-foreground">
+        <div className="flex min-w-0 items-center justify-between gap-2 pt-0.5 text-xs text-muted-foreground">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5 gap-y-1">
             {bookmark.folder_name && (
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <FolderIcon className="size-3.5" />
-                <span className="truncate max-w-[100px]" title={bookmark.folder_name}>
+                <span
+                  className="max-w-[100px] truncate"
+                  title={bookmark.folder_name}
+                >
                   {bookmark.folder_name}
                 </span>
               </span>
@@ -239,7 +252,7 @@ export function BookmarkRow({
             {isGithub && bookmark.forks !== undefined && (
               <>
                 <span className="text-muted-foreground/30">·</span>
-                <span className="hidden sm:inline-flex items-center gap-1 font-mono text-xs">
+                <span className="hidden items-center gap-1 font-mono text-xs sm:inline-flex">
                   <GitForkIcon className="size-3.5" />
                   {bookmark.forks}
                 </span>
@@ -247,13 +260,13 @@ export function BookmarkRow({
             )}
 
             {tags.length > 0 && (
-              <div className="hidden sm:flex min-w-0 flex-wrap items-center gap-1">
+              <div className="hidden min-w-0 flex-wrap items-center gap-1 sm:flex">
                 <span className="text-muted-foreground/30">·</span>
                 {visibleTags.map((tag) => (
                   <Badge
                     key={tag}
                     variant="secondary"
-                    className="h-5 px-1.5 text-xs font-normal bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground border-transparent"
+                    className="h-5 border-transparent bg-muted/50 px-1.5 text-xs font-normal text-muted-foreground hover:bg-muted hover:text-foreground"
                   >
                     #{tag}
                   </Badge>
@@ -267,7 +280,7 @@ export function BookmarkRow({
             )}
 
             {formattedDate && (
-              <span className="hidden md:inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
+              <span className="hidden items-center gap-1 font-mono text-xs text-muted-foreground md:inline-flex">
                 <ClockIcon className="size-3.5" />
                 {formattedDate}
               </span>

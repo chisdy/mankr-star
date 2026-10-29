@@ -129,7 +129,7 @@ export const LoginFormSchema = z.object({
 })
 
 export const AddBookmarkSchema = z.object({
-  url: z.string().min(1, "请输入 GitHub、X 帖子或网页链接"),
+  url: z.string().min(1, "请输入 GitHub、X 帖子、微信公众号文章或网页链接"),
   folder_id: z.string().optional(),
   notes: z.string().optional(),
 })

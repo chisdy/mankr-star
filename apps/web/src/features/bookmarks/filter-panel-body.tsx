@@ -43,7 +43,7 @@ const ACTIVE_FILTER_CLASS =
 
 const CONTROL_WIDTH = "w-[11rem]"
 
-type SourceFilter = "" | "github" | "twitter" | "url"
+type SourceFilter = "" | "github" | "twitter" | "wechat" | "url"
 type PricingFilter = "" | BookmarkPricingFilter
 
 function SelectPrefix({ children }: { children: React.ReactNode }) {
@@ -186,6 +186,7 @@ export function FilterPanelBody({ className }: { className?: string }) {
     { value: "", label: t("list.sourceAll") },
     { value: "github", label: t("list.sourceGithub") },
     { value: "twitter", label: t("list.sourceX") },
+    { value: "wechat", label: t("list.sourceWechat") },
     { value: "url", label: t("list.sourceWeb") },
   ]
 
@@ -236,6 +237,14 @@ export function FilterPanelBody({ className }: { className?: string }) {
         next.delete("has_account")
         const sortVal = next.get("sort")
         if (sortVal === "updated") next.delete("sort")
+      } else if (nextSource === "wechat") {
+        next.delete("language")
+        next.delete("owner")
+        next.delete("health_status")
+        next.delete("site")
+        next.delete("has_account")
+        const sortVal = next.get("sort")
+        if (sortVal === "stars" || sortVal === "updated") next.delete("sort")
       } else {
         next.delete("language")
         next.delete("health_status")
@@ -429,10 +438,7 @@ export function FilterPanelBody({ className }: { className?: string }) {
         >
           <SelectTrigger
             size="sm"
-            className={cn(
-              "h-8 w-full text-xs",
-              pricing && ACTIVE_FILTER_CLASS
-            )}
+            className={cn("h-8 w-full text-xs", pricing && ACTIVE_FILTER_CLASS)}
           >
             <SelectPrefix>{t("list.pricingLabel")}</SelectPrefix>
             <SelectValue placeholder={t("list.pricingAll")} />

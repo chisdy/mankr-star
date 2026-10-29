@@ -277,6 +277,7 @@ export {
   IMPLEMENTED_SOURCE_TYPES,
   SOURCE_DETECT_RULES,
   SOURCE_TYPES,
+  WECHAT_ARTICLE_HOST,
   type ImplementedSourceType,
   type SourceType,
 } from "./source-detect-rules"
@@ -299,6 +300,13 @@ export const SOURCE_CAPABILITIES: Record<SourceType, SourceCapabilities> = {
     accountCredentials: false,
   },
   twitter: {
+    healthStatus: false,
+    sortByPushedAt: false,
+    trackUpdates: false,
+    languages: false,
+    accountCredentials: false,
+  },
+  wechat: {
     healthStatus: false,
     sortByPushedAt: false,
     trackUpdates: false,

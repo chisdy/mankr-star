@@ -1,3 +1,4 @@
+import { env } from "cloudflare:test"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import {
   TestClient,
@@ -50,6 +51,7 @@ interface BookmarkPayload {
   track_updates: boolean
   health_status?: string
   sync_status?: string
+  last_sync_error?: string | null
   click_count?: number
   view_count?: number
   open_count?: number
@@ -78,7 +80,7 @@ beforeEach(async () => {
       language: "Rust",
       stargazers_count: 42100,
       topics: ["cli", "python", "package-manager"],
-    }),
+    })
   )
   client = await registerOwner()
 })
@@ -88,15 +90,16 @@ afterEach(() => {
 })
 
 async function createBookmark(url: string, body: Record<string, unknown> = {}) {
-  return client.post<BookmarkPayload & { code?: string; details?: { id: string } }>(
-    "/api/bookmarks",
-    { url, ...body },
-  )
+  return client.post<
+    BookmarkPayload & { code?: string; details?: { id: string } }
+  >("/api/bookmarks", { url, ...body })
 }
 
 describe("POST /api/bookmarks", () => {
   it("抓取 GitHub 元数据并入库（snake_case 响应）", async () => {
-    const { status, body } = await createBookmark("https://github.com/facebook/react")
+    const { status, body } = await createBookmark(
+      "https://github.com/facebook/react"
+    )
 
     expect(status).toBe(201)
     expect(body.source_type).toBe("github")
@@ -142,7 +145,7 @@ describe("POST /api/bookmarks", () => {
         <meta property="og:description" content="A helpful guide" />
         <meta property="og:site_name" content="Example Docs" />
         <link rel="icon" href="/favicon.ico" />
-      </head><body><main><p>UniqueExcerptToken for search</p></main></body></html>`,
+      </head><body><main><p>UniqueExcerptToken for search</p></main></body></html>`
     )
 
     const { status, body } = await createBookmark(pageUrl)
@@ -163,7 +166,7 @@ describe("POST /api/bookmarks", () => {
   it("网页重复收藏返回 409", async () => {
     outbound.text(
       "https://example.com/a",
-      "<html><head><title>A</title></head><body>hi</body></html>",
+      "<html><head><title>A</title></head><body>hi</body></html>"
     )
     const first = await createBookmark("https://example.com/a")
     expect(first.status).toBe(201)
@@ -186,14 +189,206 @@ describe("POST /api/bookmarks", () => {
   it("q 可命中 content_excerpt", async () => {
     outbound.text(
       "https://example.com/searchable",
-      "<html><head><title>Searchable</title></head><body><p>NeedleInExcerptXYZ</p></body></html>",
+      "<html><head><title>Searchable</title></head><body><p>NeedleInExcerptXYZ</p></body></html>"
     )
     await createBookmark("https://example.com/searchable")
     const list = await client.json<{ items: BookmarkPayload[] }>(
-      "/api/bookmarks?q=NeedleInExcerptXYZ",
+      "/api/bookmarks?q=NeedleInExcerptXYZ"
     )
     expect(list.status).toBe(200)
     expect(list.body.items.some((i) => i.source_type === "url")).toBe(true)
+  })
+
+  it("公众号文章写入正文、账号名和平台参数", async () => {
+    const pageUrl =
+      "https://mp.weixin.qq.com/s?__biz=MzTest&mid=224&idx=2&sn=abc&scene=1"
+    outbound.text(
+      "https://mp.weixin.qq.com/s",
+      `<!doctype html><html><head>
+        <title>备用标题</title>
+        <meta property="og:title" content="知识库怎么建" />
+        <meta property="og:description" content="摘录说明" />
+        <meta property="og:image" content="https://mmbiz.qpic.cn/cover.jpg" />
+      </head><body>
+        <a id="js_name">曼库笔记</a>
+        <div id="js_content">
+          <p>第一段讲收藏时要保存正文。</p>
+          <p>UniqueWechatBodyToken 提问时只放短摘录，这里把正文写够。</p>
+        </div>
+      </body></html>`
+    )
+
+    const { status, body } = await createBookmark(pageUrl)
+    expect(status).toBe(201)
+    expect(body.source_type).toBe("wechat")
+    expect(body.owner).toBeNull()
+    expect(body.site_name).toBe("曼库笔记")
+    expect(body.title).toBe("知识库怎么建")
+    expect(body.track_updates).toBe(false)
+    expect(body.sync_status).toBe("ok")
+    expect(body.content_excerpt).toContain("UniqueWechatBodyToken")
+    expect(body.content_excerpt).not.toContain("<p>")
+    expect(body.canonical_url).toBe(
+      "https://mp.weixin.qq.com/s?__biz=MzTest&mid=224&idx=2&sn=abc"
+    )
+    expect(body.external_id).toBe("mp.weixin.qq.com/s")
+    expect(body.platform_meta).toMatchObject({
+      kind: "wechat_article",
+      biz: "MzTest",
+      mid: "224",
+      idx: "2",
+    })
+  })
+
+  it("公众号验证页仍入库，但正文为空", async () => {
+    outbound.text(
+      "https://mp.weixin.qq.com/s/blocked",
+      "<html><head><title>环境异常</title></head><body>环境异常，完成验证后即可继续访问</body></html>"
+    )
+    const { status, body } = await createBookmark(
+      "https://mp.weixin.qq.com/s/blocked"
+    )
+    expect(status).toBe(201)
+    expect(body.source_type).toBe("wechat")
+    expect(body.sync_status).toBe("error")
+    expect(body.content_excerpt).toBeNull()
+    expect(body.last_sync_error).toBe("微信返回验证页")
+  })
+
+  it("同步失败保留已有公众号正文", async () => {
+    const pageUrl = "https://mp.weixin.qq.com/s/keep-body"
+    outbound.text(
+      pageUrl,
+      `<html><head><meta property="og:title" content="保留正文" /></head><body>
+        <div id="js_content"><p>KeepWechatExcerptToken 这段正文必须在失败同步后还在，并且长度要超过摘录门槛。</p></div>
+      </body></html>`
+    )
+    const created = await createBookmark(pageUrl)
+    expect(created.status).toBe(201)
+    expect(created.body.content_excerpt).toContain("KeepWechatExcerptToken")
+
+    outbound.text(
+      pageUrl,
+      "<html><head><title>环境异常</title></head><body>环境异常</body></html>"
+    )
+    const synced = await client.post<{ ok: boolean; ai_status: string }>(
+      `/api/bookmarks/${created.body.id}/sync`
+    )
+    expect(synced.status).toBe(200)
+
+    const again = await client.json<BookmarkPayload>(
+      `/api/bookmarks/${created.body.id}`
+    )
+    expect(again.body.sync_status).toBe("error")
+    expect(again.body.content_excerpt).toContain("KeepWechatExcerptToken")
+  })
+
+  it("已有的 url 公众号行升级为 wechat，不另插一条", async () => {
+    const pageUrl = "https://mp.weixin.qq.com/s/upgrade-me"
+    await env.DB.prepare(
+      `INSERT INTO bookmarks(
+        id, source_type, canonical_url, external_id, title, content_excerpt, ai_status
+      ) VALUES (?, 'url', ?, 'mp.weixin.qq.com/s/upgrade-me', '旧标题', '旧摘录', 'done')`
+    )
+      .bind("wechat-upgrade-row", pageUrl)
+      .run()
+
+    outbound.text(
+      pageUrl,
+      `<html><head><meta property="og:title" content="升级后的标题" /></head><body>
+        <a id="js_name">升级账号</a>
+        <div id="js_content"><p>UpgradedWechatToken 升级后的正文需要足够长才能入库，这里把说明写完整。</p></div>
+      </body></html>`
+    )
+    const created = await createBookmark(pageUrl)
+    expect(created.status).toBe(201)
+    expect(created.body.id).toBe("wechat-upgrade-row")
+    expect(created.body.source_type).toBe("wechat")
+    expect(created.body.content_excerpt).toContain("UpgradedWechatToken")
+
+    const rows = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM bookmarks WHERE canonical_url = ? AND deleted_at IS NULL"
+    )
+      .bind(pageUrl)
+      .first<{ n: number }>()
+    expect(rows?.n).toBe(1)
+  })
+
+  it("带不同 scene 的同一篇长链不重复入库，并升级旧的 url 行", async () => {
+    const stored =
+      "https://mp.weixin.qq.com/s?__biz=MzLegacy&mid=8&idx=1&sn=leg&scene=1&chksm=old"
+    await env.DB.prepare(
+      `INSERT INTO bookmarks(
+        id, source_type, canonical_url, external_id, title, content_excerpt, ai_status
+      ) VALUES (?, 'url', ?, 'mp.weixin.qq.com/s', '旧长链', '旧摘录', 'done')`
+    )
+      .bind("wechat-legacy-long", stored)
+      .run()
+
+    outbound.text(
+      "https://mp.weixin.qq.com/s",
+      `<html><head><meta property="og:title" content="稳定长链" /></head><body>
+        <div id="js_content"><p>StableWechatToken 同一篇文章换了分享参数，仍然应该落在原来那一行。</p></div>
+      </body></html>`
+    )
+    const created = await createBookmark(
+      "https://mp.weixin.qq.com/s?scene=126&chksm=new&sn=leg&idx=1&mid=8&__biz=MzLegacy#rd"
+    )
+    expect(created.status).toBe(201)
+    expect(created.body.id).toBe("wechat-legacy-long")
+    expect(created.body.source_type).toBe("wechat")
+    expect(created.body.canonical_url).toBe(
+      "https://mp.weixin.qq.com/s?__biz=MzLegacy&mid=8&idx=1&sn=leg"
+    )
+
+    const again = await createBookmark(
+      "https://mp.weixin.qq.com/s?__biz=MzLegacy&idx=1&mid=8&sn=leg&scene=2"
+    )
+    expect(again.status).toBe(409)
+    expect(again.body.code).toBe("DUPLICATE")
+  })
+
+  it("公开接口不返回公众号正文，登录态仍然返回", async () => {
+    const pageUrl = "https://mp.weixin.qq.com/s/private-body"
+    outbound.text(
+      pageUrl,
+      `<html><head><meta property="og:title" content="仅登录可见" /></head><body>
+        <div id="js_content"><p>PrivateWechatExcerptToken 这段不能出现在公开接口里，登录后的详情仍然要能读到。</p></div>
+      </body></html>`
+    )
+    const created = await createBookmark(pageUrl)
+    expect(created.status).toBe(201)
+
+    await env.DB.prepare(
+      `INSERT INTO bookmarks(
+        id, source_type, canonical_url, external_id, title, content_excerpt, ai_status
+      ) VALUES (
+        'legacy-weixin-url', 'url', 'https://mp.weixin.qq.com/s/legacy-public',
+        'mp.weixin.qq.com/s/legacy-public', '历史公众号', 'LegacyWechatExcerptToken', 'done'
+      )`
+    ).run()
+
+    await client.put("/api/settings/public-browsing", { enabled: true })
+    const guest = new TestClient()
+
+    const publicNew = await guest.json<BookmarkPayload>(
+      `/api/bookmarks/${created.body.id}`
+    )
+    expect(publicNew.status).toBe(200)
+    expect(publicNew.body.content_excerpt).toBeNull()
+
+    const publicLegacy = await guest.json<BookmarkPayload>(
+      "/api/bookmarks/legacy-weixin-url"
+    )
+    expect(publicLegacy.status).toBe(200)
+    expect(publicLegacy.body.content_excerpt).toBeNull()
+
+    const ownerView = await client.json<BookmarkPayload>(
+      `/api/bookmarks/${created.body.id}`
+    )
+    expect(ownerView.body.content_excerpt).toContain(
+      "PrivateWechatExcerptToken"
+    )
   })
 
   it("收藏 X status 链接并写入元数据", async () => {
@@ -212,13 +407,15 @@ describe("POST /api/bookmarks", () => {
           avatar_url: "https://pbs.twimg.com/profile.jpg",
         },
         media: {
-          photos: [{ url: "https://pbs.twimg.com/media/abc.jpg", type: "photo" }],
+          photos: [
+            { url: "https://pbs.twimg.com/media/abc.jpg", type: "photo" },
+          ],
         },
       },
     })
 
     const { status, body } = await createBookmark(
-      "https://x.com/someone/status/1",
+      "https://x.com/someone/status/1"
     )
     expect(status).toBe(201)
     expect(body.source_type).toBe("twitter")
@@ -255,9 +452,7 @@ describe("POST /api/bookmarks", () => {
     })
     const first = await createBookmark("https://x.com/someone/status/99")
     expect(first.status).toBe(201)
-    const second = await createBookmark(
-      "https://twitter.com/someone/status/99",
-    )
+    const second = await createBookmark("https://twitter.com/someone/status/99")
     expect(second.status).toBe(409)
     expect(second.body.code).toBe("DUPLICATE")
   })
@@ -295,7 +490,7 @@ describe("无 DeepSeek Key 时的 AI 降级", () => {
     expect(created.status).toBe(201)
 
     const { body } = await client.json<BookmarkPayload>(
-      `/api/bookmarks/${created.body.id}`,
+      `/api/bookmarks/${created.body.id}`
     )
     expect(body.ai_status).toBe("fallback")
     expect(body.summary_ai).toBeTruthy()
@@ -305,7 +500,9 @@ describe("无 DeepSeek Key 时的 AI 降级", () => {
     // 无 Key 兜底仅按语言粗分（mock 默认为 TypeScript → 工具与 CLI）
     expect(body.folder!.name).toBe("工具与 CLI")
     // 降级路径不应调用 DeepSeek
-    expect(outbound.calls.some((u) => u.includes("api.deepseek.com"))).toBe(false)
+    expect(outbound.calls.some((u) => u.includes("api.deepseek.com"))).toBe(
+      false
+    )
   })
 })
 
@@ -326,8 +523,12 @@ describe("GET /api/bookmarks", () => {
   })
 
   it("支持 pageSize 分页", async () => {
-    const page1 = await client.json<BookmarkList>("/api/bookmarks?pageSize=1&page=1")
-    const page2 = await client.json<BookmarkList>("/api/bookmarks?pageSize=1&page=2")
+    const page1 = await client.json<BookmarkList>(
+      "/api/bookmarks?pageSize=1&page=1"
+    )
+    const page2 = await client.json<BookmarkList>(
+      "/api/bookmarks?pageSize=1&page=2"
+    )
     expect(page1.body.items).toHaveLength(1)
     expect(page2.body.items).toHaveLength(1)
     expect(page1.body.total).toBe(2)
@@ -336,7 +537,10 @@ describe("GET /api/bookmarks", () => {
 
   it("同值排序下逐页翻完不重不漏", async () => {
     // 默认 payload 的 stars 相同，专门制造并列排序
-    outbound.json(`${GITHUB}vercel/next.js`, githubRepoPayload("vercel/next.js"))
+    outbound.json(
+      `${GITHUB}vercel/next.js`,
+      githubRepoPayload("vercel/next.js")
+    )
     outbound.json(`${GITHUB}vitejs/vite`, githubRepoPayload("vitejs/vite"))
     await createBookmark("vercel/next.js")
     await createBookmark("vitejs/vite")
@@ -348,7 +552,7 @@ describe("GET /api/bookmarks", () => {
     for (let page = 1; page <= total; page += 1) {
       // title 排序在这里没有并列，用 stars 制造更容易抖动的同值场景
       const res = await client.json<BookmarkList>(
-        `/api/bookmarks?sort=stars&order=desc&pageSize=1&page=${page}`,
+        `/api/bookmarks?sort=stars&order=desc&pageSize=1&page=${page}`
       )
       expect(res.body.total).toBe(total)
       expect(res.body.items).toHaveLength(1)
@@ -359,7 +563,9 @@ describe("GET /api/bookmarks", () => {
   })
 
   it("超出总页数时返回空页但保留 total", async () => {
-    const res = await client.json<BookmarkList>("/api/bookmarks?pageSize=1&page=99")
+    const res = await client.json<BookmarkList>(
+      "/api/bookmarks?pageSize=1&page=99"
+    )
     expect(res.status).toBe(200)
     expect(res.body.items).toHaveLength(0)
     expect(res.body.total).toBe(2)
@@ -368,16 +574,16 @@ describe("GET /api/bookmarks", () => {
 
   it("pageSize 边界 1 与 100 可用，越界返回 400", async () => {
     expect(
-      (await client.json<BookmarkList>("/api/bookmarks?pageSize=1")).status,
+      (await client.json<BookmarkList>("/api/bookmarks?pageSize=1")).status
     ).toBe(200)
     expect(
-      (await client.json<BookmarkList>("/api/bookmarks?pageSize=100")).status,
+      (await client.json<BookmarkList>("/api/bookmarks?pageSize=100")).status
     ).toBe(200)
     expect(
-      (await client.json<BookmarkList>("/api/bookmarks?pageSize=0")).status,
+      (await client.json<BookmarkList>("/api/bookmarks?pageSize=0")).status
     ).toBe(400)
     expect(
-      (await client.json<BookmarkList>("/api/bookmarks?pageSize=101")).status,
+      (await client.json<BookmarkList>("/api/bookmarks?pageSize=101")).status
     ).toBe(400)
   })
 
@@ -386,15 +592,21 @@ describe("GET /api/bookmarks", () => {
     expect(byQuery.body.items).toHaveLength(1)
     expect(byQuery.body.items[0]!.external_id).toBe("astral-sh/uv")
 
-    const byLanguage = await client.json<BookmarkList>("/api/bookmarks?language=Rust")
+    const byLanguage = await client.json<BookmarkList>(
+      "/api/bookmarks?language=Rust"
+    )
     expect(byLanguage.body.items).toHaveLength(1)
 
-    const byOwner = await client.json<BookmarkList>("/api/bookmarks?owner=facebook")
+    const byOwner = await client.json<BookmarkList>(
+      "/api/bookmarks?owner=facebook"
+    )
     expect(byOwner.body.items).toHaveLength(1)
     expect(byOwner.body.items[0]!.external_id).toBe("facebook/react")
     expect(byOwner.body.items[0]!.owner).toBe("facebook")
 
-    const unknownOwner = await client.json<BookmarkList>("/api/bookmarks?owner=nobody")
+    const unknownOwner = await client.json<BookmarkList>(
+      "/api/bookmarks?owner=nobody"
+    )
     expect(unknownOwner.body.total).toBe(0)
     expect(unknownOwner.body.items).toEqual([])
 
@@ -402,7 +614,9 @@ describe("GET /api/bookmarks", () => {
     expect(byTag.body.items).toHaveLength(1)
     expect(byTag.body.items[0]!.external_id).toBe("facebook/react")
 
-    const unknownTag = await client.json<BookmarkList>("/api/bookmarks?tag=nope")
+    const unknownTag = await client.json<BookmarkList>(
+      "/api/bookmarks?tag=nope"
+    )
     expect(unknownTag.body.total).toBe(0)
     expect(unknownTag.body.items).toEqual([])
 
@@ -416,42 +630,52 @@ describe("GET /api/bookmarks", () => {
       folderId: folder.body.id,
     })
     const byFolder = await client.json<BookmarkList>(
-      `/api/bookmarks?folderId=${folder.body.id}`,
+      `/api/bookmarks?folderId=${folder.body.id}`
     )
     expect(byFolder.body.items).toHaveLength(1)
     expect(byFolder.body.items[0]!.external_id).toBe("facebook/react")
   })
 
   it("支持按 stars 排序", async () => {
-    const desc = await client.json<BookmarkList>("/api/bookmarks?sort=stars&order=desc")
+    const desc = await client.json<BookmarkList>(
+      "/api/bookmarks?sort=stars&order=desc"
+    )
     expect(desc.body.items[0]!.external_id).toBe("astral-sh/uv")
 
-    const asc = await client.json<BookmarkList>("/api/bookmarks?sort=stars&order=asc")
+    const asc = await client.json<BookmarkList>(
+      "/api/bookmarks?sort=stars&order=asc"
+    )
     expect(asc.body.items[0]!.external_id).toBe("facebook/react")
   })
 
   it("支持按 pushed_at 排序且 NULL 沉底，并可按 healthStatus 筛选", async () => {
-    outbound.json(`${GITHUB}facebook/react`, githubRepoPayload("facebook/react", {
-      pushed_at: "2026-08-01T00:00:00Z",
-      size: 100,
-    }))
-    outbound.json(`${GITHUB}astral-sh/uv`, githubRepoPayload("astral-sh/uv", {
-      pushed_at: "2026-07-01T00:00:00Z",
-      size: 50,
-      stargazers_count: 99999,
-    }))
+    outbound.json(
+      `${GITHUB}facebook/react`,
+      githubRepoPayload("facebook/react", {
+        pushed_at: "2026-08-01T00:00:00Z",
+        size: 100,
+      })
+    )
+    outbound.json(
+      `${GITHUB}astral-sh/uv`,
+      githubRepoPayload("astral-sh/uv", {
+        pushed_at: "2026-07-01T00:00:00Z",
+        size: 50,
+        stargazers_count: 99999,
+      })
+    )
 
     // recreate with known pushed_at (beforeEach already created them via other tests' setup)
     // This describe's beforeEach creates both; list should have health_status
     const byPushed = await client.json<BookmarkList>(
-      "/api/bookmarks?sort=pushed_at&order=desc",
+      "/api/bookmarks?sort=pushed_at&order=desc"
     )
     expect(byPushed.status).toBe(200)
     expect(byPushed.body.items.length).toBeGreaterThanOrEqual(1)
     expect(byPushed.body.items[0]!.health_status).toBeTruthy()
 
     const hot = await client.json<BookmarkList>(
-      "/api/bookmarks?healthStatus=hot",
+      "/api/bookmarks?healthStatus=hot"
     )
     expect(hot.status).toBe(200)
     for (const item of hot.body.items) {
@@ -468,7 +692,7 @@ describe("GET /api/bookmarks", () => {
     const status = all.body.items[0]!.ai_status
 
     const filtered = await client.json<BookmarkList>(
-      `/api/bookmarks?aiStatus=${status}`,
+      `/api/bookmarks?aiStatus=${status}`
     )
     expect(filtered.status).toBe(200)
     expect(filtered.body.total).toBeGreaterThanOrEqual(1)
@@ -477,20 +701,20 @@ describe("GET /api/bookmarks", () => {
     }
 
     const failed = await client.json<BookmarkList>(
-      "/api/bookmarks?aiStatus=failed",
+      "/api/bookmarks?aiStatus=failed"
     )
     expect(failed.status).toBe(200)
     if (status !== "failed") expect(failed.body.total).toBe(0)
 
     expect(
       (await client.json<{ code: string }>("/api/bookmarks?aiStatus=bogus"))
-        .status,
+        .status
     ).toBe(400)
   })
 
   it("非法查询参数返回 400", async () => {
     const { status, body } = await client.json<{ code: string }>(
-      "/api/bookmarks?pageSize=999",
+      "/api/bookmarks?pageSize=999"
     )
     expect(status).toBe(400)
     expect(body.code).toBe("VALIDATION_ERROR")
@@ -513,7 +737,7 @@ describe("PATCH /api/bookmarks/:id", () => {
         summaryAi: "手工覆盖的摘要",
         tagNames: ["ui", "自定义标签"],
         trackUpdates: false,
-      },
+      }
     )
 
     expect(status).toBe(200)
@@ -524,47 +748,61 @@ describe("PATCH /api/bookmarks/:id", () => {
   })
 
   it("folderId=null 可清空文件夹", async () => {
-    const { body } = await client.patch<BookmarkPayload>(`/api/bookmarks/${id}`, {
-      folderId: null,
-    })
+    const { body } = await client.patch<BookmarkPayload>(
+      `/api/bookmarks/${id}`,
+      {
+        folderId: null,
+      }
+    )
     expect(body.folder_id).toBeNull()
     expect(body.folder).toBeNull()
   })
 
   it("归档后默认列表不返回，archived/includeArchived 可查", async () => {
-    const archived = await client.patch<BookmarkPayload>(`/api/bookmarks/${id}`, {
-      archived: true,
-    })
+    const archived = await client.patch<BookmarkPayload>(
+      `/api/bookmarks/${id}`,
+      {
+        archived: true,
+      }
+    )
     expect(archived.body.archived_at).toBeTruthy()
 
     const defaultList = await client.json<BookmarkList>("/api/bookmarks")
     expect(defaultList.body.total).toBe(0)
 
-    const archivedOnly = await client.json<BookmarkList>("/api/bookmarks?archived=true")
+    const archivedOnly = await client.json<BookmarkList>(
+      "/api/bookmarks?archived=true"
+    )
     expect(archivedOnly.body.total).toBe(1)
 
     const withArchived = await client.json<BookmarkList>(
-      "/api/bookmarks?includeArchived=true",
+      "/api/bookmarks?includeArchived=true"
     )
     expect(withArchived.body.total).toBe(1)
 
-    const restored = await client.patch<BookmarkPayload>(`/api/bookmarks/${id}`, {
-      archived: false,
-    })
+    const restored = await client.patch<BookmarkPayload>(
+      `/api/bookmarks/${id}`,
+      {
+        archived: false,
+      }
+    )
     expect(restored.body.archived_at).toBeNull()
   })
 
   it("不存在的收藏返回 404，非法字段返回 400", async () => {
     const missing = await client.patch<{ code: string }>(
       "/api/bookmarks/00000000-0000-0000-0000-0000000000ff",
-      { notes: "x" },
+      { notes: "x" }
     )
     expect(missing.status).toBe(404)
     expect(missing.body.code).toBe("NOT_FOUND")
 
-    const invalid = await client.patch<{ code: string }>(`/api/bookmarks/${id}`, {
-      folderId: "not-a-uuid",
-    })
+    const invalid = await client.patch<{ code: string }>(
+      `/api/bookmarks/${id}`,
+      {
+        folderId: "not-a-uuid",
+      }
+    )
     expect(invalid.status).toBe(400)
     expect(invalid.body.code).toBe("VALIDATION_ERROR")
   })
@@ -600,22 +838,23 @@ describe("DELETE /api/bookmarks/:id", () => {
 describe("POST /api/bookmarks/:id/ai/regenerate", () => {
   it("重置为 pending 并异步重跑", async () => {
     const created = await createBookmark("facebook/react")
-    const { status, body } = await client.post<{ ok: boolean; ai_status: string }>(
-      `/api/bookmarks/${created.body.id}/ai/regenerate`,
-    )
+    const { status, body } = await client.post<{
+      ok: boolean
+      ai_status: string
+    }>(`/api/bookmarks/${created.body.id}/ai/regenerate`)
     expect(status).toBe(200)
     expect(body.ok).toBe(true)
     expect(body.ai_status).toBe("pending")
 
     const detail = await client.json<BookmarkPayload>(
-      `/api/bookmarks/${created.body.id}`,
+      `/api/bookmarks/${created.body.id}`
     )
     expect(["pending", "fallback"]).toContain(detail.body.ai_status)
   })
 
   it("不存在的收藏返回 404", async () => {
     const { status } = await client.post(
-      "/api/bookmarks/00000000-0000-0000-0000-0000000000ff/ai/regenerate",
+      "/api/bookmarks/00000000-0000-0000-0000-0000000000ff/ai/regenerate"
     )
     expect(status).toBe(404)
   })
@@ -624,21 +863,25 @@ describe("POST /api/bookmarks/:id/ai/regenerate", () => {
 describe("POST /api/bookmarks/:id/sync", () => {
   it("刷新 GitHub 元数据并置 ai_status=pending", async () => {
     const created = await createBookmark("facebook/react")
-    outbound.on("https://api.github.com/repos/facebook/react", () =>
-      new Response(
-        JSON.stringify({
-          ...githubRepoPayload("facebook/react", {
-            description: "synced description",
-            stargazers_count: 999,
+    outbound.on(
+      "https://api.github.com/repos/facebook/react",
+      () =>
+        new Response(
+          JSON.stringify({
+            ...githubRepoPayload("facebook/react", {
+              description: "synced description",
+              stargazers_count: 999,
+            }),
           }),
-        }),
-        { headers: { "content-type": "application/json" } },
-      ),
+          { headers: { "content-type": "application/json" } }
+        )
     )
-    outbound.on("https://api.github.com/repos/facebook/react/readme", () =>
-      new Response("# synced readme", {
-        headers: { "content-type": "text/plain" },
-      }),
+    outbound.on(
+      "https://api.github.com/repos/facebook/react/readme",
+      () =>
+        new Response("# synced readme", {
+          headers: { "content-type": "text/plain" },
+        })
     )
 
     const { status, body } = await client.post<{
@@ -650,7 +893,7 @@ describe("POST /api/bookmarks/:id/sync", () => {
     expect(body.ai_status).toBe("pending")
 
     const detail = await client.json<BookmarkPayload>(
-      `/api/bookmarks/${created.body.id}`,
+      `/api/bookmarks/${created.body.id}`
     )
     expect(detail.body.description).toBe("synced description")
     expect(detail.body.stars).toBe(999)
@@ -659,7 +902,7 @@ describe("POST /api/bookmarks/:id/sync", () => {
 
   it("不存在的收藏返回 404", async () => {
     const { status } = await client.post(
-      "/api/bookmarks/00000000-0000-0000-0000-0000000000ff/sync",
+      "/api/bookmarks/00000000-0000-0000-0000-0000000000ff/sync"
     )
     expect(status).toBe(404)
   })
@@ -669,7 +912,12 @@ describe("GET /api/tags", () => {
   it("返回标签与使用次数", async () => {
     await createBookmark("facebook/react")
     const { status, body } = await client.json<{
-      items: Array<{ id: string; name: string; slug: string; usage_count: number }>
+      items: Array<{
+        id: string
+        name: string
+        slug: string
+        usage_count: number
+      }>
     }>("/api/tags")
 
     expect(status).toBe(200)
@@ -705,7 +953,7 @@ describe("PATCH /api/tags/:id", () => {
     expect(body.usage_count).toBe(1)
 
     const bookmark = await client.json<BookmarkPayload>(
-      `/api/bookmarks/${created.body.id}`,
+      `/api/bookmarks/${created.body.id}`
     )
     expect(bookmark.body.tags).toEqual(["新标签"])
   })
@@ -724,7 +972,7 @@ describe("PATCH /api/tags/:id", () => {
 
     const { status, body } = await client.patch<{ code: string }>(
       `/api/tags/${alpha!.id}`,
-      { name: "beta" },
+      { name: "beta" }
     )
     expect(status).toBe(409)
     expect(body.code).toBe("DUPLICATE")
@@ -744,7 +992,7 @@ describe("PATCH /api/tags/:id", () => {
 
     const { status, body } = await client.patch<{ code: string }>(
       `/api/tags/${other!.id}`,
-      { name: "react!" },
+      { name: "react!" }
     )
     expect(status).toBe(409)
     expect(body.code).toBe("DUPLICATE")
@@ -753,7 +1001,7 @@ describe("PATCH /api/tags/:id", () => {
   it("不存在的标签返回 404", async () => {
     const { status, body } = await client.patch<{ code: string }>(
       "/api/tags/00000000-0000-0000-0000-0000000000ff",
-      { name: "nowhere" },
+      { name: "nowhere" }
     )
     expect(status).toBe(404)
     expect(body.code).toBe("NOT_FOUND")
@@ -774,7 +1022,7 @@ describe("DELETE /api/tags/:id", () => {
     expect(doomed).toBeTruthy()
 
     const { status, body } = await client.delete<{ ok: boolean }>(
-      `/api/tags/${doomed!.id}`,
+      `/api/tags/${doomed!.id}`
     )
     expect(status).toBe(200)
     expect(body.ok).toBe(true)
@@ -786,14 +1034,14 @@ describe("DELETE /api/tags/:id", () => {
     expect(after.body.items.find((t) => t.name === "保留")).toBeTruthy()
 
     const bookmark = await client.json<BookmarkPayload>(
-      `/api/bookmarks/${created.body.id}`,
+      `/api/bookmarks/${created.body.id}`
     )
     expect(bookmark.body.tags).toEqual(["保留"])
   })
 
   it("不存在的标签返回 404", async () => {
     const { status, body } = await client.delete<{ code: string }>(
-      "/api/tags/00000000-0000-0000-0000-0000000000ff",
+      "/api/tags/00000000-0000-0000-0000-0000000000ff"
     )
     expect(status).toBe(404)
     expect(body.code).toBe("NOT_FOUND")
@@ -813,14 +1061,19 @@ describe("DELETE /api/tags/empty", () => {
     const before = await client.json<{
       items: Array<{ name: string; usage_count: number }>
     }>("/api/tags")
-    expect(before.body.items.find((t) => t.name === "空的")?.usage_count).toBe(0)
-    expect(before.body.items.find((t) => t.name === "保留")?.usage_count).toBe(1)
+    expect(before.body.items.find((t) => t.name === "空的")?.usage_count).toBe(
+      0
+    )
+    expect(before.body.items.find((t) => t.name === "保留")?.usage_count).toBe(
+      1
+    )
     const emptyBefore = before.body.items.filter((t) => t.usage_count === 0)
     expect(emptyBefore.length).toBeGreaterThanOrEqual(1)
 
-    const { status, body } = await client.delete<{ ok: boolean; deleted: number }>(
-      "/api/tags/empty",
-    )
+    const { status, body } = await client.delete<{
+      ok: boolean
+      deleted: number
+    }>("/api/tags/empty")
     expect(status).toBe(200)
     expect(body.ok).toBe(true)
     expect(body.deleted).toBe(emptyBefore.length)
@@ -841,9 +1094,10 @@ describe("DELETE /api/tags/empty", () => {
     // 清掉 AI waitUntil 可能留下的孤儿空标签，再断言幂等
     await client.delete("/api/tags/empty")
 
-    const { status, body } = await client.delete<{ ok: boolean; deleted: number }>(
-      "/api/tags/empty",
-    )
+    const { status, body } = await client.delete<{
+      ok: boolean
+      deleted: number
+    }>("/api/tags/empty")
     expect(status).toBe(200)
     expect(body.ok).toBe(true)
     expect(body.deleted).toBe(0)
@@ -856,7 +1110,9 @@ describe("DELETE /api/tags/empty", () => {
 
   it("未登录返回 401", async () => {
     const guest = new TestClient()
-    const { status, body } = await guest.delete<{ code: string }>("/api/tags/empty")
+    const { status, body } = await guest.delete<{ code: string }>(
+      "/api/tags/empty"
+    )
     expect(status).toBe(401)
     expect(body.code).toBe("UNAUTHORIZED")
   })
@@ -872,7 +1128,9 @@ describe("GET /api/bookmarks/owners", () => {
     }>("/api/bookmarks/owners")
     expect(all.status).toBe(200)
     expect(all.body.items.map((o) => o.name)).toEqual(["astral-sh", "facebook"])
-    expect(all.body.items.find((o) => o.name === "facebook")?.usage_count).toBe(1)
+    expect(all.body.items.find((o) => o.name === "facebook")?.usage_count).toBe(
+      1
+    )
 
     const filtered = await client.json<{
       items: Array<{ name: string; usage_count: number }>
@@ -894,7 +1152,7 @@ describe("GET /api/bookmarks/owners", () => {
       `<!doctype html><html><head>
         <meta property="og:title" content="Example Page" />
         <meta property="og:site_name" content="Example Docs" />
-      </head><body><main><p>hello</p></main></body></html>`,
+      </head><body><main><p>hello</p></main></body></html>`
     )
     await createBookmark("https://example.com/page")
 
@@ -915,14 +1173,14 @@ describe("GET /api/bookmarks/sites", () => {
       `<!doctype html><html><head>
         <meta property="og:title" content="A" />
         <meta property="og:site_name" content="Example Docs" />
-      </head><body><main><p>a</p></main></body></html>`,
+      </head><body><main><p>a</p></main></body></html>`
     )
     outbound.text(
       "https://other.test/b",
       `<!doctype html><html><head>
         <meta property="og:title" content="B" />
         <meta property="og:site_name" content="Other Site" />
-      </head><body><main><p>b</p></main></body></html>`,
+      </head><body><main><p>b</p></main></body></html>`
     )
     await createBookmark("https://example.com/a")
     await createBookmark("https://other.test/b")
@@ -1014,7 +1272,7 @@ describe("GET /api/tags 分页与搜索", () => {
     ])
 
     const paged = await client.json<FacetList>(
-      "/api/tags?q=alpha&page=1&pageSize=1",
+      "/api/tags?q=alpha&page=1&pageSize=1"
     )
     expect(paged.body.total).toBe(2)
     expect(paged.body.items).toHaveLength(1)
@@ -1026,7 +1284,7 @@ describe("GET /api/tags 分页与搜索", () => {
 
   it("pageSize 超过上限返回 400", async () => {
     const { status, body } = await client.json<{ code: string }>(
-      "/api/tags?page=1&pageSize=101",
+      "/api/tags?page=1&pageSize=101"
     )
     expect(status).toBe(400)
     expect(body.code).toBe("VALIDATION_ERROR")
@@ -1035,7 +1293,10 @@ describe("GET /api/tags 分页与搜索", () => {
 
 describe("GET /api/bookmarks/owners 分页", () => {
   beforeEach(() => {
-    outbound.json(`${GITHUB}vercel/next.js`, githubRepoPayload("vercel/next.js"))
+    outbound.json(
+      `${GITHUB}vercel/next.js`,
+      githubRepoPayload("vercel/next.js")
+    )
   })
 
   it("未传 page 时返回全量并带 total", async () => {
@@ -1059,7 +1320,7 @@ describe("GET /api/bookmarks/owners 分页", () => {
     await createBookmark("vercel/next.js")
 
     const first = await client.json<FacetList>(
-      "/api/bookmarks/owners?page=1&pageSize=2",
+      "/api/bookmarks/owners?page=1&pageSize=2"
     )
     expect(first.status).toBe(200)
     expect(first.body.page).toBe(1)
@@ -1071,7 +1332,7 @@ describe("GET /api/bookmarks/owners 分页", () => {
     ])
 
     const second = await client.json<FacetList>(
-      "/api/bookmarks/owners?page=2&pageSize=2",
+      "/api/bookmarks/owners?page=2&pageSize=2"
     )
     expect(second.body.items.map((o) => o.name)).toEqual(["vercel"])
     expect(second.body.total).toBe(3)
@@ -1082,7 +1343,7 @@ describe("GET /api/bookmarks/owners 分页", () => {
     await createBookmark("astral-sh/uv")
 
     const { status, body } = await client.json<FacetList>(
-      "/api/bookmarks/owners?q=face&page=1&pageSize=10",
+      "/api/bookmarks/owners?q=face&page=1&pageSize=10"
     )
     expect(status).toBe(200)
     expect(body.items.map((o) => o.name)).toEqual(["facebook"])
@@ -1093,7 +1354,7 @@ describe("GET /api/bookmarks/owners 分页", () => {
     await createBookmark("facebook/react")
 
     const { status, body } = await client.json<FacetList>(
-      "/api/bookmarks/owners?sourceType=nope",
+      "/api/bookmarks/owners?sourceType=nope"
     )
     expect(status).toBe(200)
     expect(body.items.map((o) => o.name)).toEqual(["facebook"])
@@ -1112,7 +1373,7 @@ describe("GET /api/bookmarks/sites 分页", () => {
         `<!doctype html><html><head>
           <meta property="og:title" content="${siteName}" />
           <meta property="og:site_name" content="${siteName}" />
-        </head><body><main><p>x</p></main></body></html>`,
+        </head><body><main><p>x</p></main></body></html>`
       )
       await createBookmark(url)
     }
@@ -1135,7 +1396,7 @@ describe("GET /api/bookmarks/sites 分页", () => {
     await seedSites()
 
     const first = await client.json<FacetList>(
-      "/api/bookmarks/sites?page=1&pageSize=2",
+      "/api/bookmarks/sites?page=1&pageSize=2"
     )
     expect(first.status).toBe(200)
     expect(first.body.total).toBe(3)
@@ -1145,7 +1406,7 @@ describe("GET /api/bookmarks/sites 分页", () => {
     ])
 
     const second = await client.json<FacetList>(
-      "/api/bookmarks/sites?page=2&pageSize=2",
+      "/api/bookmarks/sites?page=2&pageSize=2"
     )
     expect(second.body.items.map((s) => s.name)).toEqual(["Third Site"])
   })
@@ -1154,7 +1415,7 @@ describe("GET /api/bookmarks/sites 分页", () => {
     await seedSites()
 
     const { status, body } = await client.json<FacetList>(
-      "/api/bookmarks/sites?q=Other&page=1&pageSize=10",
+      "/api/bookmarks/sites?q=Other&page=1&pageSize=10"
     )
     expect(status).toBe(200)
     expect(body.items.map((s) => s.name)).toEqual(["Other Site"])
@@ -1179,7 +1440,7 @@ describe("GET /api/feed", () => {
 
   it("非法 eventType 返回 400", async () => {
     const { status, body } = await client.json<{ code: string }>(
-      "/api/feed?eventType=nope",
+      "/api/feed?eventType=nope"
     )
     expect(status).toBe(400)
     expect(body.code).toBe("VALIDATION_ERROR")
@@ -1188,10 +1449,11 @@ describe("GET /api/feed", () => {
 
 describe("文件夹接口", () => {
   it("创建文件夹后统计收藏数量", async () => {
-    const created = await client.post<{ id: string; name: string; slug: string }>(
-      "/api/folders",
-      { name: "我的收藏夹", color: "#123456" },
-    )
+    const created = await client.post<{
+      id: string
+      name: string
+      slug: string
+    }>("/api/folders", { name: "我的收藏夹", color: "#123456" })
     expect(created.status).toBe(201)
     expect(created.body.slug).toBeTruthy()
 
@@ -1222,7 +1484,7 @@ describe("文件夹接口", () => {
     expect(conflict.body.code).toBe("DUPLICATE")
 
     const missing = await client.delete<{ code: string }>(
-      "/api/folders/00000000-0000-0000-0000-0000000000ff",
+      "/api/folders/00000000-0000-0000-0000-0000000000ff"
     )
     expect(missing.status).toBe(404)
   })
@@ -1239,12 +1501,12 @@ describe("文件夹接口", () => {
 
     const deleted = await client.delete<{ ok: boolean }>(
       `/api/folders/${folder.body.id}`,
-      { bookmarkAction: "detach" },
+      { bookmarkAction: "detach" }
     )
     expect(deleted.status).toBe(200)
 
     const detail = await client.json<BookmarkPayload>(
-      `/api/bookmarks/${bookmark.body.id}`,
+      `/api/bookmarks/${bookmark.body.id}`
     )
     expect(detail.body.folder_id).toBeNull()
   })
@@ -1252,11 +1514,11 @@ describe("文件夹接口", () => {
   it("删除文件夹时可选择一并删除收藏或迁移到其他文件夹", async () => {
     outbound.json(
       `${GITHUB}vercel/next.js`,
-      githubRepoPayload("vercel/next.js"),
+      githubRepoPayload("vercel/next.js")
     )
     outbound.json(
       `${GITHUB}tailwindlabs/tailwindcss`,
-      githubRepoPayload("tailwindlabs/tailwindcss"),
+      githubRepoPayload("tailwindlabs/tailwindcss")
     )
 
     const source = await client.post<{ id: string }>("/api/folders", {
@@ -1286,7 +1548,7 @@ describe("文件夹接口", () => {
     expect(deletedWithBookmarks.body.bookmark_action).toBe("delete")
 
     const gone = await client.json<{ code?: string }>(
-      `/api/bookmarks/${toDelete.body.id}`,
+      `/api/bookmarks/${toDelete.body.id}`
     )
     expect(gone.status).toBe(404)
 
@@ -1312,7 +1574,7 @@ describe("文件夹接口", () => {
     expect(moved.body.bookmark_action).toBe("move")
 
     const detail = await client.json<BookmarkPayload>(
-      `/api/bookmarks/${toMove.body.id}`,
+      `/api/bookmarks/${toMove.body.id}`
     )
     expect(detail.status).toBe(200)
     expect(detail.body.folder_id).toBe(target.body.id)
@@ -1348,11 +1610,14 @@ describe("文件夹接口", () => {
     // 构建 depth 2..4 的链条，在 depth-4 父下创建应失败
     let currentId = child.body.id
     for (let depth = 2; depth <= 4; depth++) {
-      const next = await client.post<{ id: string; depth: number }>("/api/folders", {
-        name: `Level ${depth}`,
-        slug: `level-${depth}-test`,
-        parentId: currentId,
-      })
+      const next = await client.post<{ id: string; depth: number }>(
+        "/api/folders",
+        {
+          name: `Level ${depth}`,
+          slug: `level-${depth}-test`,
+          parentId: currentId,
+        }
+      )
       expect(next.status).toBe(201)
       expect(next.body.depth).toBe(depth)
       currentId = next.body.id
@@ -1367,7 +1632,7 @@ describe("文件夹接口", () => {
     expect(tooDeep.body.code).toBe("INVALID_PARENT")
 
     const delParent = await client.delete<{ code: string }>(
-      `/api/folders/${parent.body.id}`,
+      `/api/folders/${parent.body.id}`
     )
     expect(delParent.status).toBe(409)
     expect(delParent.body.code).toBe("HAS_CHILDREN")
@@ -1378,9 +1643,11 @@ describe("文件夹接口", () => {
     })
 
     const byParent = await client.json<BookmarkList>(
-      `/api/bookmarks?folderId=${parent.body.id}`,
+      `/api/bookmarks?folderId=${parent.body.id}`
     )
-    expect(byParent.body.items.some((b) => b.id === bookmark.body.id)).toBe(true)
+    expect(byParent.body.items.some((b) => b.id === bookmark.body.id)).toBe(
+      true
+    )
 
     const folderList = await client.json<{
       items: Array<{ id: string; count: number; parent_id: string | null }>
@@ -1389,16 +1656,23 @@ describe("文件夹接口", () => {
     expect(parentRow?.count).toBeGreaterThanOrEqual(1)
 
     const detail = await client.json<BookmarkPayload>(
-      `/api/bookmarks/${bookmark.body.id}`,
+      `/api/bookmarks/${bookmark.body.id}`
     )
     expect(detail.body.folder?.name).toBe("Agent Skills Test")
     expect(detail.body.folder?.parent_id).toBe(parent.body.id)
     expect(detail.body.folder?.path_label).toBe("AI Parent / Agent Skills Test")
 
     const exported = await client.json<{
-      folders: Array<{ id: string; parent_id: string | null; depth: number; path: string }>
+      folders: Array<{
+        id: string
+        parent_id: string | null
+        depth: number
+        path: string
+      }>
     }>("/api/export")
-    const exportedChild = exported.body.folders.find((f) => f.id === child.body.id)
+    const exportedChild = exported.body.folders.find(
+      (f) => f.id === child.body.id
+    )
     expect(exportedChild?.parent_id).toBe(parent.body.id)
     expect(exportedChild?.depth).toBe(1)
     expect(exportedChild?.path).toContain(child.body.id)
@@ -1435,14 +1709,14 @@ describe("POST /api/bookmarks/:id/open", () => {
     expect(created.body.click_count ?? 0).toBe(0)
 
     const first = await client.post<BookmarkPayload>(
-      `/api/bookmarks/${created.body.id}/open`,
+      `/api/bookmarks/${created.body.id}/open`
     )
     expect(first.status).toBe(200)
     expect(first.body.click_count).toBe(1)
     expect(first.body.canonical_url).toBe("https://github.com/facebook/react")
 
     const second = await client.post<BookmarkPayload>(
-      `/api/bookmarks/${created.body.id}/open`,
+      `/api/bookmarks/${created.body.id}/open`
     )
     expect(second.status).toBe(200)
     expect(second.body.click_count).toBe(2)
@@ -1455,14 +1729,14 @@ describe("POST /api/bookmarks/:id/open", () => {
     expect(created.body.open_count ?? 0).toBe(0)
 
     const detail = await client.post<BookmarkPayload>(
-      `/api/bookmarks/${id}/open?type=detail`,
+      `/api/bookmarks/${id}/open?type=detail`
     )
     expect(detail.body.view_count).toBe(1)
     expect(detail.body.open_count).toBe(0)
     expect(detail.body.click_count).toBe(1)
 
     const external = await client.post<BookmarkPayload>(
-      `/api/bookmarks/${id}/open?type=external`,
+      `/api/bookmarks/${id}/open?type=external`
     )
     expect(external.body.view_count).toBe(1)
     expect(external.body.open_count).toBe(1)
@@ -1472,7 +1746,7 @@ describe("POST /api/bookmarks/:id/open", () => {
   it("缺省 type 按 external 处理，兼容旧客户端", async () => {
     const created = await createBookmark("https://github.com/facebook/react")
     const { body } = await client.post<BookmarkPayload>(
-      `/api/bookmarks/${created.body.id}/open`,
+      `/api/bookmarks/${created.body.id}/open`
     )
     expect(body.open_count).toBe(1)
     expect(body.view_count).toBe(0)
@@ -1480,7 +1754,7 @@ describe("POST /api/bookmarks/:id/open", () => {
 
   it("不存在的收藏返回 404", async () => {
     const { status, body } = await client.post<{ code?: string }>(
-      "/api/bookmarks/missing-id/open",
+      "/api/bookmarks/missing-id/open"
     )
     expect(status).toBe(404)
     expect(body.code).toBe("NOT_FOUND")
@@ -1555,7 +1829,7 @@ describe("收藏点赞", () => {
     expect(removed.body.like_count).toBe(1)
 
     const other = await client.json<BookmarkPayload>(
-      `/api/bookmarks/${b.body.id}`,
+      `/api/bookmarks/${b.body.id}`
     )
     expect(other.body.like_count).toBe(1)
   })
@@ -1581,7 +1855,7 @@ describe("收藏点赞", () => {
 
     const mine = await client.json<{ ids: string[] }>(
       "/api/bookmarks/likes/mine",
-      { headers: { "user-agent": "agent-a" } },
+      { headers: { "user-agent": "agent-a" } }
     )
     expect(mine.status).toBe(200)
     expect(mine.body.ids).toEqual([a.body.id])
@@ -1589,7 +1863,7 @@ describe("收藏点赞", () => {
 
   it("不存在的收藏返回 404", async () => {
     const { status, body } = await client.post<LikeResult>(
-      "/api/bookmarks/missing-id/like",
+      "/api/bookmarks/missing-id/like"
     )
     expect(status).toBe(404)
     expect(body.code).toBe("NOT_FOUND")
@@ -1618,7 +1892,9 @@ describe("GET /api/bookmarks/rankings", () => {
     expect(body.views.map((v) => v.id)).toEqual([react.body.id, uv.body.id])
     expect(body.views[0]!.count).toBe(2)
     // 访问榜要带 canonical_url，前端据此直接跳转
-    expect(body.views[0]!.canonical_url).toBe("https://github.com/facebook/react")
+    expect(body.views[0]!.canonical_url).toBe(
+      "https://github.com/facebook/react"
+    )
     expect(body.opens.map((v) => v.id)).toEqual([uv.body.id])
     expect(body.likes.map((v) => v.id)).toEqual([uv.body.id])
   })
@@ -1642,7 +1918,7 @@ describe("站点账号密码 vault", () => {
     const pageUrl = `https://vault.example.com${path}`
     outbound.text(
       pageUrl,
-      `<html><head><title>Vault Site</title></head><body>ok</body></html>`,
+      `<html><head><title>Vault Site</title></head><body>ok</body></html>`
     )
     const created = await createBookmark(pageUrl)
     expect(created.status).toBe(201)
@@ -1656,26 +1932,24 @@ describe("站点账号密码 vault", () => {
       {
         accountUsername: "alice@example.com",
         accountPassword: "s3cret-pass",
-      },
+      }
     )
     expect(status).toBe(200)
     expect(body.account_registered).toBe(true)
     expect(body.account_username).toBe("alice@example.com")
     expect(body.account_password_set).toBe(true)
     expect(body.account_password_updated_at).toBeTruthy()
-    expect(
-      (body as Record<string, unknown>).account_password,
-    ).toBeUndefined()
+    expect((body as Record<string, unknown>).account_password).toBeUndefined()
     expect(body.account_password_encrypted).toBeUndefined()
 
     const detail = await client.json<BookmarkPayload>(
-      `/api/bookmarks/${bookmark.id}`,
+      `/api/bookmarks/${bookmark.id}`
     )
     expect(detail.status).toBe(200)
     expect(detail.body.account_password_set).toBe(true)
     expect(detail.body.account_username).toBe("alice@example.com")
     expect(
-      (detail.body as Record<string, unknown>).account_password,
+      (detail.body as Record<string, unknown>).account_password
     ).toBeUndefined()
   })
 
@@ -1687,21 +1961,21 @@ describe("站点账号密码 vault", () => {
     })
 
     const copied = await client.post<{ password?: string; code?: string }>(
-      `/api/bookmarks/${bookmark.id}/account-password/copy`,
+      `/api/bookmarks/${bookmark.id}/account-password/copy`
     )
     expect(copied.status).toBe(200)
     expect(copied.body.password).toBe("copy-me-now")
 
     const cleared = await client.patch<BookmarkPayload>(
       `/api/bookmarks/${bookmark.id}`,
-      { accountPassword: "" },
+      { accountPassword: "" }
     )
     expect(cleared.status).toBe(200)
     expect(cleared.body.account_password_set).toBe(false)
     expect(cleared.body.account_password_updated_at).toBeNull()
 
     const missing = await client.post<{ code?: string }>(
-      `/api/bookmarks/${bookmark.id}/account-password/copy`,
+      `/api/bookmarks/${bookmark.id}/account-password/copy`
     )
     expect(missing.status).toBe(404)
     expect(missing.body.code).toBe("PASSWORD_NOT_SET")
@@ -1715,7 +1989,7 @@ describe("站点账号密码 vault", () => {
         accountUsername: "should-ignore",
         accountPassword: "nope",
         accountRegistered: true,
-      },
+      }
     )
     expect(patched.status).toBe(200)
     expect(patched.body.account_registered).toBeUndefined()
@@ -1723,7 +1997,7 @@ describe("站点账号密码 vault", () => {
     expect(patched.body.account_password_set).toBeUndefined()
 
     const copy = await client.post<{ code?: string }>(
-      `/api/bookmarks/${created.body.id}/account-password/copy`,
+      `/api/bookmarks/${created.body.id}/account-password/copy`
     )
     expect(copy.status).toBe(400)
     expect(copy.body.code).toBe("UNSUPPORTED_SOURCE")
@@ -1739,7 +2013,7 @@ describe("站点账号密码 vault", () => {
     expect(withoutAccount.account_registered ?? false).toBe(false)
 
     const yes = await client.json<BookmarkList>(
-      "/api/bookmarks?sourceType=url&hasAccount=true",
+      "/api/bookmarks?sourceType=url&hasAccount=true"
     )
     expect(yes.status).toBe(200)
     expect(yes.body.items.every((i) => i.source_type === "url")).toBe(true)
@@ -1747,13 +2021,13 @@ describe("站点账号密码 vault", () => {
     expect(yes.body.items.some((i) => i.id === withoutAccount.id)).toBe(false)
 
     const no = await client.json<BookmarkList>(
-      "/api/bookmarks?sourceType=url&hasAccount=false",
+      "/api/bookmarks?sourceType=url&hasAccount=false"
     )
     expect(no.body.items.some((i) => i.id === withoutAccount.id)).toBe(true)
     expect(no.body.items.some((i) => i.id === withAccount.id)).toBe(false)
 
     const byQ = await client.json<BookmarkList>(
-      `/api/bookmarks?q=${encodeURIComponent("UniqueVaultUserXYZ")}`,
+      `/api/bookmarks?q=${encodeURIComponent("UniqueVaultUserXYZ")}`
     )
     expect(byQ.status).toBe(200)
     expect(byQ.body.items.length).toBe(0)
@@ -1767,7 +2041,7 @@ describe("站点账号密码 vault", () => {
         accountUsername: "keep-me",
         accountPassword: "secret",
         accountRegistered: false,
-      },
+      }
     )
     expect(forced.status).toBe(200)
     expect(forced.body.account_registered).toBe(true)
@@ -1780,7 +2054,7 @@ describe("站点账号密码 vault", () => {
         accountUsername: "",
         accountPassword: "",
         accountRegistered: false,
-      },
+      }
     )
     expect(cleared.status).toBe(200)
     expect(cleared.body.account_registered).toBe(false)
@@ -1813,26 +2087,32 @@ describe("付费属性与精选", () => {
     expect(created.status).toBe(201)
     const id = created.body.id
 
-    const setPaid = await client.patch<BookmarkPayload>(`/api/bookmarks/${id}`, {
-      pricing: "paid",
-      featured: true,
-    })
+    const setPaid = await client.patch<BookmarkPayload>(
+      `/api/bookmarks/${id}`,
+      {
+        pricing: "paid",
+        featured: true,
+      }
+    )
     expect(setPaid.status).toBe(200)
     expect(setPaid.body.pricing).toBe("paid")
     expect(setPaid.body.featured).toBe(true)
 
     const setFreemium = await client.patch<BookmarkPayload>(
       `/api/bookmarks/${id}`,
-      { pricing: "freemium" },
+      { pricing: "freemium" }
     )
     expect(setFreemium.status).toBe(200)
     expect(setFreemium.body.pricing).toBe("freemium")
     expect(setFreemium.body.featured).toBe(true)
 
-    const cleared = await client.patch<BookmarkPayload>(`/api/bookmarks/${id}`, {
-      pricing: null,
-      featured: false,
-    })
+    const cleared = await client.patch<BookmarkPayload>(
+      `/api/bookmarks/${id}`,
+      {
+        pricing: null,
+        featured: false,
+      }
+    )
     expect(cleared.status).toBe(200)
     expect(cleared.body.pricing).toBeNull()
     expect(cleared.body.featured).toBe(false)
@@ -1846,7 +2126,7 @@ describe("付费属性与精选", () => {
 
     outbound.text(
       "https://pricing-filter.example.com/",
-      "<html><head><title>Unset Tool</title></head><body>ok</body></html>",
+      "<html><head><title>Unset Tool</title></head><body>ok</body></html>"
     )
     const unset = await createBookmark("https://pricing-filter.example.com/")
     expect(unset.status).toBe(201)
@@ -1861,7 +2141,7 @@ describe("付费属性与精选", () => {
     })
 
     const freeList = await client.json<BookmarkList>(
-      "/api/bookmarks?pricing=free",
+      "/api/bookmarks?pricing=free"
     )
     expect(freeList.status).toBe(200)
     expect(freeList.body.items.every((i) => i.pricing === "free")).toBe(true)
@@ -1869,7 +2149,7 @@ describe("付费属性与精选", () => {
     expect(freeList.body.items.some((i) => i.id === paid.body.id)).toBe(false)
 
     const unsetList = await client.json<BookmarkList>(
-      "/api/bookmarks?pricing=unset",
+      "/api/bookmarks?pricing=unset"
     )
     expect(unsetList.status).toBe(200)
     expect(unsetList.body.items.every((i) => i.pricing == null)).toBe(true)
@@ -1877,15 +2157,15 @@ describe("付费属性与精选", () => {
     expect(unsetList.body.items.some((i) => i.id === free.body.id)).toBe(false)
 
     const featuredList = await client.json<BookmarkList>(
-      "/api/bookmarks?featured=true",
+      "/api/bookmarks?featured=true"
     )
     expect(featuredList.status).toBe(200)
     expect(featuredList.body.items.every((i) => i.featured === true)).toBe(true)
     expect(featuredList.body.items.some((i) => i.id === free.body.id)).toBe(
-      true,
+      true
     )
     expect(featuredList.body.items.some((i) => i.id === paid.body.id)).toBe(
-      false,
+      false
     )
   })
 

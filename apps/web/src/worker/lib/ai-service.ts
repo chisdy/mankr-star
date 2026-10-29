@@ -7,6 +7,7 @@ import {
   README_EXCERPT_MAX_CHARS,
   PRESET_FOLDERS,
   type AiOutput,
+  type SourceType,
 } from "@mankr/shared"
 import { and, eq, isNull } from "drizzle-orm"
 import type { Env } from "../env"
@@ -424,8 +425,7 @@ export async function runAiForBookmark(
     topics = []
   }
 
-  const sourceType =
-    (bookmark.sourceType as "github" | "url" | "twitter") || "github"
+  const sourceType = (bookmark.sourceType as SourceType) || "github"
 
   const applyOpts = {
     overwriteFolder:

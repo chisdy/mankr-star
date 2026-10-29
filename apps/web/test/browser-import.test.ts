@@ -158,6 +158,14 @@ describe("browser import identity", () => {
       sourceType: "twitter",
       externalId: "99",
     })
+    expect(
+      resolveBrowserImportIdentity("https://mp.weixin.qq.com/s/abc")
+    ).toMatchObject({
+      sourceType: "wechat",
+      canonicalUrl: "https://mp.weixin.qq.com/s/abc",
+      externalId: "mp.weixin.qq.com/s/abc",
+      owner: null,
+    })
   })
 })
 
