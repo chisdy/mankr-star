@@ -717,7 +717,7 @@ export function FolderManagePage() {
                           />
                         ) : (
                           <div
-                            onClick={() => startEdit(folder, "name")}
+                            onDoubleClick={() => startEdit(folder, "name")}
                             role="button"
                             tabIndex={0}
                             onKeyDown={(e) => {
@@ -760,7 +760,7 @@ export function FolderManagePage() {
                             />
                           ) : (
                             <div
-                              onClick={() => startEdit(folder, "slug")}
+                              onDoubleClick={() => startEdit(folder, "slug")}
                               role="button"
                               tabIndex={0}
                               onKeyDown={(e) => {
@@ -851,7 +851,9 @@ export function FolderManagePage() {
                           />
                         ) : (
                           <div
-                            onClick={() => startEdit(folder, "description")}
+                            onDoubleClick={() =>
+                              startEdit(folder, "description")
+                            }
                             role="button"
                             tabIndex={0}
                             onKeyDown={(e) => {
